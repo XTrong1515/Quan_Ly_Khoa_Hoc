@@ -8,6 +8,7 @@ import HomePage           from './pages/public/home.jsx';
 import CourseListingPage  from './pages/public/course-listing.jsx';
 import CourseDetailPage   from './pages/public/course-detail.jsx';
 import LoginPage          from './pages/public/login.jsx';
+import RegisterPage       from './pages/public/register.jsx';
 import CartPage           from './pages/public/cart.jsx';
 import PaymentResultPage  from './pages/public/payment-result.jsx';
 
@@ -74,8 +75,8 @@ export function Router() {
       </Route>
 
       <Route element={<BareLayout />}>
-        <Route path="/login"              element={<LoginPage mode="login" />} />
-        <Route path="/register"           element={<LoginPage mode="register" />} />
+        <Route path="/login"              element={<LoginPage />} />
+        <Route path="/register"           element={<RegisterPage />} />
         <Route path="/learn/:courseId/:lessonId"
                                           element={<RequireAuth><LessonPlayerPage /></RequireAuth>} />
 

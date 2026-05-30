@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Logo } from '@/components/logo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { useAuth } from '@/store/auth';
+import { apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 /**
@@ -69,7 +70,7 @@ const REQS = [
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const login = useAuth((s) => s.login);
+  const register_action = useAuth((s) => s.register);
   const [showPw, setShowPw] = useState(false);
 
   const {
@@ -89,10 +90,14 @@ export default function RegisterPage() {
   const matchValid = confirm.length > 0 && pw === confirm;
 
   const onSubmit = async (data) => {
-    // TODO: POST /api/auth/register → email verification flow
-    await login({ email: data.email });
-    toast.success('Tài khoản đã tạo! Kiểm tra email để xác thực.');
-    navigate('/me');
+    try {
+      // TODO: POST /api/auth/register → email verification flow
+      await register_action({ name: data.name, email: data.email, password: data.password });
+      toast.success('Tài khoản đã tạo! Kiểm tra email để xác thực.');
+      navigate('/me');
+    } catch (err) {
+      toast.error(apiMessage(err, 'Đăng ký thất bại, vui lòng thử lại'));
+    }
   };
 
   return (
