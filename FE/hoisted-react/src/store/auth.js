@@ -1,28 +1,47 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { api, setToken, registerLogout } from '@/lib/api';
 
-/**
- * Auth store — giả lập, replace bằng API thật.
- * Roles: 'guest' | 'user' | 'admin'
- */
 export const useAuth = create(
   persist(
-    (set) => ({
-      user: null,           // { id, name, email, avatar, role }
-      role: 'guest',
+    (set, get) => ({
+      user: null,         // { id, name, email, avatar, role }
+      role: 'guest',      // 'guest' | 'user' | 'admin'
       token: null,
+      refreshToken: null,
 
-      login: async ({ email }) => {
-        // TODO: POST /auth/login → { user, token }
-        const fakeUser = {
-          id: 'u1', name: 'Phạm Khang', email, avatar: 'KP',
-          role: email.includes('admin') ? 'admin' : 'user',
-        };
-        set({ user: fakeUser, role: fakeUser.role, token: 'fake-jwt' });
-        return fakeUser;
+      login: async ({ email, password }) => {
+        const { data } = await api.post('/api/auth/login', { email, password });
+        const role = data.user.role.toLowerCase(); // BE returns 'USER'/'ADMIN'
+        setToken(data.accessToken);
+        set({ user: data.user, role, token: data.accessToken, refreshToken: data.refreshToken });
+        return data.user;
       },
-      logout: () => set({ user: null, role: 'guest', token: null }),
+
+      register: async ({ name, email, password }) => {
+        const { data } = await api.post('/api/auth/register', { name, email, password });
+        const role = data.user.role.toLowerCase();
+        setToken(data.accessToken);
+        set({ user: data.user, role, token: data.accessToken, refreshToken: data.refreshToken });
+        return data.user;
+      },
+
+      logout: () => {
+        const { refreshToken } = get();
+        if (refreshToken) api.post('/api/auth/logout', { refreshToken }).catch(() => {});
+        setToken(null);
+        set({ user: null, role: 'guest', token: null, refreshToken: null });
+      },
     }),
-    { name: 'hoisted.auth' },
+    {
+      name: 'hoisted.auth',
+      // Restore in-memory token after page refresh
+      onRehydrateStorage: () => (state) => {
+        if (state?.token) setToken(state.token);
+      },
+    },
   ),
 );
+
+// Wire logout callback so the 401 interceptor can force-logout
+registerLogout(useAuth.getState().logout);
