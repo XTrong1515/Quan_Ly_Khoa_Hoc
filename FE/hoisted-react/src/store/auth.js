@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api, setToken, registerLogout } from '@/lib/api';
+import { queryClient } from '@/lib/query-client';
 
 export const useAuth = create(
   persist(
@@ -14,6 +15,8 @@ export const useAuth = create(
         const { data } = await api.post('/api/auth/login', { email, password });
         const role = data.user.role.toLowerCase(); // BE returns 'USER'/'ADMIN'
         setToken(data.accessToken);
+        // Clear all cached queries so the new user doesn't see the previous user's data
+        queryClient.clear();
         set({ user: data.user, role, token: data.accessToken, refreshToken: data.refreshToken });
         return data.user;
       },
@@ -22,6 +25,7 @@ export const useAuth = create(
         const { data } = await api.post('/api/auth/register', { name, email, password });
         const role = data.user.role.toLowerCase();
         setToken(data.accessToken);
+        queryClient.clear();
         set({ user: data.user, role, token: data.accessToken, refreshToken: data.refreshToken });
         return data.user;
       },
@@ -35,6 +39,8 @@ export const useAuth = create(
         const { refreshToken } = get();
         if (refreshToken) api.post('/api/auth/logout', { refreshToken }).catch(() => {});
         setToken(null);
+        // Clear cache before resetting state so no stale user data lingers
+        queryClient.clear();
         set({ user: null, role: 'guest', token: null, refreshToken: null });
       },
     }),
