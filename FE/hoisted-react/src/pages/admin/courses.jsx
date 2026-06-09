@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Plus, Search, Edit2, Trash2, X, ChevronDown, ChevronUp,
-  GripVertical, Download, Star,
+  GripVertical, Download, Star, ImageIcon, Link2, Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
@@ -36,6 +36,7 @@ const courseSchema = z.object({
   thumb:            z.string().optional(),
   tag:              z.string().optional(),
   status:           z.enum(['DRAFT','PUBLISHED','ARCHIVED']),
+  thumbnailUrl:     z.string().optional(),
 });
 
 /* ── Queries ────────────────────────────────────────────────────── */
@@ -536,6 +537,12 @@ function LessonForm({ courseId, sections, initial, onCancel, onSaved }) {
 }
 
 /* ── Course form modal ──────────────────────────────────────────── */
+const THUMB_MODES = [
+  { key: 'default', label: 'Mặc định', icon: ImageIcon },
+  { key: 'url',     label: 'Link URL',  icon: Link2    },
+  { key: 'upload',  label: 'Tải lên',  icon: Upload   },
+];
+
 function CourseModal({ mode, initial, categories, onClose, onSaved }) {
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(courseSchema),
@@ -547,19 +554,76 @@ function CourseModal({ mode, initial, categories, onClose, onSaved }) {
       instructorName: initial.instructor_name ?? '',
       glyph: initial.glyph ?? '', thumb: initial.thumb ?? 'yellow',
       tag: initial.tag ?? '', status: initial.status,
-    } : { level: 'BEGINNER', status: 'DRAFT', thumb: 'yellow', price: 0 },
+      thumbnailUrl: initial.thumbnail_url ?? '',
+    } : { level: 'BEGINNER', status: 'DRAFT', thumb: 'yellow', price: 0, thumbnailUrl: '' },
   });
+
+  // Determine initial thumb mode when editing
+  const initMode = mode === 'edit' && initial?.thumbnail_url
+    ? (initial.thumbnail_url.startsWith('blob:') ? 'upload' : 'url')
+    : 'default';
+  const [thumbMode,    setThumbMode]    = useState(initMode);
+  const [uploadPreview, setUploadPreview] = useState(initial?.thumbnail_url ?? null);
+  const [uploading,    setUploading]    = useState(false);
+  const fileInputRef = useRef(null);
 
   const autoSlug = (t) =>
     t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
 
+  const handleThumbModeChange = (next) => {
+    setThumbMode(next);
+    if (next === 'default') {
+      setValue('thumbnailUrl', '');
+      setUploadPreview(null);
+    }
+    if (next === 'url') {
+      setUploadPreview(null);
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Local preview immediately
+    const localUrl = URL.createObjectURL(file);
+    setUploadPreview(localUrl);
+    setValue('thumbnailUrl', ''); // clear until upload completes
+
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('image', file);
+      const { data } = await api.post('/api/admin/upload/image', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setValue('thumbnailUrl', data.url);
+      setUploadPreview(data.url);
+      URL.revokeObjectURL(localUrl);
+    } catch (err) {
+      toast.error(apiMessage(err, 'Upload thất bại'));
+      setUploadPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const onSubmit = async (values) => {
+    if (thumbMode === 'upload' && uploading) {
+      toast.error('Vui lòng chờ ảnh upload xong');
+      return;
+    }
+    // Clear thumbnailUrl when using default glyph/color mode
+    const payload = {
+      ...values,
+      thumbnailUrl: thumbMode === 'default' ? null : (values.thumbnailUrl || null),
+    };
     try {
       if (mode === 'create') {
-        await api.post('/api/admin/courses', values);
+        await api.post('/api/admin/courses', payload);
         toast.success('Đã tạo khóa học');
       } else {
-        await api.put(`/api/admin/courses/${initial.id}`, values);
+        await api.put(`/api/admin/courses/${initial.id}`, payload);
         toast.success('Đã cập nhật khóa học');
       }
       onSaved();
@@ -568,8 +632,10 @@ function CourseModal({ mode, initial, categories, onClose, onSaved }) {
     }
   };
 
-  const thumbVal = watch('thumb') ?? 'yellow';
-  const glyphVal = watch('glyph') ?? '';
+  const thumbVal     = watch('thumb') ?? 'yellow';
+  const glyphVal     = watch('glyph') ?? '';
+  const thumbUrlVal  = watch('thumbnailUrl') ?? '';
+  const previewImg   = thumbMode === 'upload' ? uploadPreview : (thumbMode === 'url' ? thumbUrlVal : null);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -585,15 +651,95 @@ function CourseModal({ mode, initial, categories, onClose, onSaved }) {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-5">
-          {/* Preview thumb */}
-          <div className="flex items-center gap-4 mb-6 p-4 bg-bg-2 rounded-xl">
-            <div className="w-16 h-16 rounded-xl grid place-items-center font-mono font-bold text-[20px] text-bg shrink-0"
-              style={{ background: THUMB_COLORS[thumbVal] ?? THUMB_COLORS.yellow }}>
-              {glyphVal || 'JS'}
+          {/* ── Thumbnail section ── */}
+          <div className="mb-6 p-4 bg-bg-2 rounded-xl">
+            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-3">Thumbnail</p>
+
+            {/* Mode tabs */}
+            <div className="flex gap-1 mb-4">
+              {THUMB_MODES.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key} type="button"
+                  onClick={() => handleThumbModeChange(key)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors',
+                    thumbMode === key
+                      ? 'bg-accent text-bg'
+                      : 'bg-bg border border-line text-ink-2 hover:bg-bg-3',
+                  )}>
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </button>
+              ))}
             </div>
-            <div>
-              <p className="text-[13px] text-ink-3 font-mono mb-1">Xem trước thumbnail</p>
-              <p className="text-[14px] text-ink font-medium">{watch('title') || 'Tên khóa học'}</p>
+
+            {/* Preview + controls */}
+            <div className="flex items-start gap-4">
+              {/* Preview box */}
+              <div className="shrink-0 w-[120px]">
+                {previewImg ? (
+                  <div className="aspect-video rounded-lg overflow-hidden bg-bg-3 border border-line">
+                    <img src={previewImg} className="w-full h-full object-cover" alt="preview" />
+                  </div>
+                ) : (
+                  <div className="aspect-video rounded-lg grid place-items-center font-mono font-bold text-[18px] text-bg"
+                    style={{ background: THUMB_COLORS[thumbVal] ?? THUMB_COLORS.yellow }}>
+                    {glyphVal || 'JS'}
+                  </div>
+                )}
+              </div>
+
+              {/* Controls */}
+              <div className="flex-1">
+                {thumbMode === 'default' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Glyph (vd: JS, Rx, TS)">
+                      <input {...register('glyph')} className={inputCls()} placeholder="JS" />
+                    </Field>
+                    <Field label="Màu nền">
+                      <select {...register('thumb')} className={inputCls()}>
+                        {Object.keys(THUMB_COLORS).map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                )}
+
+                {thumbMode === 'url' && (
+                  <Field label="Đường dẫn ảnh (https://...)">
+                    <input
+                      {...register('thumbnailUrl')}
+                      className={inputCls()}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </Field>
+                )}
+
+                {thumbMode === 'upload' && (
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={cn(
+                        'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-[13px] font-medium transition-colors',
+                        uploading
+                          ? 'border-line text-ink-3 cursor-wait'
+                          : 'border-accent text-accent hover:bg-accent/10',
+                      )}>
+                      <Upload className="w-4 h-4" />
+                      {uploading ? 'Đang upload...' : uploadPreview ? 'Chọn ảnh khác' : 'Chọn ảnh từ thiết bị'}
+                    </button>
+                    <p className="font-mono text-[10px] text-ink-3 mt-2">JPG, PNG, WebP — tối đa 5 MB</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -643,16 +789,6 @@ function CourseModal({ mode, initial, categories, onClose, onSaved }) {
               </select>
             </Field>
 
-            <Field label="Glyph (vd: JS, Rx, TS)">
-              <input {...register('glyph')} className={inputCls()} placeholder="JS" />
-            </Field>
-
-            <Field label="Màu thumb">
-              <select {...register('thumb')} className={inputCls()}>
-                {Object.keys(THUMB_COLORS).map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </Field>
-
             <Field label="Mô tả ngắn" className="col-span-2">
               <textarea {...register('shortDescription')} rows={2} className={cn(inputCls(), 'resize-none')}
                 placeholder="Mô tả ngắn về khóa học..." />
@@ -661,7 +797,7 @@ function CourseModal({ mode, initial, categories, onClose, onSaved }) {
 
           <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-line">
             <Button type="button" variant="ghost" onClick={onClose}>Hủy</Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || uploading}>
               {isSubmitting ? 'Đang lưu...' : mode === 'create' ? 'Tạo khóa học' : 'Lưu thay đổi'}
             </Button>
           </div>

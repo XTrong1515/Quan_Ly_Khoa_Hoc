@@ -1,8 +1,10 @@
 require('dotenv').config();
+const path    = require('path');
 const express = require('express');
 const cors    = require('cors');
 
 const adminRoutes          = require('./routes/admin');
+const uploadRoutes         = require('./routes/upload');
 const authRoutes           = require('./routes/auth');
 const userRoutes           = require('./routes/user');
 const courseRoutes         = require('./routes/courses');
@@ -24,7 +26,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Serve uploaded images as static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 app.get('/api/home',                                     homeController.home);
+app.use('/api/admin/upload',    uploadRoutes);
 app.use('/api/admin',           adminRoutes);
 app.use('/api/auth',            authRoutes);
 app.use('/api/user',            userRoutes);

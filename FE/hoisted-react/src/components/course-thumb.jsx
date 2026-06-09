@@ -10,6 +10,29 @@ const GRADIENTS = {
 };
 
 export function CourseThumb({ course, className }) {
+  const thumbUrl = course.thumbnail_url || course.thumbnailUrl;
+
+  if (thumbUrl) {
+    return (
+      <div className={cn('relative aspect-video rounded-[10px] overflow-hidden bg-bg-3', className)}>
+        <img
+          src={thumbUrl}
+          alt={course.title ?? ''}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+        {course.tag && (
+          <span className={cn(
+            'absolute top-2.5 left-2.5 bg-[#0B0F19] font-mono font-semibold text-[10px] uppercase tracking-[0.06em] px-2 py-1 rounded',
+            course.tag === 'Free' ? 'text-accent' : 'text-white',
+          )}>
+            {course.tag}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={cn(
       'relative aspect-video rounded-[10px] overflow-hidden bg-gradient-to-br',
