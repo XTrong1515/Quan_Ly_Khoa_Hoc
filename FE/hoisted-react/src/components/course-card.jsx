@@ -6,7 +6,7 @@ import { formatVND } from '@/lib/format';
 
 export function CourseCard({ course }) {
   return (
-    <Link to={`/courses/${course.id}`} className="card p-3 flex flex-col gap-3 hover:-translate-y-0.5 hover:shadow-lg transition">
+    <Link to={`/courses/${course.slug ?? course.id}`} className="card p-3 flex flex-col gap-3 hover:-translate-y-0.5 hover:shadow-lg transition">
       <CourseThumb course={course} />
       <div className="px-1 pb-2">
         <div className="flex gap-2 mb-2">

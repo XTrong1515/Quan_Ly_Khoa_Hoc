@@ -1,46 +1,169 @@
-import { Link } from 'react-router-dom';
-import { IdeFrame } from '@/components/ide-frame.jsx';
+import { useNavigate, Link } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Trash2, ShoppingCart, ArrowRight, Lock } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button.jsx';
+import { CourseThumb } from '@/components/course-thumb.jsx';
+import { Chip } from '@/components/ui/chip.jsx';
+import { useCart } from '@/store/cart';
+import { useAuth } from '@/store/auth';
+import { api, apiMessage } from '@/lib/api';
+import { formatVND } from '@/lib/format';
 
-/**
- * Cart
- * Danh sách khóa, tổng tiền, chọn payment (VNPay / Momo / Visa), nút Checkout — redirect sang VNPay gateway.
- *
- * 📐 Design reference: xem Hoisted.html — section/artboard tương ứng.
- * Copy markup từ design file (pages-*.jsx) và refactor:
- *   - thay inline style bằng Tailwind classes
- *   - thay hard-coded color bằng tokens (bg-bg-2, text-ink-2, …)
- *   - lift state lên Zustand store hoặc React Query hook
- *
- * Suggested data hooks:
- *   - useQuery({ queryKey: ['…'], queryFn: api.… })
- *   - useMutation cho actions (mark complete, add to cart, v.v.)
- */
+function useCartCourses(ids) {
+  return useQuery({
+    queryKey: ['cart-courses', ids],
+    queryFn: () =>
+      ids.length > 0
+        ? api.get('/api/courses/cart-items', { params: { ids: ids.join(',') } }).then((r) => r.data.courses)
+        : Promise.resolve([]),
+    enabled: ids.length > 0,
+    staleTime: 60_000,
+  });
+}
+
 export default function CartPage() {
+  const { items, remove, clear } = useCart();
+  const { role } = useAuth();
+  const navigate  = useNavigate();
+
+  const courseIds = items.map((i) => i.courseId);
+  const { data: courses = [], isLoading } = useCartCourses(courseIds);
+
+  // Map course id → course data
+  const courseMap = Object.fromEntries(courses.map((c) => [c.id, c]));
+
+  const total = courseIds.reduce((sum, id) => sum + (courseMap[id]?.price ?? 0), 0);
+
+  const checkoutMutation = useMutation({
+    mutationFn: () => api.post('/api/orders', { courseIds }).then((r) => r.data),
+    onSuccess: ({ paymentUrl }) => {
+      clear();
+      if (paymentUrl.startsWith('http')) {
+        window.location.href = paymentUrl;
+      } else {
+        navigate(paymentUrl);
+      }
+    },
+    onError: (err) => toast.error(apiMessage(err, 'Thanh toán thất bại')),
+  });
+
+  const handleCheckout = () => {
+    if (role === 'guest') {
+      toast.error('Vui lòng đăng nhập để thanh toán');
+      navigate('/login');
+      return;
+    }
+    checkoutMutation.mutate();
+  };
+
+  if (courseIds.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto px-6 py-20 text-center">
+        <div className="w-16 h-16 rounded-full bg-bg-2 grid place-items-center mx-auto mb-5">
+          <ShoppingCart className="w-7 h-7 text-ink-3" />
+        </div>
+        <p className="eyebrow mb-2">// giỏ hàng</p>
+        <h1 className="display text-2xl mb-3">Giỏ hàng trống</h1>
+        <p className="text-ink-2 mb-6">Hãy khám phá các khóa học và thêm vào giỏ hàng.</p>
+        <Link to="/courses"><Button>Khám phá khóa học</Button></Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="px-16 py-12 max-w-5xl mx-auto">
-      <p className="eyebrow mb-2">// stub · /cart</p>
-      <h1 className="display text-4xl mb-3">Cart</h1>
-      <p className="text-ink-2 mb-6 max-w-xl">Danh sách khóa, tổng tiền, chọn payment (VNPay / Momo / Visa), nút Checkout — redirect sang VNPay gateway.</p>
+    <div className="max-w-[1100px] mx-auto px-8 py-10">
+      <p className="eyebrow mb-2">// giỏ hàng</p>
+      <h1 className="display text-[32px] mb-8">Giỏ hàng ({courseIds.length})</h1>
 
-      <IdeFrame tab="TODO.md">
-        <pre className="font-mono text-[13px] leading-relaxed text-ink-2 p-5 whitespace-pre-wrap">
-{`# Cart
+      <div className="flex gap-8 items-start">
+        {/* Course list */}
+        <div className="flex-1 min-w-0 space-y-4">
+          {courseIds.map((id) => {
+            const course = courseMap[id];
+            if (isLoading || !course) {
+              return (
+                <div key={id} className="card p-4 animate-pulse flex gap-4">
+                  <div className="w-32 aspect-video rounded-lg bg-bg-3 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-bg-3 rounded w-3/4" />
+                    <div className="h-3 bg-bg-3 rounded w-1/2" />
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div key={id} className="card p-4 flex gap-4 items-start">
+                <div className="w-32 shrink-0">
+                  <CourseThumb course={course} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex gap-2 mb-1.5">
+                    <Chip variant="line" className="text-[11px]">{course.instructor}</Chip>
+                  </div>
+                  <Link to={`/courses/${course.slug}`} className="font-display font-semibold text-[15px] hover:text-accent line-clamp-2 block mb-1">
+                    {course.title}
+                  </Link>
+                  <p className="font-mono font-bold text-[17px] text-ink mt-auto">
+                    {formatVND(course.price)}
+                    {course.originalPrice > course.price && (
+                      <span className="text-[13px] text-ink-3 font-normal line-through ml-2">
+                        {formatVND(course.originalPrice)}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { remove(id); toast.success('Đã xóa khỏi giỏ hàng'); }}
+                  className="text-ink-3 hover:text-danger transition p-1 rounded"
+                  title="Xóa">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
 
-Page này đã có thiết kế hi-fi trong design canvas.
-Mở Hoisted.html → tìm artboard "Cart" để copy markup.
+        {/* Order summary */}
+        <div className="w-[300px] shrink-0 sticky top-24">
+          <div className="card p-5">
+            <h2 className="font-display font-semibold text-[17px] mb-4">Tóm tắt đơn hàng</h2>
 
-Bước tiếp theo:
-  □ Copy JSX từ design canvas vào file này
-  □ Refactor inline style → Tailwind classes
-  □ Wire state vào Zustand stores (auth, cart, …)
-  □ Thay mock data bằng React Query + axios
-  □ Form validation: react-hook-form + zod
-`}
-        </pre>
-      </IdeFrame>
+            <div className="space-y-2 mb-4">
+              {courseIds.map((id) => {
+                const c = courseMap[id];
+                return (
+                  <div key={id} className="flex justify-between text-[13px]">
+                    <span className="text-ink-2 truncate flex-1 mr-2">{c?.title ?? '…'}</span>
+                    <span className="font-mono text-ink shrink-0">{formatVND(c?.price ?? 0)}</span>
+                  </div>
+                );
+              })}
+            </div>
 
-      <div className="mt-6 flex gap-3">
-        <Link to="/" className="font-mono text-sm text-accent">← về trang chủ</Link>
+            <div className="border-t border-line pt-3 mb-5 flex justify-between">
+              <span className="font-semibold text-ink">Tổng cộng</span>
+              <span className="font-mono font-bold text-[20px] text-ink">{formatVND(total)}</span>
+            </div>
+
+            <Button
+              size="lg"
+              className="w-full justify-center"
+              disabled={checkoutMutation.isPending || isLoading}
+              onClick={handleCheckout}>
+              {checkoutMutation.isPending ? 'Đang xử lý…' : (
+                <>
+                  {role === 'guest' ? <Lock className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                  {role === 'guest' ? 'Đăng nhập để thanh toán' : 'Tiến hành thanh toán'}
+                </>
+              )}
+            </Button>
+
+            <p className="font-mono text-[11px] text-ink-3 text-center mt-3">
+              Thanh toán qua VNPay • Bảo mật SSL
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
