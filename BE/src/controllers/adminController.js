@@ -108,6 +108,7 @@ async function adminCreateCourse(req, res) {
     price = 0, originalPrice, level = 'BEGINNER',
     categoryId, instructorName, glyph, thumb = 'yellow', tag,
     whatYouLearn, requirements, status = 'DRAFT',
+    thumbnailUrl,
   } = req.body;
 
   if (!title || !slug || !categoryId) {
@@ -118,11 +119,12 @@ async function adminCreateCourse(req, res) {
     const [result] = await pool.query(
       `INSERT INTO courses
          (title, slug, short_description, description, price, original_price, level,
-          category_id, instructor_name, glyph, thumb, tag, what_you_learn, requirements, status)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          category_id, instructor_name, glyph, thumb, tag, thumbnail_url,
+          what_you_learn, requirements, status)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [title, slug, shortDescription ?? null, description ?? null,
        price, originalPrice ?? null, level, categoryId, instructorName ?? null,
-       glyph ?? null, thumb, tag ?? null,
+       glyph ?? null, thumb, tag ?? null, thumbnailUrl ?? null,
        whatYouLearn ? JSON.stringify(whatYouLearn) : null,
        requirements ? JSON.stringify(requirements) : null,
        status],
@@ -142,6 +144,7 @@ async function adminUpdateCourse(req, res) {
     ['description','description'],['price','price'],['original_price','originalPrice'],
     ['level','level'],['category_id','categoryId'],['instructor_name','instructorName'],
     ['glyph','glyph'],['thumb','thumb'],['tag','tag'],['status','status'],
+    ['thumbnail_url','thumbnailUrl'],
   ];
   const updates = []; const params = [];
   for (const [col, key] of fields) {
