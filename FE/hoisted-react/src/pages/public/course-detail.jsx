@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Star, Clock, BookOpen, Users, ChevronDown, Play,
-  ShoppingCart, Zap, Check, X, Lock, Trash2,
+  ShoppingCart, Zap, Check, X, Lock, Trash2, Gift,
 } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { Button } from '@/components/ui/button.jsx';
@@ -32,10 +32,21 @@ export default function CourseDetailPage() {
   const { role }       = useAuth();
   const { add, items } = useCart();
   const navigate       = useNavigate();
+  const queryClient    = useQueryClient();
   const [tab, setTab]    = useState('Mô tả');
   const [previewLesson, setPreviewLesson] = useState(null);
 
   const { data, isLoading, isError } = useCourseDetail(slug);
+
+  const enrollFreeMutation = useMutation({
+    mutationFn: (courseId) => api.post('/api/enrollments', { courseId }),
+    onSuccess: () => {
+      toast.success('Đăng ký thành công! Bắt đầu học ngay.');
+      queryClient.invalidateQueries({ queryKey: ['course', slug] });
+      queryClient.invalidateQueries({ queryKey: ['enrolled-course-ids'] });
+    },
+    onError: (err) => toast.error(apiMessage(err, 'Đăng ký thất bại')),
+  });
 
   if (isLoading) return <CourseDetailSkeleton />;
   if (isError || !data?.course) {
@@ -49,6 +60,7 @@ export default function CourseDetailPage() {
   }
 
   const { course, lessons = [], reviews = [], isEnrolled = false } = data;
+  const isFree = parseFloat(course.price) === 0;
   const inCart = items.some((i) => i.courseId === course.id);
 
   const handleAddCart = () => {
@@ -58,6 +70,14 @@ export default function CourseDetailPage() {
   const handleBuyNow = () => {
     add(course.id);
     navigate('/cart');
+  };
+  const handleEnrollFree = () => {
+    if (role === 'guest') {
+      toast.error('Vui lòng đăng nhập để đăng ký');
+      navigate('/login');
+      return;
+    }
+    enrollFreeMutation.mutate(course.id);
   };
   const handleGoLearn = () => navigate(`/learn/${course.id}/${lessons[0]?.id}`);
 
@@ -209,6 +229,15 @@ export default function CourseDetailPage() {
                 {isEnrolled ? (
                   <Button size="lg" className="w-full justify-center mb-2" onClick={handleGoLearn}>
                     <Play className="w-4 h-4" /> Tiếp tục học
+                  </Button>
+                ) : isFree ? (
+                  <Button
+                    size="lg"
+                    className="w-full justify-center mb-2"
+                    disabled={enrollFreeMutation.isPending}
+                    onClick={handleEnrollFree}>
+                    <Gift className="w-4 h-4" />
+                    {enrollFreeMutation.isPending ? 'Đang đăng ký…' : 'Đăng ký miễn phí'}
                   </Button>
                 ) : (
                   <>

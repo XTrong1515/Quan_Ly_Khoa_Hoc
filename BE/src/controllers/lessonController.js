@@ -25,35 +25,27 @@ async function preview(req, res) {
 }
 
 /* ── GET /api/lessons/:id ─────────────────────────────────────── */
+// requireEnrollment({ allowPreview: true }) middleware runs first:
+//   sets req.enrollmentId (null for preview lessons) and req.lessonCourseId
 async function detail(req, res) {
-  const userId   = req.user.id;
-  const lessonId = parseInt(req.params.id, 10);
+  const lessonId     = parseInt(req.params.id, 10);
+  const enrollmentId = req.enrollmentId;   // null when is_preview + not enrolled
+  const courseId     = req.lessonCourseId;
 
   try {
     const [lessonRows] = await pool.query(
-      `SELECT l.*, c.id AS courseId, c.title AS courseTitle, c.slug AS courseSlug
+      `SELECT l.id, l.title, l.video_url, l.content, l.duration_minutes,
+              l.attachment_url, l.is_preview,
+              c.title AS courseTitle, c.slug AS courseSlug
        FROM lessons l
        JOIN courses c ON c.id = l.course_id
        WHERE l.id = ?`,
       [lessonId],
     );
     if (!lessonRows.length) return res.status(404).json({ message: 'Không tìm thấy bài học' });
-
     const lesson = lessonRows[0];
 
-    // Check enrollment
-    const [enrollRows] = await pool.query(
-      `SELECT id FROM enrollments WHERE user_id = ? AND course_id = ? LIMIT 1`,
-      [userId, lesson.courseId],
-    );
-
-    if (!enrollRows.length && !lesson.is_preview) {
-      return res.status(403).json({ message: 'Bạn chưa đăng ký khóa học này' });
-    }
-
-    const enrollmentId = enrollRows[0]?.id ?? null;
-
-    // Get this lesson's saved progress
+    // Saved playback progress (only if enrolled)
     let progress = { lastWatchedSeconds: 0, isCompleted: false };
     if (enrollmentId) {
       const [progRows] = await pool.query(
@@ -71,7 +63,7 @@ async function detail(req, res) {
       }
     }
 
-    // Get curriculum: all sections + lessons with completion flags
+    // Curriculum: all sections + lessons with completion flags
     const [sectionRows] = await pool.query(
       `SELECT cs.id AS sectionId, cs.title AS sectionTitle, cs.order_index AS sectionOrder,
               l.id AS lessonId, l.title AS lessonTitle, l.duration_minutes,
@@ -83,10 +75,9 @@ async function detail(req, res) {
          ON lp.lesson_id = l.id AND lp.enrollment_id = ?
        WHERE cs.course_id = ?
        ORDER BY cs.order_index ASC, l.order_index ASC`,
-      [enrollmentId ?? 0, lesson.courseId],
+      [enrollmentId ?? 0, courseId],
     );
 
-    // Group by section
     const sectionsMap = {};
     for (const row of sectionRows) {
       if (!sectionsMap[row.sectionId]) {
@@ -115,7 +106,7 @@ async function detail(req, res) {
         content: lesson.content,
         durationMinutes: lesson.duration_minutes,
         hasAttachment: !!lesson.attachment_url,
-        courseId: lesson.courseId,
+        courseId,
         courseTitle: lesson.courseTitle,
         courseSlug: lesson.courseSlug,
       },
@@ -130,25 +121,19 @@ async function detail(req, res) {
 }
 
 /* ── GET /api/lessons/:id/attachment ─────────────────────────── */
+// requireEnrollment() middleware runs first (strict — no preview exception)
 async function attachment(req, res) {
-  const userId   = req.user.id;
   const lessonId = parseInt(req.params.id, 10);
 
   try {
     const [rows] = await pool.query(
-      `SELECT l.attachment_url, l.course_id FROM lessons l WHERE l.id = ?`,
+      'SELECT attachment_url FROM lessons WHERE id = ?',
       [lessonId],
     );
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy bài học' });
 
-    const { attachment_url, course_id } = rows[0];
+    const { attachment_url } = rows[0];
     if (!attachment_url) return res.status(404).json({ message: 'Bài học không có tài liệu đính kèm' });
-
-    const [enrollRows] = await pool.query(
-      `SELECT id FROM enrollments WHERE user_id = ? AND course_id = ? LIMIT 1`,
-      [userId, course_id],
-    );
-    if (!enrollRows.length) return res.status(403).json({ message: 'Bạn chưa đăng ký khóa học này' });
 
     return res.json({ url: attachment_url });
   } catch (err) {

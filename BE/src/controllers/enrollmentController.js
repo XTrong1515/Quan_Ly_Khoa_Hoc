@@ -37,4 +37,63 @@ async function myEnrollments(req, res) {
   }
 }
 
-module.exports = { myEnrollments };
+/* ── GET /api/enrollments/me/course-ids ──────────────────────── */
+// Lightweight endpoint used by the cart page to check owned courses
+async function myEnrolledCourseIds(req, res) {
+  const userId = req.user.id;
+  try {
+    const [rows] = await pool.query(
+      'SELECT course_id AS courseId FROM enrollments WHERE user_id = ?',
+      [userId],
+    );
+    return res.json({ courseIds: rows.map((r) => r.courseId) });
+  } catch (err) {
+    console.error('[enrollments/me/course-ids]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+/* ── POST /api/enrollments ───────────────────────────────────── */
+// Direct enrollment for free courses (price = 0) — skips the order/payment flow
+async function enrollFree(req, res) {
+  const userId   = req.user.id;
+  const courseId = parseInt(req.body.courseId, 10);
+
+  if (!courseId || courseId <= 0) {
+    return res.status(400).json({ message: 'courseId không hợp lệ' });
+  }
+
+  try {
+    const [courseRows] = await pool.query(
+      "SELECT id, price FROM courses WHERE id = ? AND status = 'PUBLISHED'",
+      [courseId],
+    );
+    if (!courseRows.length) {
+      return res.status(404).json({ message: 'Không tìm thấy khóa học' });
+    }
+    if (parseFloat(courseRows[0].price) > 0) {
+      return res.status(400).json({ message: 'Khóa học này không miễn phí. Vui lòng thanh toán để đăng ký.' });
+    }
+
+    // Idempotent — return success if already enrolled
+    const [existing] = await pool.query(
+      'SELECT id FROM enrollments WHERE user_id = ? AND course_id = ? LIMIT 1',
+      [userId, courseId],
+    );
+    if (existing.length) {
+      return res.json({ enrollmentId: existing[0].id, alreadyEnrolled: true });
+    }
+
+    const [result] = await pool.query(
+      'INSERT INTO enrollments (user_id, course_id) VALUES (?, ?)',
+      [userId, courseId],
+    );
+
+    return res.status(201).json({ enrollmentId: result.insertId });
+  } catch (err) {
+    console.error('[enrollments/enrollFree]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+module.exports = { myEnrollments, myEnrolledCourseIds, enrollFree };
