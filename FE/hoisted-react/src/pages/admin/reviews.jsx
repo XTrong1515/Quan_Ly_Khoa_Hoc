@@ -1,47 +1,144 @@
-import { Link } from 'react-router-dom';
-import { IdeFrame } from '@/components/ide-frame.jsx';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Eye, EyeOff, Star } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button.jsx';
+import { StatusBadge } from '@/components/ui/status-badge.jsx';
+import { api, apiMessage } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
-/**
- * AdminReviews
- * List reviews với hành động Duyệt/Từ chối/Ẩn/Trả lời. Right rail: rating distribution.
- *
- * 📐 Design reference: xem Hoisted.html — section/artboard tương ứng.
- * Copy markup từ design file (pages-*.jsx) và refactor:
- *   - thay inline style bằng Tailwind classes
- *   - thay hard-coded color bằng tokens (bg-bg-2, text-ink-2, …)
- *   - lift state lên Zustand store hoặc React Query hook
- *
- * Suggested data hooks:
- *   - useQuery({ queryKey: ['…'], queryFn: api.… })
- *   - useMutation cho actions (mark complete, add to cart, v.v.)
- */
+function useReviews(params) {
+  return useQuery({
+    queryKey: ['admin-reviews', params],
+    queryFn: () => api.get('/api/admin/reviews', { params }).then(r => r.data),
+    staleTime: 30_000,
+  });
+}
+
 export default function AdminReviewsPage() {
+  const qc = useQueryClient();
+  const [type, setType]     = useState('course');
+  const [status, setStatus] = useState('');
+  const [page, setPage]     = useState(1);
+
+  const params = { type, status, page, limit: 15 };
+  const { data, isLoading } = useReviews(params);
+  const reviews    = data?.reviews ?? [];
+  const totalPages = data?.totalPages ?? 1;
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status: s }) => api.put(`/api/admin/reviews/${id}/status`, { status: s, type }),
+    onSuccess: () => { toast.success('Đã cập nhật trạng thái'); qc.invalidateQueries({ queryKey: ['admin-reviews'] }); },
+    onError: (err) => toast.error(apiMessage(err)),
+  });
+
   return (
-    <div className="px-16 py-12 max-w-5xl mx-auto">
-      <p className="eyebrow mb-2">// stub · /admin/reviews</p>
-      <h1 className="display text-4xl mb-3">AdminReviews</h1>
-      <p className="text-ink-2 mb-6 max-w-xl">List reviews với hành động Duyệt/Từ chối/Ẩn/Trả lời. Right rail: rating distribution.</p>
+    <div className="p-8">
+      <h1 className="font-display font-bold text-[24px] mb-6">Đánh giá</h1>
 
-      <IdeFrame tab="TODO.md">
-        <pre className="font-mono text-[13px] leading-relaxed text-ink-2 p-5 whitespace-pre-wrap">
-{`# AdminReviews
-
-Page này đã có thiết kế hi-fi trong design canvas.
-Mở Hoisted.html → tìm artboard "AdminReviews" để copy markup.
-
-Bước tiếp theo:
-  □ Copy JSX từ design canvas vào file này
-  □ Refactor inline style → Tailwind classes
-  □ Wire state vào Zustand stores (auth, cart, …)
-  □ Thay mock data bằng React Query + axios
-  □ Form validation: react-hook-form + zod
-`}
-        </pre>
-      </IdeFrame>
-
-      <div className="mt-6 flex gap-3">
-        <Link to="/" className="font-mono text-sm text-accent">← về trang chủ</Link>
+      {/* Filters */}
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <div className="flex gap-1 border border-line rounded-lg p-1 bg-bg-2">
+          {[{ v: 'course', l: 'Khóa học' }, { v: 'site', l: 'Website' }].map(({ v, l }) => (
+            <button key={v} onClick={() => { setType(v); setPage(1); }}
+              className={cn(
+                'px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors',
+                type === v ? 'bg-bg text-ink shadow-sm' : 'text-ink-3 hover:text-ink',
+              )}>
+              {l}
+            </button>
+          ))}
+        </div>
+        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}
+          className="px-3 py-2 text-[13px] bg-bg border border-line rounded-lg text-ink focus:outline-none focus:border-accent">
+          <option value="">Tất cả</option>
+          <option value="VISIBLE">Hiển thị</option>
+          <option value="HIDDEN">Đã ẩn</option>
+        </select>
       </div>
+
+      {/* List */}
+      <div className="space-y-3">
+        {isLoading && [1,2,3].map(i => (
+          <div key={i} className="card p-4 animate-pulse h-24 bg-bg-3" />
+        ))}
+
+        {!isLoading && reviews.length === 0 && (
+          <div className="py-16 text-center card">
+            <p className="font-mono text-ink-3">// Không có đánh giá nào</p>
+          </div>
+        )}
+
+        {reviews.map(r => (
+          <div key={r.id} className={cn(
+            'card p-4 flex gap-4',
+            r.status === 'HIDDEN' && 'opacity-60',
+          )}>
+            {/* Avatar */}
+            <div className="w-9 h-9 rounded-full grid place-items-center font-mono font-bold text-sm shrink-0"
+              style={{ background: 'linear-gradient(135deg, #6366F1, #F7DF1E)', color: '#0B0F19' }}>
+              {r.userName?.[0]?.toUpperCase() ?? '?'}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <div>
+                  <span className="font-semibold text-[13.5px] text-ink">{r.userName}</span>
+                  <span className="font-mono text-[11px] text-ink-3 ml-2">{r.email}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <StatusBadge status={r.status.toLowerCase()} />
+                  <button
+                    onClick={() => statusMutation.mutate({ id: r.id, status: r.status === 'VISIBLE' ? 'HIDDEN' : 'VISIBLE' })}
+                    disabled={statusMutation.isPending}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-medium transition-colors',
+                      r.status === 'VISIBLE'
+                        ? 'bg-bg-2 text-ink-2 hover:bg-danger/10 hover:text-danger'
+                        : 'bg-success/10 text-success hover:bg-success/20',
+                    )}>
+                    {r.status === 'VISIBLE'
+                      ? <><EyeOff className="w-3.5 h-3.5" /> Ẩn</>
+                      : <><Eye className="w-3.5 h-3.5" /> Hiện</>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Stars */}
+              <div className="flex items-center gap-1 mb-1.5">
+                {[1,2,3,4,5].map(s => (
+                  <Star key={s} className={cn('w-3.5 h-3.5', s <= r.rating ? 'fill-accent text-accent' : 'text-line')} />
+                ))}
+              </div>
+
+              {/* Course link */}
+              {r.courseTitle && (
+                <p className="font-mono text-[11.5px] text-accent mb-1">
+                  {r.courseTitle}
+                </p>
+              )}
+
+              {/* Comment */}
+              {r.comment && (
+                <p className="text-[13px] text-ink-2 leading-relaxed">{r.comment}</p>
+              )}
+
+              <p className="font-mono text-[11px] text-ink-3 mt-1.5">
+                {new Date(r.created_at).toLocaleString('vi-VN')}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-5">
+          <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>←</Button>
+          <span className="font-mono text-[13px] text-ink-2">{page} / {totalPages}</span>
+          <Button size="sm" variant="ghost" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>→</Button>
+        </div>
+      )}
     </div>
   );
 }

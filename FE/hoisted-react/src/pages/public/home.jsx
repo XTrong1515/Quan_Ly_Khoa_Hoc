@@ -1,12 +1,58 @@
 import { Link } from 'react-router-dom';
-import { Play, Check } from 'lucide-react';
+import { Play } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { CourseCard } from '@/components/course-card.jsx';
 import { IdeFrame } from '@/components/ide-frame.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Chip } from '@/components/ui/chip.jsx';
+import { api } from '@/lib/api';
 import { COURSES, CATEGORIES } from '@/data/courses';
 
+function useHomeData() {
+  return useQuery({
+    queryKey: ['home'],
+    queryFn: () => api.get('/api/home').then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+function CategorySkeleton() {
+  return (
+    <div className="grid grid-cols-6 gap-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="card p-4 animate-pulse">
+          <div className="w-9 h-9 rounded-lg bg-bg-3 mb-3.5" />
+          <div className="h-3 bg-bg-3 rounded w-3/4 mb-1.5" />
+          <div className="h-2.5 bg-bg-3 rounded w-1/2" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CourseSkeleton() {
+  return (
+    <div className="grid grid-cols-3 gap-5">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="card p-3 animate-pulse">
+          <div className="aspect-video rounded-[10px] bg-bg-3 mb-3" />
+          <div className="px-1 pb-2 space-y-2">
+            <div className="h-3 bg-bg-3 rounded w-full" />
+            <div className="h-3 bg-bg-3 rounded w-2/3" />
+            <div className="h-2.5 bg-bg-3 rounded w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function HomePage() {
+  const { data, isLoading } = useHomeData();
+
+  const categories = data?.categories ?? CATEGORIES;
+  const featured   = data?.featured   ?? COURSES.slice(0, 3);
+
   return (
     <>
       {/* Hero */}
@@ -29,7 +75,9 @@ export default function HomePage() {
             và Node runtime — dạy bởi instructor đang đứng trong production team thật.
           </p>
           <div className="flex gap-3 mb-9">
-            <Button size="lg">Bắt đầu học miễn phí</Button>
+            <Link to="/courses">
+              <Button size="lg">Bắt đầu học miễn phí</Button>
+            </Link>
             <Button size="lg" variant="ghost"><Play className="w-4 h-4" /> Xem demo (3:24)</Button>
           </div>
           <div className="flex gap-8 pt-6 border-t border-line">
@@ -69,17 +117,19 @@ function hoisted() {
       {/* Categories */}
       <section className="px-16 pb-6">
         <p className="eyebrow mb-3.5">// duyệt theo chủ đề</p>
-        <div className="grid grid-cols-6 gap-3">
-          {CATEGORIES.map((c) => (
-            <Link key={c.slug} to={`/courses?cat=${c.slug}`} className="card p-4 hover:bg-bg-2 transition">
-              <div className="w-9 h-9 rounded-lg bg-bg-2 text-accent grid place-items-center font-mono font-bold text-base mb-3.5">
-                {c.icon}
-              </div>
-              <div className="font-display font-semibold text-sm">{c.name}</div>
-              <div className="text-xs text-ink-3 mt-0.5">{c.count} khóa học</div>
-            </Link>
-          ))}
-        </div>
+        {isLoading ? <CategorySkeleton /> : (
+          <div className="grid grid-cols-6 gap-3">
+            {categories.map((c) => (
+              <Link key={c.slug} to={`/courses?category=${c.slug}`} className="card p-4 hover:bg-bg-2 transition">
+                <div className="w-9 h-9 rounded-lg bg-bg-2 text-accent grid place-items-center font-mono font-bold text-base mb-3.5">
+                  {c.icon}
+                </div>
+                <div className="font-display font-semibold text-sm">{c.name}</div>
+                <div className="text-xs text-ink-3 mt-0.5">{c.count} khóa học</div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Featured */}
@@ -91,9 +141,11 @@ function hoisted() {
           </div>
           <Link to="/courses" className="font-mono text-[13px] text-ink-2">xem tất cả →</Link>
         </div>
-        <div className="grid grid-cols-3 gap-5">
-          {COURSES.slice(0, 3).map((c) => <CourseCard key={c.id} course={c} />)}
-        </div>
+        {isLoading ? <CourseSkeleton /> : (
+          <div className="grid grid-cols-3 gap-5">
+            {featured.slice(0, 3).map((c) => <CourseCard key={c.id} course={c} />)}
+          </div>
+        )}
       </section>
 
       {/* CTA */}

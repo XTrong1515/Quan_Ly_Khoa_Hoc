@@ -1,47 +1,699 @@
-import { Link } from 'react-router-dom';
-import { IdeFrame } from '@/components/ide-frame.jsx';
+import { useState, useRef, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  Plus, Search, Edit2, Trash2, X, ChevronDown, ChevronUp,
+  GripVertical, Download, Star,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button.jsx';
+import { StatusBadge } from '@/components/ui/status-badge.jsx';
+import { api, apiMessage } from '@/lib/api';
+import { formatVND } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
-/**
- * AdminCourses
- * DataTable + nút Add Course, modal form, curriculum editor với drag-drop reorder (sử dụng dnd-kit).
- *
- * 📐 Design reference: xem Hoisted.html — section/artboard tương ứng.
- * Copy markup từ design file (pages-*.jsx) và refactor:
- *   - thay inline style bằng Tailwind classes
- *   - thay hard-coded color bằng tokens (bg-bg-2, text-ink-2, …)
- *   - lift state lên Zustand store hoặc React Query hook
- *
- * Suggested data hooks:
- *   - useQuery({ queryKey: ['…'], queryFn: api.… })
- *   - useMutation cho actions (mark complete, add to cart, v.v.)
- */
+/* ── Config ─────────────────────────────────────────────────────── */
+const THUMB_COLORS = {
+  yellow: '#F7DF1E', indigo: '#6366F1', rose: '#F43F5E',
+  green:  '#10B981', violet: '#8B5CF6', sky:  '#06B6D4',
+};
+const LEVELS       = ['BEGINNER','INTERMEDIATE','ADVANCED'];
+const STATUSES     = ['DRAFT','PUBLISHED','ARCHIVED'];
+const LEVEL_LABELS = { BEGINNER: 'Cơ bản', INTERMEDIATE: 'Trung cấp', ADVANCED: 'Nâng cao' };
+
+const courseSchema = z.object({
+  title:            z.string().min(3, 'Tối thiểu 3 ký tự'),
+  slug:             z.string().min(3).regex(/^[a-z0-9-]+$/, 'Chỉ chữ thường, số, dấu gạch ngang'),
+  shortDescription: z.string().optional(),
+  price:            z.coerce.number().min(0),
+  originalPrice:    z.coerce.number().min(0).optional(),
+  level:            z.enum(['BEGINNER','INTERMEDIATE','ADVANCED']),
+  categoryId:       z.coerce.number().min(1, 'Chọn danh mục'),
+  instructorName:   z.string().optional(),
+  glyph:            z.string().optional(),
+  thumb:            z.string().optional(),
+  tag:              z.string().optional(),
+  status:           z.enum(['DRAFT','PUBLISHED','ARCHIVED']),
+});
+
+/* ── Queries ────────────────────────────────────────────────────── */
+function useCourses(params) {
+  return useQuery({
+    queryKey: ['admin-courses', params],
+    queryFn: () => api.get('/api/admin/courses', { params }).then(r => r.data),
+    staleTime: 30_000,
+  });
+}
+function useCategories() {
+  return useQuery({
+    queryKey: ['admin-categories-list'],
+    queryFn: () => api.get('/api/admin/categories').then(r => r.data),
+    staleTime: 300_000,
+  });
+}
+
+/* ── Page ───────────────────────────────────────────────────────── */
 export default function AdminCoursesPage() {
+  const qc = useQueryClient();
+  const [search, setSearch]     = useState('');
+  const [catFilter, setCatFilter] = useState('');
+  const [level, setLevel]       = useState('');
+  const [status, setStatus]     = useState('');
+  const [page, setPage]         = useState(1);
+  const [modal, setModal]       = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+
+  const params   = { search, category: catFilter, level, status, page, limit: 15 };
+  const { data, isLoading } = useCourses(params);
+  const { data: catData }   = useCategories();
+  const courses     = data?.courses ?? [];
+  const totalPages  = data?.totalPages ?? 1;
+  const total       = data?.total ?? 0;
+  const categories  = catData?.categories ?? [];
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/api/admin/courses/${id}`),
+    onSuccess: () => { toast.success('Đã xóa khóa học'); qc.invalidateQueries({ queryKey: ['admin-courses'] }); },
+    onError: (err) => toast.error(apiMessage(err)),
+  });
+
   return (
-    <div className="px-16 py-12 max-w-5xl mx-auto">
-      <p className="eyebrow mb-2">// stub · /admin/courses</p>
-      <h1 className="display text-4xl mb-3">AdminCourses</h1>
-      <p className="text-ink-2 mb-6 max-w-xl">DataTable + nút Add Course, modal form, curriculum editor với drag-drop reorder (sử dụng dnd-kit).</p>
-
-      <IdeFrame tab="TODO.md">
-        <pre className="font-mono text-[13px] leading-relaxed text-ink-2 p-5 whitespace-pre-wrap">
-{`# AdminCourses
-
-Page này đã có thiết kế hi-fi trong design canvas.
-Mở Hoisted.html → tìm artboard "AdminCourses" để copy markup.
-
-Bước tiếp theo:
-  □ Copy JSX từ design canvas vào file này
-  □ Refactor inline style → Tailwind classes
-  □ Wire state vào Zustand stores (auth, cart, …)
-  □ Thay mock data bằng React Query + axios
-  □ Form validation: react-hook-form + zod
-`}
-        </pre>
-      </IdeFrame>
-
-      <div className="mt-6 flex gap-3">
-        <Link to="/" className="font-mono text-sm text-accent">← về trang chủ</Link>
+    <div className="p-8">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1">// Admin / Khóa học</p>
+          <h1 className="font-display font-bold text-[24px]">Quản lý khóa học</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
+            <Download className="w-3.5 h-3.5" /> Export
+          </button>
+          <button
+            onClick={() => setModal({ mode: 'create' })}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-bg text-[13px] font-semibold hover:opacity-90 transition-opacity">
+            <Plus className="w-3.5 h-3.5" /> Tạo khóa mới
+          </button>
+        </div>
       </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <div className="relative flex-1 min-w-[220px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3" />
+          <input
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Tìm theo tên, instructor..."
+            className="w-full pl-9 pr-3 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent"
+          />
+        </div>
+        {[
+          { value: catFilter, set: v => { setCatFilter(v); setPage(1); },
+            opts: [['', 'Mọi danh mục'], ...categories.map(c => [String(c.id), c.name])] },
+          { value: level,     set: v => { setLevel(v); setPage(1); },
+            opts: [['', 'Mọi cấp độ'], ...LEVELS.map(l => [l, LEVEL_LABELS[l]])] },
+          { value: status,    set: v => { setStatus(v); setPage(1); },
+            opts: [['', 'Mọi trạng thái'], ...STATUSES.map(s => [s, s])] },
+        ].map(({ value, set, opts }, i) => (
+          <select key={i} value={value} onChange={e => set(e.target.value)}
+            className="px-3 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink focus:outline-none focus:border-accent">
+            {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        ))}
+        {total > 0 && (
+          <span className="font-mono text-[11px] text-ink-3 ml-auto">
+            {total.toLocaleString()} kết quả
+          </span>
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="card overflow-hidden mb-5">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-line bg-bg-2">
+              <th className="px-4 py-2.5 w-10" />
+              {['Khóa học', 'Danh mục', 'Giá', 'Học viên', 'Rating', 'Status', 'Cấp độ', ''].map(h => (
+                <th key={h} className="px-4 py-2.5 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {isLoading && (
+              <tr><td colSpan={9} className="px-4 py-8 text-center font-mono text-[12px] text-ink-3">Đang tải...</td></tr>
+            )}
+            {!isLoading && courses.length === 0 && (
+              <tr><td colSpan={9} className="px-4 py-8 text-center font-mono text-[12px] text-ink-3">// Không có kết quả</td></tr>
+            )}
+            {courses.map(c => (
+              <>
+                <tr key={c.id} className={cn('hover:bg-bg-2 transition-colors', expandedId === c.id && 'bg-bg-2')}>
+                  {/* Drag handle */}
+                  <td className="px-4 py-3 w-10">
+                    <GripVertical className="w-4 h-4 text-ink-3 cursor-grab" />
+                  </td>
+
+                  {/* Course thumb + title */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <CourseBadge glyph={c.glyph} thumb={c.thumb} tag={c.tag} />
+                      <div>
+                        <p className="font-medium text-ink line-clamp-1 max-w-[200px]">{c.title}</p>
+                        <p className="font-mono text-[10px] text-ink-3 mt-0.5">{c.instructor_name}</p>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {c.category && (
+                      <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-bg-3 text-ink-3">{c.category}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[12px]">{formatVND(c.price)}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-ink-3">
+                    {c.student_count?.toLocaleString() ?? '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    {c.rating ? (
+                      <span className="flex items-center gap-1 font-mono text-[12px] text-ink-2">
+                        <Star className="w-3.5 h-3.5 fill-js text-js" />
+                        {Number(c.rating).toFixed(1)}
+                      </span>
+                    ) : <span className="text-ink-3">—</span>}
+                  </td>
+                  <td className="px-4 py-3"><StatusDropdown course={c} /></td>
+                  <td className="px-4 py-3">
+                    <span className={cn(
+                      'font-mono text-[10px] px-2 py-0.5 rounded uppercase',
+                      c.level === 'BEGINNER'     ? 'bg-success/10 text-success' :
+                      c.level === 'INTERMEDIATE' ? 'bg-js/10 text-js' :
+                                                   'bg-danger/10 text-danger',
+                    )}>
+                      {LEVEL_LABELS[c.level] ?? c.level}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1 justify-end">
+                      <button
+                        onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
+                        className="p-1.5 rounded hover:bg-bg-3 text-ink-3 transition-colors"
+                        title="Curriculum">
+                        {expandedId === c.id
+                          ? <ChevronUp className="w-4 h-4" />
+                          : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={() => setModal({ mode: 'edit', data: c })}
+                        className="p-1.5 rounded hover:bg-bg-3 text-ink-3 transition-colors"
+                        title="Chỉnh sửa">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => { if (window.confirm(`Xóa "${c.title}"?`)) deleteMutation.mutate(c.id); }}
+                        className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors"
+                        title="Xóa">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                {expandedId === c.id && (
+                  <tr key={`curriculum-${c.id}`}>
+                    <td colSpan={9} className="bg-bg-2 px-6 pb-5 pt-0">
+                      <CurriculumPanel courseId={c.id} courseTitle={c.title} />
+                    </td>
+                  </tr>
+                )}
+              </>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      <Pagination page={page} totalPages={totalPages} onPage={setPage} />
+
+      {/* Modal */}
+      {modal && (
+        <CourseModal
+          mode={modal.mode}
+          initial={modal.data}
+          categories={categories}
+          onClose={() => setModal(null)}
+          onSaved={() => { setModal(null); qc.invalidateQueries({ queryKey: ['admin-courses'] }); }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── Inline status dropdown ─────────────────────────────────────── */
+const STATUS_OPTIONS = [
+  { value: 'PUBLISHED', label: 'Hoạt động', dot: 'bg-success' },
+  { value: 'DRAFT',     label: 'Nháp',      dot: 'bg-ink-3'   },
+  { value: 'ARCHIVED',  label: 'Lưu trữ',   dot: 'bg-ink-3'   },
+];
+
+function StatusDropdown({ course }) {
+  const qc  = useQueryClient();
+  const ref = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const mutation = useMutation({
+    mutationFn: (status) => api.put(`/api/admin/courses/${course.id}`, { status }),
+    onSuccess: (_, status) => {
+      toast.success(`Đã chuyển sang "${STATUS_OPTIONS.find(o => o.value === status)?.label}"`);
+      qc.invalidateQueries({ queryKey: ['admin-courses'] });
+      setOpen(false);
+    },
+    onError: (err) => toast.error(apiMessage(err)),
+  });
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        disabled={mutation.isPending}
+        className="flex items-center gap-1 hover:opacity-75 transition-opacity disabled:opacity-50">
+        <StatusBadge status={course.status?.toLowerCase()} />
+        <ChevronDown className={cn('w-3 h-3 text-ink-3 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 bg-bg border border-line rounded-lg shadow-2xl py-1 min-w-[136px]">
+          {STATUS_OPTIONS.map(opt => {
+            const active = opt.value === course.status;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => { if (!active) mutation.mutate(opt.value); }}
+                disabled={active || mutation.isPending}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-3 py-2 text-[12px] transition-colors text-left',
+                  active ? 'cursor-default opacity-60' : 'hover:bg-bg-2',
+                )}>
+                <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', opt.dot)} />
+                <span className="text-ink flex-1">{opt.label}</span>
+                {active && <span className="text-accent text-[10px]">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Course thumb badge ─────────────────────────────────────────── */
+function CourseBadge({ glyph, thumb, tag }) {
+  const bg = THUMB_COLORS[thumb] ?? THUMB_COLORS.yellow;
+  return (
+    <div className="relative shrink-0">
+      <div className="w-12 h-12 rounded-lg grid place-items-center font-mono font-bold text-[14px] text-bg select-none"
+        style={{ background: bg }}>
+        {glyph || 'JS'}
+      </div>
+      {tag && (
+        <span className="absolute -top-1.5 -right-1.5 font-mono text-[8px] font-bold px-1 py-0.5 rounded bg-danger text-white uppercase">
+          {tag}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ── Curriculum panel ───────────────────────────────────────────── */
+function CurriculumPanel({ courseId, courseTitle }) {
+  const qc = useQueryClient();
+  const [addOpen, setAddOpen]     = useState(false);
+  const [editLesson, setEditLesson] = useState(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-lessons', courseId],
+    queryFn: () => api.get(`/api/admin/courses/${courseId}/lessons`).then(r => r.data),
+    staleTime: 30_000,
+  });
+  const lessons  = data?.lessons  ?? [];
+  const sections = data?.sections ?? [];
+
+  const grouped = sections.length
+    ? sections.map(s => ({ ...s, items: lessons.filter(l => l.section_id === s.id) }))
+    : [{ id: null, title: null, items: lessons }];
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/api/admin/lessons/${id}`),
+    onSuccess: () => { toast.success('Đã xóa bài học'); qc.invalidateQueries({ queryKey: ['admin-lessons', courseId] }); },
+    onError: (err) => toast.error(apiMessage(err)),
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: (items) => api.put('/api/admin/lessons/reorder', items),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-lessons', courseId] }),
+  });
+
+  const moveLesson = (lesson, dir) => {
+    const idx = lessons.findIndex(l => l.id === lesson.id);
+    const swapIdx = idx + dir;
+    if (swapIdx < 0 || swapIdx >= lessons.length) return;
+    reorderMutation.mutate([
+      { id: lesson.id,          order_index: lessons[swapIdx].order_index },
+      { id: lessons[swapIdx].id, order_index: lesson.order_index },
+    ]);
+  };
+
+  return (
+    <div className="mt-4">
+      {/* Curriculum header */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+          // Curriculum · {courseTitle}
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setAddOpen(v => !v)}
+            className="flex items-center gap-1.5 font-mono text-[11px] text-accent hover:underline">
+            <Plus className="w-3 h-3" /> Bài học
+          </button>
+        </div>
+      </div>
+
+      {/* Add lesson form */}
+      {addOpen && (
+        <LessonForm
+          courseId={courseId} sections={sections}
+          onCancel={() => setAddOpen(false)}
+          onSaved={() => { setAddOpen(false); qc.invalidateQueries({ queryKey: ['admin-lessons', courseId] }); }}
+        />
+      )}
+
+      {/* Edit lesson form */}
+      {editLesson && (
+        <LessonForm
+          courseId={courseId} sections={sections} initial={editLesson}
+          onCancel={() => setEditLesson(null)}
+          onSaved={() => { setEditLesson(null); qc.invalidateQueries({ queryKey: ['admin-lessons', courseId] }); }}
+        />
+      )}
+
+      {isLoading && <p className="font-mono text-[12px] text-ink-3 py-2">Đang tải...</p>}
+
+      {/* Sections */}
+      <div className="border border-line rounded-lg overflow-hidden bg-bg">
+        {grouped.map((section, si) => (
+          <div key={section.id ?? 'root'}>
+            {section.title && (
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-bg-2 border-b border-line">
+                <GripVertical className="w-3.5 h-3.5 text-ink-3" />
+                <span className="font-mono text-[12px] font-semibold text-ink">{section.title}</span>
+                <span className="font-mono text-[10px] text-ink-3 ml-auto">{section.items.length} bài</span>
+              </div>
+            )}
+            {section.items.map((l, idx) => (
+              <div key={l.id}
+                className="flex items-center gap-3 px-4 py-2.5 border-b border-line last:border-0 hover:bg-bg-2 transition-colors group">
+                <GripVertical className="w-3.5 h-3.5 text-ink-3 cursor-grab shrink-0" />
+                <span className="font-mono text-[10px] text-ink-3 w-5 shrink-0">
+                  {String(l.order_index).padStart(2, '0')}
+                </span>
+                <span className={cn('flex-1 text-[13px] truncate', l.is_preview ? 'text-accent' : 'text-ink')}>
+                  {l.title}
+                </span>
+                {l.is_preview && (
+                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-accent/10 text-accent uppercase shrink-0">
+                    Preview
+                  </span>
+                )}
+                <span className="font-mono text-[10px] text-ink-3 shrink-0">{l.duration_minutes}m</span>
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => moveLesson(l, -1)} disabled={idx === 0}
+                    className="p-1 rounded hover:bg-bg-3 text-ink-3 disabled:opacity-30 transition-colors">
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => moveLesson(l, 1)} disabled={idx === section.items.length - 1}
+                    className="p-1 rounded hover:bg-bg-3 text-ink-3 disabled:opacity-30 transition-colors">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setEditLesson(l)}
+                    className="p-1 rounded hover:bg-bg-3 text-ink-3 transition-colors">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => { if (window.confirm(`Xóa "${l.title}"?`)) deleteMutation.mutate(l.id); }}
+                    className="p-1 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {section.items.length === 0 && (
+              <p className="px-4 py-3 font-mono text-[11px] text-ink-3">// Chưa có bài học trong section này</p>
+            )}
+          </div>
+        ))}
+
+        {!isLoading && lessons.length === 0 && !grouped[0]?.title && (
+          <p className="px-4 py-4 font-mono text-[12px] text-ink-3">// Chưa có bài học</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Lesson inline form ─────────────────────────────────────────── */
+function LessonForm({ courseId, sections, initial, onCancel, onSaved }) {
+  const [title,     setTitle]     = useState(initial?.title          ?? '');
+  const [videoUrl,  setVideoUrl]  = useState(initial?.video_url      ?? '');
+  const [duration,  setDuration]  = useState(initial?.duration_minutes ?? 0);
+  const [sectionId, setSectionId] = useState(initial?.section_id     ?? '');
+  const [isPreview, setIsPreview] = useState(!!initial?.is_preview);
+  const [saving,    setSaving]    = useState(false);
+
+  const save = async () => {
+    if (!title.trim()) { toast.error('Tên bài học là bắt buộc'); return; }
+    setSaving(true);
+    try {
+      const payload = { title, videoUrl, durationMinutes: +duration, sectionId: sectionId || null, isPreview };
+      if (initial) {
+        await api.put(`/api/admin/lessons/${initial.id}`, payload);
+        toast.success('Đã cập nhật bài học');
+      } else {
+        await api.post(`/api/admin/courses/${courseId}/lessons`, payload);
+        toast.success('Đã thêm bài học');
+      }
+      onSaved();
+    } catch (err) {
+      toast.error(apiMessage(err));
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-3 items-end mb-3 px-4 py-3 bg-bg-2 border border-line rounded-lg">
+      <div className="flex-1 min-w-[180px]">
+        <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tên bài học *</label>
+        <input value={title} onChange={e => setTitle(e.target.value)}
+          className={inputCls()} placeholder="Tên bài học" />
+      </div>
+      <div className="w-[220px]">
+        <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Video URL</label>
+        <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
+          className={inputCls()} placeholder="https://youtu.be/..." />
+      </div>
+      <div className="w-[70px]">
+        <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Phút</label>
+        <input type="number" value={duration} onChange={e => setDuration(e.target.value)}
+          className={inputCls()} />
+      </div>
+      {sections.length > 0 && (
+        <div className="w-[140px]">
+          <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Section</label>
+          <select value={sectionId} onChange={e => setSectionId(e.target.value)} className={inputCls()}>
+            <option value="">-- Không --</option>
+            {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+          </select>
+        </div>
+      )}
+      <label className="flex items-center gap-1.5 text-[12px] text-ink-2 cursor-pointer mb-0.5">
+        <input type="checkbox" checked={isPreview} onChange={e => setIsPreview(e.target.checked)}
+          className="accent-accent" /> Preview
+      </label>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={save} disabled={saving}>{saving ? '...' : 'Lưu'}</Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>Hủy</Button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Course form modal ──────────────────────────────────────────── */
+function CourseModal({ mode, initial, categories, onClose, onSaved }) {
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
+    resolver: zodResolver(courseSchema),
+    defaultValues: mode === 'edit' && initial ? {
+      title: initial.title, slug: initial.slug,
+      shortDescription: initial.short_description ?? '',
+      price: initial.price, originalPrice: initial.original_price ?? 0,
+      level: initial.level, categoryId: initial.categoryId ?? initial.category_id,
+      instructorName: initial.instructor_name ?? '',
+      glyph: initial.glyph ?? '', thumb: initial.thumb ?? 'yellow',
+      tag: initial.tag ?? '', status: initial.status,
+    } : { level: 'BEGINNER', status: 'DRAFT', thumb: 'yellow', price: 0 },
+  });
+
+  const autoSlug = (t) =>
+    t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
+
+  const onSubmit = async (values) => {
+    try {
+      if (mode === 'create') {
+        await api.post('/api/admin/courses', values);
+        toast.success('Đã tạo khóa học');
+      } else {
+        await api.put(`/api/admin/courses/${initial.id}`, values);
+        toast.success('Đã cập nhật khóa học');
+      }
+      onSaved();
+    } catch (err) {
+      toast.error(apiMessage(err));
+    }
+  };
+
+  const thumbVal = watch('thumb') ?? 'yellow';
+  const glyphVal = watch('glyph') ?? '';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(11,15,25,0.8)' }}>
+      <div className="w-full max-w-[660px] bg-bg border border-line rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-line sticky top-0 bg-bg z-10">
+          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+            {mode === 'create' ? '// Tạo khóa học mới' : '// Chỉnh sửa khóa học'}
+          </p>
+          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="p-5">
+          {/* Preview thumb */}
+          <div className="flex items-center gap-4 mb-6 p-4 bg-bg-2 rounded-xl">
+            <div className="w-16 h-16 rounded-xl grid place-items-center font-mono font-bold text-[20px] text-bg shrink-0"
+              style={{ background: THUMB_COLORS[thumbVal] ?? THUMB_COLORS.yellow }}>
+              {glyphVal || 'JS'}
+            </div>
+            <div>
+              <p className="text-[13px] text-ink-3 font-mono mb-1">Xem trước thumbnail</p>
+              <p className="text-[14px] text-ink font-medium">{watch('title') || 'Tên khóa học'}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Tên khóa học *" error={errors.title?.message} className="col-span-2">
+              <input {...register('title', {
+                onChange: e => { if (mode === 'create') setValue('slug', autoSlug(e.target.value)); }
+              })} className={inputCls(errors.title)} placeholder="JavaScript: The Hard Parts" />
+            </Field>
+
+            <Field label="Slug *" error={errors.slug?.message}>
+              <input {...register('slug')} className={inputCls(errors.slug)} placeholder="javascript-the-hard-parts" />
+            </Field>
+
+            <Field label="Tag">
+              <input {...register('tag')} className={inputCls()} placeholder="Bestseller, Hot, Free..." />
+            </Field>
+
+            <Field label="Giá (VND) *" error={errors.price?.message}>
+              <input type="number" {...register('price')} className={inputCls(errors.price)} />
+            </Field>
+
+            <Field label="Giá gốc (VND)">
+              <input type="number" {...register('originalPrice')} className={inputCls()} />
+            </Field>
+
+            <Field label="Danh mục *" error={errors.categoryId?.message}>
+              <select {...register('categoryId')} className={inputCls(errors.categoryId)}>
+                <option value="">-- Chọn danh mục --</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Cấp độ *" error={errors.level?.message}>
+              <select {...register('level')} className={inputCls(errors.level)}>
+                {LEVELS.map(l => <option key={l} value={l}>{LEVEL_LABELS[l]}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Giảng viên">
+              <input {...register('instructorName')} className={inputCls()} placeholder="Tên giảng viên" />
+            </Field>
+
+            <Field label="Trạng thái *" error={errors.status?.message}>
+              <select {...register('status')} className={inputCls(errors.status)}>
+                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Glyph (vd: JS, Rx, TS)">
+              <input {...register('glyph')} className={inputCls()} placeholder="JS" />
+            </Field>
+
+            <Field label="Màu thumb">
+              <select {...register('thumb')} className={inputCls()}>
+                {Object.keys(THUMB_COLORS).map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Mô tả ngắn" className="col-span-2">
+              <textarea {...register('shortDescription')} rows={2} className={cn(inputCls(), 'resize-none')}
+                placeholder="Mô tả ngắn về khóa học..." />
+            </Field>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-line">
+            <Button type="button" variant="ghost" onClick={onClose}>Hủy</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Đang lưu...' : mode === 'create' ? 'Tạo khóa học' : 'Lưu thay đổi'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ── Helpers ────────────────────────────────────────────────────── */
+const inputCls = (err) => cn(
+  'w-full px-3 py-2 text-[13px] bg-bg border rounded-lg text-ink placeholder:text-ink-3 focus:outline-none transition-colors',
+  err ? 'border-danger focus:border-danger' : 'border-line focus:border-accent',
+);
+
+function Field({ label, error, children, className }) {
+  return (
+    <div className={className}>
+      <label className="block font-mono text-[10px] text-ink-3 mb-1.5 uppercase tracking-widest">{label}</label>
+      {children}
+      {error && <p className="mt-1 font-mono text-[11px] text-danger">{error}</p>}
+    </div>
+  );
+}
+
+function Pagination({ page, totalPages, onPage }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-2">
+      <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => onPage(p => p - 1)}>←</Button>
+      <span className="font-mono text-[13px] text-ink-2">{page} / {totalPages}</span>
+      <Button size="sm" variant="ghost" disabled={page >= totalPages} onClick={() => onPage(p => p + 1)}>→</Button>
     </div>
   );
 }

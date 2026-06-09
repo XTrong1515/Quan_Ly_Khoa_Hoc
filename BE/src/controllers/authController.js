@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const pool = require('../config/db');
 const { signAccess, signRefresh, verifyRefresh } = require('../utils/jwt');
 
@@ -160,4 +161,69 @@ async function me(req, res) {
   }
 }
 
-module.exports = { register, login, refresh, logout, me };
+/* ── POST /api/auth/forgot-password ───────────────────────────── */
+async function forgotPassword(req, res) {
+  const { email } = req.body;
+  if (!email?.trim()) return res.status(400).json({ message: 'Thiếu email' });
+
+  try {
+    const [rows] = await pool.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+
+    // Không tiết lộ email có tồn tại hay không
+    if (rows.length === 0) {
+      return res.json({ message: 'Nếu email tồn tại, bạn sẽ nhận được link đặt lại mật khẩu.' });
+    }
+
+    const userId = rows[0].id;
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 giờ
+
+    await pool.query(
+      'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)',
+      [userId, token, expiresAt],
+    );
+
+    const resetUrl = `${process.env.FE_ORIGIN || 'http://localhost:5173'}/reset-password?token=${token}`;
+
+    // TODO production: gửi email. Hiện tại log ra console để dev test.
+    console.log(`\n[forgot-password] Reset URL:\n  ${resetUrl}\n`);
+
+    return res.json({ message: 'Nếu email tồn tại, bạn sẽ nhận được link đặt lại mật khẩu.' });
+  } catch (err) {
+    console.error('[forgotPassword]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+/* ── POST /api/auth/reset-password ───────────────────────────── */
+async function resetPassword(req, res) {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ message: 'Thiếu token hoặc mật khẩu mới' });
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT pr.id, pr.user_id FROM password_resets pr
+       WHERE pr.token = ? AND pr.used = FALSE AND pr.expires_at > NOW()`,
+      [token],
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ message: 'Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn' });
+    }
+
+    const { id: resetId, user_id: userId } = rows[0];
+    const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash, userId]);
+    await pool.query('UPDATE password_resets SET used = TRUE WHERE id = ?', [resetId]);
+    // Thu hồi toàn bộ refresh token của user sau khi đổi mật khẩu
+    await pool.query('UPDATE refresh_tokens SET revoked = TRUE WHERE user_id = ?', [userId]);
+
+    return res.json({ message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.' });
+  } catch (err) {
+    console.error('[resetPassword]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+module.exports = { register, login, refresh, logout, me, forgotPassword, resetPassword };

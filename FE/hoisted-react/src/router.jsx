@@ -1,15 +1,18 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Nav } from './components/layout/nav.jsx';
 import { Footer } from './components/layout/footer.jsx';
+import { AdminLayout } from './components/layout/admin-layout.jsx';
 import { useAuth } from './store/auth';
 
 // Public
 import HomePage           from './pages/public/home.jsx';
 import CourseListingPage  from './pages/public/course-listing.jsx';
 import CourseDetailPage   from './pages/public/course-detail.jsx';
-import LoginPage          from './pages/public/login.jsx';
-import RegisterPage       from './pages/public/register.jsx';
-import CartPage           from './pages/public/cart.jsx';
+import LoginPage           from './pages/public/login.jsx';
+import RegisterPage        from './pages/public/register.jsx';
+import ForgotPasswordPage  from './pages/public/forgot-password.jsx';
+import ResetPasswordPage   from './pages/public/reset-password.jsx';
+import CartPage            from './pages/public/cart.jsx';
 import PaymentResultPage  from './pages/public/payment-result.jsx';
 
 // User
@@ -62,10 +65,9 @@ export function Router() {
       <Route element={<PublicLayout />}>
         <Route path="/"                   element={<HomePage />} />
         <Route path="/courses"            element={<CourseListingPage />} />
-        <Route path="/courses/:id"        element={<CourseDetailPage />} />
+        <Route path="/courses/:slug"       element={<CourseDetailPage />} />
         <Route path="/cart"               element={<CartPage />} />
-        <Route path="/payment/success"    element={<PaymentResultPage status="success" />} />
-        <Route path="/payment/failed"     element={<PaymentResultPage status="failed" />} />
+        <Route path="/payment/result"     element={<PaymentResultPage />} />
 
         {/* user */}
         <Route path="/me"                 element={<RequireAuth><MyLearningPage /></RequireAuth>} />
@@ -77,16 +79,21 @@ export function Router() {
       <Route element={<BareLayout />}>
         <Route path="/login"              element={<LoginPage />} />
         <Route path="/register"           element={<RegisterPage />} />
+        <Route path="/forgot-password"    element={<ForgotPasswordPage />} />
+        <Route path="/reset-password"     element={<ResetPasswordPage />} />
         <Route path="/learn/:courseId/:lessonId"
                                           element={<RequireAuth><LessonPlayerPage /></RequireAuth>} />
 
-        {/* admin */}
-        <Route path="/admin"              element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
-        <Route path="/admin/courses"      element={<RequireAdmin><AdminCoursesPage /></RequireAdmin>} />
-        <Route path="/admin/users"        element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
-        <Route path="/admin/orders"       element={<RequireAdmin><AdminOrdersPage /></RequireAdmin>} />
-        <Route path="/admin/reviews"      element={<RequireAdmin><AdminReviewsPage /></RequireAdmin>} />
-        <Route path="/admin/categories"   element={<RequireAdmin><AdminCategoriesPage /></RequireAdmin>} />
+      </Route>
+
+      {/* Admin — own layout with sidebar */}
+      <Route element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
+        <Route path="/admin"              element={<AdminDashboardPage />} />
+        <Route path="/admin/courses"      element={<AdminCoursesPage />} />
+        <Route path="/admin/users"        element={<AdminUsersPage />} />
+        <Route path="/admin/orders"       element={<AdminOrdersPage />} />
+        <Route path="/admin/reviews"      element={<AdminReviewsPage />} />
+        <Route path="/admin/categories"   element={<AdminCategoriesPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

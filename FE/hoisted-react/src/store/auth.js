@@ -26,6 +26,11 @@ export const useAuth = create(
         return data.user;
       },
 
+      updateUser: (updatedUser) => {
+        const role = updatedUser.role?.toLowerCase() ?? get().role;
+        set({ user: { ...get().user, ...updatedUser }, role });
+      },
+
       logout: () => {
         const { refreshToken } = get();
         if (refreshToken) api.post('/api/auth/logout', { refreshToken }).catch(() => {});

@@ -1,0 +1,21 @@
+{
+  "name": "datt",
+  "version": "1.0.0",
+  "description": "",
+  "main": "verify.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XTrong1515/Quan_Ly_Khoa_Hoc.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/XTrong1515/Quan_Ly_Khoa_Hoc/issues"
+  },
+  "homepage": "https://github.com/XTrong1515/Quan_Ly_Khoa_Hoc#readme"
+}
