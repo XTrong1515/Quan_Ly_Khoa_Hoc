@@ -1,6 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Trash2, ShoppingCart, ArrowRight, Lock } from 'lucide-react';
+import { Trash2, ShoppingCart, ArrowRight, Lock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { CourseThumb } from '@/components/course-thumb.jsx';
@@ -22,6 +22,15 @@ function useCartCourses(ids) {
   });
 }
 
+function useEnrolledCourseIds(enabled) {
+  return useQuery({
+    queryKey: ['enrolled-course-ids'],
+    queryFn: () => api.get('/api/enrollments/me/course-ids').then((r) => r.data.courseIds),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 export default function CartPage() {
   const { items, remove, clear } = useCart();
   const { role } = useAuth();
@@ -29,14 +38,21 @@ export default function CartPage() {
 
   const courseIds = items.map((i) => i.courseId);
   const { data: courses = [], isLoading } = useCartCourses(courseIds);
+  const { data: enrolledIds = [] } = useEnrolledCourseIds(role !== 'guest');
+
+  const enrolledSet = new Set(enrolledIds);
 
   // Map course id → course data
   const courseMap = Object.fromEntries(courses.map((c) => [c.id, c]));
 
-  const total = courseIds.reduce((sum, id) => sum + (courseMap[id]?.price ?? 0), 0);
+  const hasOwnedItem = courseIds.some((id) => enrolledSet.has(id));
+  const total = courseIds
+    .filter((id) => !enrolledSet.has(id))
+    .reduce((sum, id) => sum + (courseMap[id]?.price ?? 0), 0);
 
   const checkoutMutation = useMutation({
-    mutationFn: () => api.post('/api/orders', { courseIds }).then((r) => r.data),
+    mutationFn: () =>
+      api.post('/api/orders', { courseIds: courseIds.filter((id) => !enrolledSet.has(id)) }).then((r) => r.data),
     onSuccess: ({ paymentUrl }) => {
       clear();
       if (paymentUrl.startsWith('http')) {
@@ -76,11 +92,20 @@ export default function CartPage() {
       <p className="eyebrow mb-2">// giỏ hàng</p>
       <h1 className="display text-[32px] mb-8">Giỏ hàng ({courseIds.length})</h1>
 
+      {hasOwnedItem && (
+        <div className="flex items-start gap-2.5 px-4 py-3 mb-6 bg-warning/10 border border-warning/30 rounded-lg text-[13px] text-ink-2">
+          <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+          <span>Giỏ hàng có khóa học bạn đã sở hữu. Vui lòng xóa chúng trước khi thanh toán.</span>
+        </div>
+      )}
+
       <div className="flex gap-8 items-start">
         {/* Course list */}
         <div className="flex-1 min-w-0 space-y-4">
           {courseIds.map((id) => {
-            const course = courseMap[id];
+            const course   = courseMap[id];
+            const isOwned  = enrolledSet.has(id);
+
             if (isLoading || !course) {
               return (
                 <div key={id} className="card p-4 animate-pulse flex gap-4">
@@ -92,26 +117,40 @@ export default function CartPage() {
                 </div>
               );
             }
+
             return (
-              <div key={id} className="card p-4 flex gap-4 items-start">
+              <div key={id}
+                className={`card p-4 flex gap-4 items-start ${isOwned ? 'opacity-70 ring-1 ring-warning/40' : ''}`}>
                 <div className="w-32 shrink-0">
                   <CourseThumb course={course} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex gap-2 mb-1.5">
+                  <div className="flex gap-2 mb-1.5 flex-wrap">
                     <Chip variant="line" className="text-[11px]">{course.instructor}</Chip>
+                    {isOwned && (
+                      <Chip className="text-[11px] bg-warning/15 text-warning border-warning/30">
+                        Đã sở hữu
+                      </Chip>
+                    )}
                   </div>
-                  <Link to={`/courses/${course.slug}`} className="font-display font-semibold text-[15px] hover:text-accent line-clamp-2 block mb-1">
+                  <Link to={`/courses/${course.slug}`}
+                    className="font-display font-semibold text-[15px] hover:text-accent line-clamp-2 block mb-1">
                     {course.title}
                   </Link>
-                  <p className="font-mono font-bold text-[17px] text-ink mt-auto">
-                    {formatVND(course.price)}
-                    {course.originalPrice > course.price && (
-                      <span className="text-[13px] text-ink-3 font-normal line-through ml-2">
-                        {formatVND(course.originalPrice)}
-                      </span>
-                    )}
-                  </p>
+                  {isOwned ? (
+                    <p className="font-mono text-[12.5px] text-warning">
+                      Bạn đã đăng ký khóa học này
+                    </p>
+                  ) : (
+                    <p className="font-mono font-bold text-[17px] text-ink mt-auto">
+                      {formatVND(course.price)}
+                      {course.originalPrice > course.price && (
+                        <span className="text-[13px] text-ink-3 font-normal line-through ml-2">
+                          {formatVND(course.originalPrice)}
+                        </span>
+                      )}
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => { remove(id); toast.success('Đã xóa khỏi giỏ hàng'); }}
@@ -130,7 +169,7 @@ export default function CartPage() {
             <h2 className="font-display font-semibold text-[17px] mb-4">Tóm tắt đơn hàng</h2>
 
             <div className="space-y-2 mb-4">
-              {courseIds.map((id) => {
+              {courseIds.filter((id) => !enrolledSet.has(id)).map((id) => {
                 const c = courseMap[id];
                 return (
                   <div key={id} className="flex justify-between text-[13px]">
@@ -149,7 +188,7 @@ export default function CartPage() {
             <Button
               size="lg"
               className="w-full justify-center"
-              disabled={checkoutMutation.isPending || isLoading}
+              disabled={checkoutMutation.isPending || isLoading || hasOwnedItem}
               onClick={handleCheckout}>
               {checkoutMutation.isPending ? 'Đang xử lý…' : (
                 <>

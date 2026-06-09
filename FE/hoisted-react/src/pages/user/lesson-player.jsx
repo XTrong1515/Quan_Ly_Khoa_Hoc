@@ -22,11 +22,22 @@ export default function LessonPlayerPage() {
   const didSeekRef    = useRef(false);
   const [tab, setTab] = useState('Tổng quan');
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['lesson', lessonId],
     queryFn: () => api.get(`/api/lessons/${lessonId}`).then(r => r.data),
     staleTime: 0,
+    retry: (failCount, err) => err?.response?.status !== 403 && failCount < 2,
   });
+
+  // Redirect to course detail when user is not enrolled
+  useEffect(() => {
+    if (!isError) return;
+    if (error?.response?.status === 403) {
+      const courseSlug = error.response?.data?.courseSlug;
+      toast.error('Bạn chưa đăng ký khóa học này');
+      navigate(courseSlug ? `/courses/${courseSlug}` : '/courses', { replace: true });
+    }
+  }, [isError, error, navigate]);
 
   /* ── Auto-save progress every 10 s ── */
   useEffect(() => {
