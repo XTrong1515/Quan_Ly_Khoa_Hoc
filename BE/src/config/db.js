@@ -9,6 +9,10 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'course_mng',
   waitForConnections: true,
   connectionLimit: 10,
+  // Prevent stale connections: MySQL closes idle connections after wait_timeout (default 8h).
+  // enableKeepAlive sends periodic TCP keepalives so the pool never holds a dead connection.
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
 });
 
 module.exports = pool;

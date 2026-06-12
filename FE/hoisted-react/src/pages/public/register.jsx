@@ -11,17 +11,6 @@ import { useAuth } from '@/store/auth';
 import { apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-/**
- * Register — Đăng ký tài khoản
- *
- * 📐 Design reference: Hoisted.html → section ① Public → artboard
- *    "Đăng ký tài khoản · password strength + role" (markup gốc: pages-register.jsx ở project root)
- *
- * Đã wire: react-hook-form + zod validation, password strength meter,
- * role select (student/instructor), Zustand auth store, sonner toast.
- * TODO production: thay register() giả lập bằng POST /api/auth/register.
- */
-
 /* ── Validation schema (Zod) ─────────────────────────────────── */
 const schema = z
   .object({
@@ -91,9 +80,8 @@ export default function RegisterPage() {
 
   const onSubmit = async (data) => {
     try {
-      // TODO: POST /api/auth/register → email verification flow
       await register_action({ name: data.name, email: data.email, password: data.password });
-      toast.success('Tài khoản đã tạo! Kiểm tra email để xác thực.');
+      toast.success('Đăng ký thành công! Chào mừng bạn đến với Hoisted.');
       navigate('/me');
     } catch (err) {
       toast.error(apiMessage(err, 'Đăng ký thất bại, vui lòng thử lại'));
@@ -253,7 +241,8 @@ export default function RegisterPage() {
           </Button>
 
           <p className="mt-4 font-mono text-[11.5px] text-ink-3 text-center">
-            Bằng cách đăng ký, một email xác thực sẽ được gửi tới hộp thư của bạn.
+            Đã có tài khoản?{' '}
+            <Link to="/login" className="text-accent underline underline-offset-2">Đăng nhập →</Link>
           </p>
         </form>
       </div>

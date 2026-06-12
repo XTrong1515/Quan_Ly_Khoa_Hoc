@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const pool   = require('../config/db');
+const { createNotification } = require('./notificationController');
 
 const VNPAY_URL  = process.env.VNPAY_URL  || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
 const TMN_CODE   = process.env.VNPAY_TMN_CODE   || '';
@@ -7,6 +8,12 @@ const HASH_SECRET = process.env.VNPAY_HASH_SECRET || '';
 const RETURN_URL = process.env.VNPAY_RETURN_URL || 'http://localhost:5173/payment/result';
 
 /* ── Helpers ──────────────────────────────────────────────────── */
+
+// Matches Java URLEncoder / PHP urlencode: spaces → '+', special chars → %XX
+function vnpEncode(str) {
+  return encodeURIComponent(String(str)).replace(/%20/g, '+');
+}
+
 function genOrderCode() {
   const now    = new Date();
   const pad    = (n) => String(n).padStart(2, '0');
@@ -37,7 +44,8 @@ function buildVNPayUrl(orderCode, amountVND, ipAddr) {
 
   // Sort keys alphabetically — required by VNPay spec
   const sorted    = Object.keys(raw).sort().reduce((acc, k) => { acc[k] = raw[k]; return acc; }, {});
-  const signData  = Object.keys(sorted).map((k) => `${k}=${sorted[k]}`).join('&');
+  // URL-encode key=value before hashing — matches Java URLEncoder / PHP urlencode (VNPay spec)
+  const signData  = Object.keys(sorted).map((k) => `${vnpEncode(k)}=${vnpEncode(sorted[k])}`).join('&');
   const hmac      = crypto.createHmac('sha512', HASH_SECRET);
   const signature = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
@@ -55,7 +63,8 @@ function verifyVNPaySignature(params) {
     .sort()
     .reduce((acc, k) => { acc[k] = params[k]; return acc; }, {});
 
-  const signData  = Object.keys(filtered).map((k) => `${k}=${filtered[k]}`).join('&');
+  // URL-encode before hashing — matches Java URLEncoder / PHP urlencode (VNPay spec)
+  const signData  = Object.keys(filtered).map((k) => `${vnpEncode(k)}=${vnpEncode(filtered[k])}`).join('&');
   const hmac      = crypto.createHmac('sha512', HASH_SECRET);
   const computed  = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
   return computed === secureHash;
@@ -112,7 +121,10 @@ async function createOrder(req, res) {
 
       await conn.commit();
 
-      const ipAddr = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1').split(',')[0].trim();
+      let ipAddr = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1').split(',')[0].trim();
+      // VNPay requires IPv4 — normalize IPv6 loopback addresses
+      if (ipAddr === '::1' || ipAddr === '::ffff:127.0.0.1') ipAddr = '127.0.0.1';
+      else if (ipAddr.startsWith('::ffff:')) ipAddr = ipAddr.slice(7);
 
       let paymentUrl;
       if (TMN_CODE && HASH_SECRET) {
@@ -192,6 +204,16 @@ async function verifyPayment(req, res) {
           const enrollValues = items.map((i) => [userId, i.course_id, order.id]);
           await conn.query('INSERT IGNORE INTO enrollments (user_id, course_id, order_id) VALUES ?', [enrollValues]);
         }
+
+        // Fire-and-forget notification — outside transaction so it never blocks payment
+        setImmediate(() => {
+          createNotification(userId, {
+            type:  'order_paid',
+            title: 'Thanh toán thành công',
+            body:  `Đơn hàng #${order.order_code} đã được xác nhận. Bắt đầu học ngay!`,
+            link:  '/me',
+          });
+        });
       } else {
         await conn.query(
           `UPDATE orders SET status = 'FAILED', transaction_id = ? WHERE id = ?`,

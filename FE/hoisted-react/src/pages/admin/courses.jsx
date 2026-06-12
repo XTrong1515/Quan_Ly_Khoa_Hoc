@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Plus, Search, Edit2, Trash2, X, ChevronDown, ChevronUp,
-  GripVertical, Download, Star, ImageIcon, Link2, Upload,
+  GripVertical, Download, Star, ImageIcon, Link2, Upload, ListChecks,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
@@ -337,8 +337,9 @@ function CourseBadge({ glyph, thumb, tag }) {
 /* ── Curriculum panel ───────────────────────────────────────────── */
 function CurriculumPanel({ courseId, courseTitle }) {
   const qc = useQueryClient();
-  const [addOpen, setAddOpen]     = useState(false);
+  const [addOpen, setAddOpen]       = useState(false);
   const [editLesson, setEditLesson] = useState(null);
+  const [quizLesson, setQuizLesson] = useState(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-lessons', courseId],
@@ -449,6 +450,10 @@ function CurriculumPanel({ courseId, courseTitle }) {
                     className="p-1 rounded hover:bg-bg-3 text-ink-3 transition-colors">
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
+                  <button onClick={() => setQuizLesson(l)} title="Quản lý Quiz"
+                    className="p-1 rounded hover:bg-bg-3 text-ink-3 hover:text-accent transition-colors">
+                    <ListChecks className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     onClick={() => { if (window.confirm(`Xóa "${l.title}"?`)) deleteMutation.mutate(l.id); }}
                     className="p-1 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors">
@@ -467,6 +472,13 @@ function CurriculumPanel({ courseId, courseTitle }) {
           <p className="px-4 py-4 font-mono text-[12px] text-ink-3">// Chưa có bài học</p>
         )}
       </div>
+
+      {quizLesson && (
+        <QuizEditorModal
+          lesson={quizLesson}
+          onClose={() => setQuizLesson(null)}
+        />
+      )}
     </div>
   );
 }
@@ -830,6 +842,289 @@ function Pagination({ page, totalPages, onPage }) {
       <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => onPage(p => p - 1)}>←</Button>
       <span className="font-mono text-[13px] text-ink-2">{page} / {totalPages}</span>
       <Button size="sm" variant="ghost" disabled={page >= totalPages} onClick={() => onPage(p => p + 1)}>→</Button>
+    </div>
+  );
+}
+
+/* ── Quiz Editor Modal ──────────────────────────────────────────── */
+const EMPTY_QUESTION = () => ({
+  question: '', type: 'single',
+  options: [{ text: '', isCorrect: false }, { text: '', isCorrect: false }],
+});
+
+function QuizEditorModal({ lesson, onClose }) {
+  const qc = useQueryClient();
+  const queryKey = ['admin-quiz', lesson.id];
+
+  const { data, isLoading } = useQuery({
+    queryKey,
+    queryFn: () => api.get(`/api/admin/lessons/${lesson.id}/quiz`).then(r => r.data),
+  });
+
+  const quiz = data?.quiz ?? null;
+
+  // Settings form state
+  const [title,     setTitle]     = useState('');
+  const [passScore, setPassScore] = useState(70);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Question form state — null means closed
+  const [qForm, setQForm] = useState(null);
+
+  useEffect(() => {
+    if (quiz) { setTitle(quiz.title ?? ''); setPassScore(quiz.passScore ?? 70); }
+  }, [quiz]);
+
+  const refresh = () => qc.invalidateQueries({ queryKey });
+
+  /* Create quiz */
+  const handleCreate = async () => {
+    setSavingSettings(true);
+    try {
+      await api.post(`/api/admin/lessons/${lesson.id}/quiz`, { title, passScore });
+      toast.success('Đã tạo quiz');
+      refresh();
+    } catch (err) { toast.error(apiMessage(err)); }
+    finally { setSavingSettings(false); }
+  };
+
+  /* Update quiz settings */
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      await api.put(`/api/admin/quizzes/${quiz.id}`, { title, passScore });
+      toast.success('Đã lưu cài đặt');
+      refresh();
+    } catch (err) { toast.error(apiMessage(err)); }
+    finally { setSavingSettings(false); }
+  };
+
+  /* Delete quiz */
+  const handleDeleteQuiz = async () => {
+    if (!window.confirm('Xóa toàn bộ quiz này?')) return;
+    try {
+      await api.delete(`/api/admin/quizzes/${quiz.id}`);
+      toast.success('Đã xóa quiz');
+      refresh();
+    } catch (err) { toast.error(apiMessage(err)); }
+  };
+
+  /* Save question (add or update) */
+  const handleSaveQuestion = async () => {
+    const { id, question, type, options } = qForm;
+    if (!question.trim()) { toast.error('Nhập câu hỏi'); return; }
+    if (options.length < 2) { toast.error('Ít nhất 2 đáp án'); return; }
+    if (!options.some(o => o.isCorrect)) { toast.error('Chọn ít nhất 1 đáp án đúng'); return; }
+    if (options.some(o => !o.text.trim())) { toast.error('Đáp án không được để trống'); return; }
+    try {
+      if (id) {
+        await api.put(`/api/admin/quiz-questions/${id}`, { question, type, options });
+        toast.success('Đã cập nhật câu hỏi');
+      } else {
+        await api.post(`/api/admin/quizzes/${quiz.id}/questions`, { question, type, options });
+        toast.success('Đã thêm câu hỏi');
+      }
+      setQForm(null);
+      refresh();
+    } catch (err) { toast.error(apiMessage(err)); }
+  };
+
+  /* Delete question */
+  const handleDeleteQuestion = async (qId, qText) => {
+    if (!window.confirm(`Xóa câu hỏi "${qText}"?`)) return;
+    try {
+      await api.delete(`/api/admin/quiz-questions/${qId}`);
+      toast.success('Đã xóa câu hỏi');
+      refresh();
+    } catch (err) { toast.error(apiMessage(err)); }
+  };
+
+  /* Option helpers */
+  const setOptionText = (i, v) =>
+    setQForm(f => ({ ...f, options: f.options.map((o, idx) => idx === i ? { ...o, text: v } : o) }));
+
+  const setOptionCorrect = (i) =>
+    setQForm(f => ({
+      ...f,
+      options: f.options.map((o, idx) =>
+        f.type === 'single'
+          ? { ...o, isCorrect: idx === i }
+          : idx === i ? { ...o, isCorrect: !o.isCorrect } : o,
+      ),
+    }));
+
+  const addOption = () =>
+    setQForm(f => ({ ...f, options: [...f.options, { text: '', isCorrect: false }] }));
+
+  const removeOption = (i) =>
+    setQForm(f => ({ ...f, options: f.options.filter((_, idx) => idx !== i) }));
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-bg border border-line rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-line shrink-0">
+          <div>
+            <p className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mb-0.5">Quiz</p>
+            <p className="font-semibold text-[14px] text-ink truncate max-w-[480px]">{lesson.title}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+          {isLoading && <p className="font-mono text-[12px] text-ink-3">Đang tải...</p>}
+
+          {!isLoading && !quiz && (
+            /* ── Create quiz ── */
+            <div className="space-y-3">
+              <p className="font-mono text-[11px] text-ink-3">// Bài học này chưa có quiz</p>
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tiêu đề (tuỳ chọn)</label>
+                  <input value={title} onChange={e => setTitle(e.target.value)}
+                    placeholder="VD: Kiểm tra cuối bài" className={inputCls()} />
+                </div>
+                <div className="w-28">
+                  <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Điểm đạt %</label>
+                  <input type="number" min="1" max="100" value={passScore}
+                    onChange={e => setPassScore(+e.target.value)} className={inputCls()} />
+                </div>
+                <Button size="sm" onClick={handleCreate} disabled={savingSettings}>Tạo quiz</Button>
+              </div>
+            </div>
+          )}
+
+          {!isLoading && quiz && (
+            <>
+              {/* ── Settings ── */}
+              <div className="flex gap-3 items-end p-3 bg-bg-2 rounded-lg border border-line">
+                <div className="flex-1">
+                  <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tiêu đề</label>
+                  <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls()} />
+                </div>
+                <div className="w-24">
+                  <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Điểm đạt %</label>
+                  <input type="number" min="1" max="100" value={passScore}
+                    onChange={e => setPassScore(+e.target.value)} className={inputCls()} />
+                </div>
+                <Button size="sm" onClick={handleSaveSettings} disabled={savingSettings}>Lưu</Button>
+                <button onClick={handleDeleteQuiz}
+                  className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors" title="Xóa quiz">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* ── Questions list ── */}
+              <div className="space-y-2">
+                <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+                  // {quiz.questions.length} câu hỏi
+                </p>
+
+                {quiz.questions.map((q, qi) => (
+                  <div key={q.id} className="border border-line rounded-lg p-3 bg-bg">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[13px] font-medium text-ink flex-1">
+                        <span className="font-mono text-ink-3 mr-1.5">{qi + 1}.</span>
+                        {q.question}
+                      </p>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button onClick={() => setQForm({ id: q.id, question: q.question, type: q.type, options: q.options.map(o => ({ text: o.text, isCorrect: o.isCorrect })) })}
+                          className="p-1 rounded hover:bg-bg-2 text-ink-3 transition-colors">
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDeleteQuestion(q.id, q.question)}
+                          className="p-1 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      {q.options.map(o => (
+                        <div key={o.id} className={cn(
+                          'flex items-center gap-2 text-[12px] px-2 py-1 rounded',
+                          o.isCorrect ? 'text-success bg-success/10' : 'text-ink-3',
+                        )}>
+                          <span>{o.isCorrect ? '✓' : '○'}</span>
+                          <span>{o.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* ── Add question button ── */}
+                {!qForm && (
+                  <button
+                    onClick={() => setQForm(EMPTY_QUESTION())}
+                    className="w-full py-2.5 border border-dashed border-line rounded-lg font-mono text-[11px] text-ink-3 hover:border-accent hover:text-accent transition-colors">
+                    + Thêm câu hỏi
+                  </button>
+                )}
+              </div>
+
+              {/* ── Question form ── */}
+              {qForm && (
+                <div className="border border-accent/40 rounded-lg p-4 space-y-3 bg-bg">
+                  <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+                    // {qForm.id ? 'Sửa câu hỏi' : 'Câu hỏi mới'}
+                  </p>
+
+                  <textarea value={qForm.question} onChange={e => setQForm(f => ({ ...f, question: e.target.value }))}
+                    rows={2} placeholder="Nhập câu hỏi..."
+                    className={cn(inputCls(), 'resize-none w-full')} />
+
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-[9px] text-ink-3 uppercase tracking-widest">Loại:</span>
+                    {['single', 'multiple'].map(t => (
+                      <label key={t} className="flex items-center gap-1.5 text-[12px] text-ink-2 cursor-pointer">
+                        <input type="radio" name="qtype" checked={qForm.type === t}
+                          onChange={() => setQForm(f => ({ ...f, type: t, options: f.options.map(o => ({ ...o, isCorrect: false })) }))}
+                          className="accent-accent" />
+                        {t === 'single' ? 'Một đáp án' : 'Nhiều đáp án'}
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    {qForm.options.map((o, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          type={qForm.type === 'single' ? 'radio' : 'checkbox'}
+                          checked={o.isCorrect}
+                          onChange={() => setOptionCorrect(i)}
+                          className="accent-accent shrink-0"
+                        />
+                        <input value={o.text} onChange={e => setOptionText(i, e.target.value)}
+                          placeholder={`Đáp án ${i + 1}`}
+                          className={cn(inputCls(), 'flex-1')} />
+                        {qForm.options.length > 2 && (
+                          <button onClick={() => removeOption(i)}
+                            className="p-1 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {qForm.options.length < 6 && (
+                      <button onClick={addOption}
+                        className="font-mono text-[11px] text-ink-3 hover:text-accent transition-colors">
+                        + Thêm đáp án
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <Button size="sm" onClick={handleSaveQuestion}>Lưu câu hỏi</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setQForm(null)}>Hủy</Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

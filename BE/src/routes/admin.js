@@ -41,4 +41,14 @@ router.put('/orders/:id/cancel', ctrl.adminCancelOrder);
 router.get('/reviews',           ctrl.adminListReviews);
 router.put('/reviews/:id/status', ctrl.adminUpdateReviewStatus);
 
+// UC27 — Quiz management
+const quiz = require('../controllers/quizController');
+router.get('/lessons/:lessonId/quiz',     quiz.getQuizAdmin);
+router.post('/lessons/:lessonId/quiz',    quiz.createQuiz);
+router.put('/quizzes/:id',               quiz.updateQuiz);
+router.delete('/quizzes/:id',            quiz.deleteQuiz);
+router.post('/quizzes/:id/questions',    quiz.addQuestion);
+router.put('/quiz-questions/:id',        quiz.updateQuestion);
+router.delete('/quiz-questions/:id',     quiz.deleteQuestion);
+
 module.exports = router;

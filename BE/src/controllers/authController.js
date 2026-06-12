@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const pool = require('../config/db');
 const { signAccess, signRefresh, verifyRefresh } = require('../utils/jwt');
+const { sendResetPasswordEmail } = require('../utils/mailer');
 
 const SALT_ROUNDS = 12;
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 ngày
@@ -185,8 +186,14 @@ async function forgotPassword(req, res) {
 
     const resetUrl = `${process.env.FE_ORIGIN || 'http://localhost:5173'}/reset-password?token=${token}`;
 
-    // TODO production: gửi email. Hiện tại log ra console để dev test.
+    // Dev fallback: luôn log link ra console để test không cần inbox thật
     console.log(`\n[forgot-password] Reset URL:\n  ${resetUrl}\n`);
+
+    try {
+      await sendResetPasswordEmail(email.toLowerCase(), resetUrl);
+    } catch (mailErr) {
+      console.error('[forgotPassword] Gửi email thất bại:', mailErr.message);
+    }
 
     return res.json({ message: 'Nếu email tồn tại, bạn sẽ nhận được link đặt lại mật khẩu.' });
   } catch (err) {
