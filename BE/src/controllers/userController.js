@@ -73,4 +73,32 @@ async function changePassword(req, res) {
   }
 }
 
-module.exports = { updateProfile, changePassword };
+/* ── POST /api/user/avatar ────────────────────────────────────── */
+async function uploadAvatar(req, res) {
+  if (!req.file) return res.status(400).json({ message: 'File không hợp lệ hoặc vượt quá 2MB' });
+  const userId = req.user.id;
+  const host   = `${req.protocol}://${req.get('host')}`;
+  const url    = `${host}/uploads/${req.file.filename}`;
+
+  try {
+    await pool.query('UPDATE users SET avatar_url = ? WHERE id = ?', [url, userId]);
+    return res.json({ avatar: url });
+  } catch (err) {
+    console.error('[uploadAvatar]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+/* ── DELETE /api/user/avatar ──────────────────────────────────── */
+async function removeAvatar(req, res) {
+  const userId = req.user.id;
+  try {
+    await pool.query('UPDATE users SET avatar_url = NULL WHERE id = ?', [userId]);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[removeAvatar]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+module.exports = { updateProfile, changePassword, uploadAvatar, removeAvatar };

@@ -21,6 +21,7 @@ import MyLearningPage        from './pages/user/my-learning.jsx';
 import ProfileSettingsPage   from './pages/user/profile.jsx';
 import MyOrdersPage          from './pages/user/my-orders.jsx';
 import TransactionsPage      from './pages/user/transactions.jsx';
+import WishlistPage          from './pages/user/wishlist.jsx';
 
 // Admin
 import AdminDashboardPage    from './pages/admin/dashboard.jsx';
@@ -74,6 +75,7 @@ export function Router() {
         <Route path="/me/profile"         element={<RequireAuth><ProfileSettingsPage /></RequireAuth>} />
         <Route path="/me/orders"          element={<RequireAuth><MyOrdersPage /></RequireAuth>} />
         <Route path="/me/transactions"    element={<RequireAuth><TransactionsPage /></RequireAuth>} />
+        <Route path="/me/wishlist"        element={<RequireAuth><WishlistPage /></RequireAuth>} />
       </Route>
 
       <Route element={<BareLayout />}>

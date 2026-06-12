@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Check } from 'lucide-react';
+import { Eye, EyeOff, Check, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { useAuth } from '@/store/auth';
@@ -61,7 +61,6 @@ export default function ProfileSettingsPage() {
         <AvatarSection />
         <InfoSection />
         <PasswordSection />
-        <TwoFactorSection />
       </div>
     </div>
   );
@@ -69,25 +68,94 @@ export default function ProfileSettingsPage() {
 
 /* ── Avatar ──────────────────────────────────────────────────── */
 function AvatarSection() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const fileRef    = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
   const avatarLabel = user?.name?.[0]?.toUpperCase() ?? '?';
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('avatar', file);
+      const { data } = await api.post('/api/user/avatar', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      updateUser({ avatar: data.avatar });
+      toast.success('Cập nhật ảnh đại diện thành công');
+    } catch (err) {
+      toast.error(apiMessage(err, 'Upload thất bại'));
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemove = async () => {
+    try {
+      await api.delete('/api/user/avatar');
+      updateUser({ avatar: null });
+      toast.success('Đã xóa ảnh đại diện');
+    } catch (err) {
+      toast.error(apiMessage(err));
+    }
+  };
 
   return (
     <div className="card p-6">
       <p className="eyebrow mb-4">// Avatar</p>
       <div className="flex items-center gap-5">
-        <div
-          className="w-[62px] h-[62px] rounded-full grid place-items-center font-mono font-bold text-xl text-[#0B0F19] shrink-0"
-          style={{ background: 'linear-gradient(135deg, #6366F1, #F7DF1E)' }}
-        >
-          {avatarLabel}
-        </div>
+        {/* Avatar preview */}
+        {user?.avatar ? (
+          <img
+            src={user.avatar}
+            alt={user.name}
+            className="w-[62px] h-[62px] rounded-full object-cover shrink-0 border-2 border-line"
+          />
+        ) : (
+          <div
+            className="w-[62px] h-[62px] rounded-full grid place-items-center font-mono font-bold text-xl text-[#0B0F19] shrink-0"
+            style={{ background: 'linear-gradient(135deg, #6366F1, #F7DF1E)' }}
+          >
+            {avatarLabel}
+          </div>
+        )}
+
         <div>
           <p className="font-semibold text-ink text-[15px]">Ảnh đại diện</p>
-          <p className="text-[12.5px] text-ink-3 mt-0.5">PNG / JPG, tối đa 2MB. Đề xuất 400×400.</p>
+          <p className="text-[12.5px] text-ink-3 mt-0.5">PNG / JPG / WebP, tối đa 2MB. Đề xuất 400×400.</p>
           <div className="flex gap-2 mt-3">
-            <Button variant="ghost" size="sm">Đổi ảnh</Button>
-            <Button variant="quiet" size="sm">Xóa</Button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+              className="flex items-center gap-1.5"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              {uploading ? 'Đang upload...' : 'Đổi ảnh'}
+            </Button>
+            {user?.avatar && (
+              <Button
+                variant="quiet"
+                size="sm"
+                onClick={handleRemove}
+                className="flex items-center gap-1.5 text-danger hover:bg-danger/10"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Xóa
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -314,28 +382,6 @@ function PasswordSection() {
   );
 }
 
-/* ── 2-Factor Auth ───────────────────────────────────────────── */
-function TwoFactorSection() {
-  return (
-    <div className="card p-6">
-      <p className="eyebrow mb-4">// 2-Factor Auth</p>
-      <div className="flex justify-between items-center gap-4">
-        <div>
-          <p className="font-semibold text-ink">Xác thực 2 lớp qua app</p>
-          <p className="text-[13px] text-ink-2 mt-0.5">
-            Authy, Google Authenticator hoặc 1Password.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="font-mono text-[11.5px] font-semibold px-2.5 py-1 rounded-md bg-danger/15 text-danger">
-            Đang tắt
-          </span>
-          <Button variant="ghost" size="sm">Bật 2FA</Button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ── Shared helpers ──────────────────────────────────────────── */
 function Field({ label, hint, error, children }) {
