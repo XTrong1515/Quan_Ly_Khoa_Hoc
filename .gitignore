@@ -19,3 +19,13 @@ build/
 # Logs
 *.log
 npm-debug.log*
+
+# Personal / scratch files
+trash.txt
+Readthis.md
+vnpaymail.txt
+*.java
+image.png
+
+# Uploaded user files
+BE/uploads/

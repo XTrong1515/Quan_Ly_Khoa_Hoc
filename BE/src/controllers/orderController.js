@@ -54,6 +54,29 @@ function buildVNPayUrl(orderCode, amountVND, ipAddr) {
   return `${VNPAY_URL}?${urlParams.toString()}`;
 }
 
+function resolveIpAddr(req) {
+  let ipAddr = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1').split(',')[0].trim();
+  // VNPay requires IPv4 — normalize IPv6 loopback addresses
+  if (ipAddr === '::1' || ipAddr === '::ffff:127.0.0.1') ipAddr = '127.0.0.1';
+  else if (ipAddr.startsWith('::ffff:')) ipAddr = ipAddr.slice(7);
+  return ipAddr;
+}
+
+function resolvePaymentUrl(orderCode, amountVND, ipAddr) {
+  if (TMN_CODE && HASH_SECRET) {
+    return buildVNPayUrl(orderCode, amountVND, ipAddr);
+  }
+  // Dev fallback: bypass VNPay, simulate success redirect
+  const mockParams = new URLSearchParams({
+    vnp_TxnRef:        orderCode,
+    vnp_ResponseCode:  '00',
+    vnp_Amount:        String(Math.round(amountVND) * 100),
+    vnp_TransactionNo: `DEV${Date.now()}`,
+    dev_mock:          '1',
+  });
+  return `/payment/result?${mockParams.toString()}`;
+}
+
 function verifyVNPaySignature(params) {
   const secureHash = params.vnp_SecureHash;
   if (!secureHash || !HASH_SECRET) return false;
@@ -111,7 +134,8 @@ async function createOrder(req, res) {
       await conn.beginTransaction();
 
       const [orderResult] = await conn.query(
-        `INSERT INTO orders (user_id, order_code, total_amount, status) VALUES (?, ?, ?, 'PENDING')`,
+        `INSERT INTO orders (user_id, order_code, total_amount, status, expires_at)
+         VALUES (?, ?, ?, 'PENDING', DATE_ADD(NOW(), INTERVAL 24 HOUR))`,
         [userId, orderCode, totalAmount],
       );
       const orderId = orderResult.insertId;
@@ -119,29 +143,13 @@ async function createOrder(req, res) {
       const itemValues = courses.map((c) => [orderId, c.id, c.title, c.price]);
       await conn.query('INSERT INTO order_items (order_id, course_id, course_title, price) VALUES ?', [itemValues]);
 
+      const [[{ expires_at: expiresAt }]] = await conn.query('SELECT expires_at FROM orders WHERE id = ?', [orderId]);
+
       await conn.commit();
 
-      let ipAddr = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1').split(',')[0].trim();
-      // VNPay requires IPv4 — normalize IPv6 loopback addresses
-      if (ipAddr === '::1' || ipAddr === '::ffff:127.0.0.1') ipAddr = '127.0.0.1';
-      else if (ipAddr.startsWith('::ffff:')) ipAddr = ipAddr.slice(7);
+      const paymentUrl = resolvePaymentUrl(orderCode, totalAmount, resolveIpAddr(req));
 
-      let paymentUrl;
-      if (TMN_CODE && HASH_SECRET) {
-        paymentUrl = buildVNPayUrl(orderCode, totalAmount, ipAddr);
-      } else {
-        // Dev fallback: bypass VNPay, simulate success redirect
-        const mockParams = new URLSearchParams({
-          vnp_TxnRef:        orderCode,
-          vnp_ResponseCode:  '00',
-          vnp_Amount:        String(Math.round(totalAmount) * 100),
-          vnp_TransactionNo: `DEV${Date.now()}`,
-          dev_mock:          '1',
-        });
-        paymentUrl = `/payment/result?${mockParams.toString()}`;
-      }
-
-      return res.status(201).json({ orderId, orderCode, paymentUrl });
+      return res.status(201).json({ orderId, orderCode, paymentUrl, expiresAt });
     } catch (err) {
       await conn.rollback();
       throw err;
@@ -235,6 +243,36 @@ async function verifyPayment(req, res) {
   }
 }
 
+/* ── POST /api/orders/:id/pay ─────────────────────────────────── */
+async function payOrder(req, res) {
+  const orderId = parseInt(req.params.id, 10);
+  const userId  = req.user.id;
+
+  try {
+    const [orders] = await pool.query(
+      'SELECT id, order_code, status, total_amount, expires_at FROM orders WHERE id = ? AND user_id = ?',
+      [orderId, userId],
+    );
+    if (orders.length === 0) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+
+    const order = orders[0];
+    if (order.status !== 'PENDING') {
+      return res.status(400).json({ message: 'Đơn hàng không còn ở trạng thái chờ thanh toán' });
+    }
+
+    if (order.expires_at && new Date(order.expires_at).getTime() <= Date.now()) {
+      await pool.query("UPDATE orders SET status = 'CANCELLED' WHERE id = ? AND status = 'PENDING'", [orderId]);
+      return res.status(410).json({ message: 'Đơn hàng đã hết hạn thanh toán (quá 24h) và đã bị hủy' });
+    }
+
+    const paymentUrl = resolvePaymentUrl(order.order_code, order.total_amount, resolveIpAddr(req));
+    return res.json({ paymentUrl });
+  } catch (err) {
+    console.error('[orders/pay]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
 /* ── GET /api/orders/me ───────────────────────────────────────── */
 async function myOrders(req, res) {
   const userId = req.user.id;
@@ -259,7 +297,7 @@ async function myOrders(req, res) {
       pool.query(`SELECT COUNT(*) AS total FROM orders o WHERE ${where}`, params),
       pool.query(
         `SELECT o.id, o.order_code, o.total_amount, o.status,
-                o.payment_method, o.transaction_id, o.paid_at, o.created_at
+                o.payment_method, o.transaction_id, o.paid_at, o.created_at, o.expires_at
          FROM orders o
          WHERE ${where}
          ORDER BY o.created_at DESC
@@ -300,7 +338,7 @@ async function getOrder(req, res) {
   try {
     const [orders] = await pool.query(
       `SELECT id, order_code, total_amount, status, payment_method,
-              transaction_id, paid_at, created_at
+              transaction_id, paid_at, created_at, expires_at
        FROM orders WHERE id = ? AND user_id = ?`,
       [orderId, userId],
     );
@@ -340,4 +378,4 @@ async function myTransactions(req, res) {
   }
 }
 
-module.exports = { createOrder, verifyPayment, myOrders, getOrder, myTransactions };
+module.exports = { createOrder, verifyPayment, payOrder, myOrders, getOrder, myTransactions };

@@ -9,11 +9,15 @@ router.use(authMiddleware, requireAdmin);
 router.get('/dashboard', ctrl.dashboard);
 
 // UC21 — Course CRUD
-router.get('/courses',      ctrl.adminListCourses);
-router.get('/courses/:id',  ctrl.adminGetCourse);
+router.get('/courses',          ctrl.adminListCourses);
+router.get('/courses/export',   ctrl.adminExportCourses);
+router.get('/courses/:id',      ctrl.adminGetCourse);
 router.post('/courses',     ctrl.adminCreateCourse);
 router.put('/courses/:id',  ctrl.adminUpdateCourse);
 router.delete('/courses/:id', ctrl.adminDeleteCourse);
+
+// Course reorder (must be before /:id to avoid param conflict)
+router.put('/courses/reorder',            ctrl.adminReorderCourses);
 
 // UC22 — Lesson CRUD (reorder before /:id to avoid param conflict)
 router.get('/courses/:courseId/lessons',  ctrl.adminListLessons);
@@ -29,13 +33,20 @@ router.put('/categories/:id',   ctrl.adminUpdateCategory);
 router.delete('/categories/:id', ctrl.adminDeleteCategory);
 
 // UC24 — User management
-router.get('/users',              ctrl.adminListUsers);
-router.put('/users/:id/status',   ctrl.adminUpdateUserStatus);
+router.get('/users',                  ctrl.adminListUsers);
+router.post('/users',                 ctrl.adminCreateUser);
+router.get('/users/export',           ctrl.adminExportUsers);
+router.post('/users/bulk',            ctrl.adminBulkUsers);
+router.put('/users/:id/status',       ctrl.adminUpdateUserStatus);
+router.put('/users/:id/role',         ctrl.adminUpdateUserRole);
+router.get('/users/:id/enrollments',  ctrl.adminGetUserEnrollments);
 
 // UC25 — Order management
-router.get('/orders',           ctrl.adminListOrders);
-router.get('/orders/:id',       ctrl.adminGetOrder);
+router.get('/orders',            ctrl.adminListOrders);
+router.get('/orders/export',     ctrl.adminExportOrders);
+router.get('/orders/:id',        ctrl.adminGetOrder);
 router.put('/orders/:id/cancel', ctrl.adminCancelOrder);
+router.put('/orders/:id/confirm', ctrl.adminConfirmOrder);
 
 // UC26 — Review moderation
 router.get('/reviews',           ctrl.adminListReviews);

@@ -53,13 +53,9 @@ export default function CartPage() {
   const checkoutMutation = useMutation({
     mutationFn: () =>
       api.post('/api/orders', { courseIds: courseIds.filter((id) => !enrolledSet.has(id)) }).then((r) => r.data),
-    onSuccess: ({ paymentUrl }) => {
+    onSuccess: ({ orderId }) => {
       clear();
-      if (paymentUrl.startsWith('http')) {
-        window.location.href = paymentUrl;
-      } else {
-        navigate(paymentUrl);
-      }
+      navigate(`/payment/pending/${orderId}`);
     },
     onError: (err) => toast.error(apiMessage(err, 'Thanh toán thất bại')),
   });

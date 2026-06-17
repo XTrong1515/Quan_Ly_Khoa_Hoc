@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +9,7 @@ import { toast } from 'sonner';
 import { Logo } from '@/components/logo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { useAuth } from '@/store/auth';
-import { apiMessage } from '@/lib/api';
+import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const schema = z.object({
@@ -17,17 +18,24 @@ const schema = z.object({
   remember: z.boolean().optional(),
 });
 
-const HIGHLIGHTS = [
-  '6 khóa miễn phí · không cần thẻ tín dụng',
+const HIGHLIGHTS_STATIC = [
   'Lưu tiến độ & ghi chú trên mọi thiết bị',
-  'Cộng đồng 3,200+ dev đang học cùng bạn',
 ];
+
+function usePlatformStats() {
+  return useQuery({
+    queryKey: ['platform-stats'],
+    queryFn: () => api.get('/api/stats').then(r => r.data),
+    staleTime: 5 * 60_000,
+  });
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useAuth((s) => s.login);
   const [showPw, setShowPw] = useState(false);
+  const { data: platformStats } = usePlatformStats();
 
   const from = location.state?.from?.pathname || '/me';
 
@@ -72,7 +80,11 @@ export default function LoginPage() {
           </p>
 
           <div className="flex flex-col gap-3 mb-10">
-            {HIGHLIGHTS.map((t) => (
+            {[
+              `${(platformStats?.freeCourses ?? 6)}+ khóa miễn phí · không cần thẻ tín dụng`,
+              'Lưu tiến độ & ghi chú trên mọi thiết bị',
+              `Cộng đồng ${(platformStats?.totalUsers ?? 0).toLocaleString('vi-VN')}+ dev đang học cùng bạn`,
+            ].map((t) => (
               <div key={t} className="flex items-center gap-3 text-sm text-ink-2">
                 <span className="w-[22px] h-[22px] rounded-full shrink-0 grid place-items-center bg-accent/15 text-accent">
                   <Check className="w-3 h-3" strokeWidth={3} />
@@ -167,8 +179,8 @@ export default function LoginPage() {
           <label className="flex items-center gap-2.5 my-[18px] text-[12.5px] text-ink-2 cursor-pointer select-none">
             <input {...register('remember')} type="checkbox" className="sr-only" />
             <span className={cn(
-              'w-[18px] h-[18px] rounded shrink-0 grid place-items-center text-accent-ink',
-              remember ? 'bg-accent' : 'border border-line',
+              'w-[18px] h-[18px] rounded shrink-0 grid place-items-center',
+              remember ? 'bg-accent text-accent-ink' : 'border-2 border-ink-3 bg-bg-2',
             )}>
               {remember && <Check className="w-3 h-3" strokeWidth={3.5} />}
             </span>

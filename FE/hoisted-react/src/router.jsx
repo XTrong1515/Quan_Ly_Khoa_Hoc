@@ -12,8 +12,9 @@ import LoginPage           from './pages/public/login.jsx';
 import RegisterPage        from './pages/public/register.jsx';
 import ForgotPasswordPage  from './pages/public/forgot-password.jsx';
 import ResetPasswordPage   from './pages/public/reset-password.jsx';
-import CartPage            from './pages/public/cart.jsx';
-import PaymentResultPage  from './pages/public/payment-result.jsx';
+import CartPage               from './pages/public/cart.jsx';
+import PaymentPendingPage     from './pages/public/payment-pending.jsx';
+import PaymentResultPage      from './pages/public/payment-result.jsx';
 
 // User
 import LessonPlayerPage      from './pages/user/lesson-player.jsx';
@@ -68,6 +69,7 @@ export function Router() {
         <Route path="/courses"            element={<CourseListingPage />} />
         <Route path="/courses/:slug"       element={<CourseDetailPage />} />
         <Route path="/cart"               element={<CartPage />} />
+        <Route path="/payment/pending/:orderId" element={<RequireAuth><PaymentPendingPage /></RequireAuth>} />
         <Route path="/payment/result"     element={<PaymentResultPage />} />
 
         {/* user */}

@@ -66,7 +66,7 @@ export default function HomePage() {
             Học JavaScript<br />
             <span className="relative">
               từ <span className="text-accent">gốc</span>
-              <span className="absolute -top-4 -right-2 font-mono text-sm text-ink-3 font-medium">// hoisted up</span>
+              <span className="absolute -top-4 -right-2 font-mono text-sm text-ink-3 font-medium"></span>
             </span><br />
             tới production-ready.
           </h1>

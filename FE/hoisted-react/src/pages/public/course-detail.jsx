@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Star, Clock, BookOpen, Users, ChevronDown, Play,
-  ShoppingCart, Zap, Check, X, Lock, Trash2, Gift,
+  ShoppingCart, Zap, Check, X, Lock, Trash2, Gift, Heart,
 } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { Button } from '@/components/ui/button.jsx';
@@ -15,6 +15,7 @@ import { useAuth } from '@/store/auth';
 import { formatVND, formatHours } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
 
 const TABS = ['Mô tả', 'Curriculum', 'Reviews', 'Giảng viên'];
 
@@ -33,6 +34,8 @@ export default function CourseDetailPage() {
   const { add, items } = useCart();
   const navigate       = useNavigate();
   const queryClient    = useQueryClient();
+  const { data: wishlistIds = [] } = useWishlistIds();
+  const wishlistToggle = useWishlistToggle();
   const [tab, setTab]    = useState('Mô tả');
   const [previewLesson, setPreviewLesson] = useState(null);
 
@@ -60,8 +63,14 @@ export default function CourseDetailPage() {
   }
 
   const { course, lessons = [], reviews = [], isEnrolled = false } = data;
-  const isFree = parseFloat(course.price) === 0;
-  const inCart = items.some((i) => i.courseId === course.id);
+  const isFree       = parseFloat(course.price) === 0;
+  const inCart       = items.some((i) => i.courseId === course.id);
+  const isWishlisted = wishlistIds.includes(course.id);
+
+  const handleWishlist = () => {
+    if (role === 'guest') { toast.error('Vui lòng đăng nhập để lưu yêu thích'); navigate('/login'); return; }
+    wishlistToggle.mutate({ courseId: course.id, isWishlisted });
+  };
 
   const handleAddCart = () => {
     add(course.id);
@@ -258,6 +267,22 @@ export default function CourseDetailPage() {
                       </Button>
                     )}
                   </>
+                )}
+
+                {role !== 'guest' && !isEnrolled && (
+                  <button
+                    onClick={handleWishlist}
+                    disabled={wishlistToggle.isPending}
+                    className={cn(
+                      'w-full mt-2 flex items-center justify-center gap-2 h-9 rounded-lg border text-[13px] font-medium transition',
+                      isWishlisted
+                        ? 'border-danger/40 text-danger bg-danger/5 hover:bg-danger/10'
+                        : 'border-line text-ink-2 hover:bg-bg-2',
+                    )}
+                  >
+                    <Heart className={cn('w-3.5 h-3.5', isWishlisted && 'fill-danger')} />
+                    {isWishlisted ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
+                  </button>
                 )}
 
                 <div className="mt-4 space-y-2 text-[12.5px] text-ink-3 font-mono">

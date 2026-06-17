@@ -20,7 +20,7 @@ const HomePage = () => (
               position: 'absolute', top: -16, right: -8,
               fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--ink-3)',
               fontWeight: 500, letterSpacing: '0',
-            }}>// hoisted up</span>
+            }}></span>
           </span>
           <br/>
           tới production-ready.

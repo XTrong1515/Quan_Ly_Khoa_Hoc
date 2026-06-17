@@ -10,7 +10,7 @@ import {
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
-import { api, apiMessage } from '@/lib/api';
+import { api, apiMessage, downloadCsv } from '@/lib/api';
 import { formatVND } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -62,11 +62,14 @@ export default function AdminCoursesPage() {
   const [catFilter, setCatFilter] = useState('');
   const [level, setLevel]       = useState('');
   const [status, setStatus]     = useState('');
+  const [sort, setSort]         = useState('manual');
   const [page, setPage]         = useState(1);
   const [modal, setModal]       = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+  const dragSrcIdx = useRef(null);
 
-  const params   = { search, category: catFilter, level, status, page, limit: 15 };
+  const params   = { search, category: catFilter, level, status, sort, page, limit: 15 };
   const { data, isLoading } = useCourses(params);
   const { data: catData }   = useCategories();
   const courses     = data?.courses ?? [];
@@ -80,6 +83,26 @@ export default function AdminCoursesPage() {
     onError: (err) => toast.error(apiMessage(err)),
   });
 
+  const reorderMutation = useMutation({
+    mutationFn: (items) => api.put('/api/admin/courses/reorder', items),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-courses'] }),
+    onError: (err) => toast.error(apiMessage(err, 'Không thể sắp xếp khóa học')),
+  });
+
+  const handleCourseDrop = (dstIdx) => {
+    setDragOverId(null);
+    const srcIdx = dragSrcIdx.current;
+    dragSrcIdx.current = null;
+    if (srcIdx === null || srcIdx === dstIdx) return;
+    const newOrder = [...courses];
+    const [moved] = newOrder.splice(srcIdx, 1);
+    newOrder.splice(dstIdx, 0, moved);
+    const sortedOrders = [...courses].map(c => c.display_order ?? c.id).sort((a, b) => a - b);
+    const updates = newOrder.map((c, i) => ({ id: c.id, display_order: sortedOrders[i] }));
+    if (sort !== 'manual') setSort('manual');
+    reorderMutation.mutate(updates);
+  };
+
   return (
     <div className="p-8">
       {/* Header */}
@@ -89,7 +112,11 @@ export default function AdminCoursesPage() {
           <h1 className="font-display font-bold text-[24px]">Quản lý khóa học</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
+          <button
+            onClick={() => downloadCsv('/api/admin/courses/export', { search, status }, `courses_${Date.now()}.csv`)
+              .then(() => toast.success('Đã xuất file CSV'))
+              .catch(() => toast.error('Xuất thất bại'))}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
             <Download className="w-3.5 h-3.5" /> Export
           </button>
           <button
@@ -118,6 +145,8 @@ export default function AdminCoursesPage() {
             opts: [['', 'Mọi cấp độ'], ...LEVELS.map(l => [l, LEVEL_LABELS[l]])] },
           { value: status,    set: v => { setStatus(v); setPage(1); },
             opts: [['', 'Mọi trạng thái'], ...STATUSES.map(s => [s, s])] },
+          { value: sort,      set: v => { setSort(v); setPage(1); },
+            opts: [['manual', 'Thủ công'], ['newest', 'Mới nhất'], ['oldest', 'Cũ nhất'], ['students', 'Học viên']] },
         ].map(({ value, set, opts }, i) => (
           <select key={i} value={value} onChange={e => set(e.target.value)}
             className="px-3 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink focus:outline-none focus:border-accent">
@@ -149,12 +178,33 @@ export default function AdminCoursesPage() {
             {!isLoading && courses.length === 0 && (
               <tr><td colSpan={9} className="px-4 py-8 text-center font-mono text-[12px] text-ink-3">// Không có kết quả</td></tr>
             )}
-            {courses.map(c => (
+            {courses.map((c, cIdx) => (
               <>
-                <tr key={c.id} className={cn('hover:bg-bg-2 transition-colors', expandedId === c.id && 'bg-bg-2')}>
-                  {/* Drag handle */}
+                <tr
+                  key={c.id}
+                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverId(c.id); }}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverId(null); }}
+                  onDrop={(e) => { e.preventDefault(); handleCourseDrop(cIdx); }}
+                  onDragEnd={() => { setDragOverId(null); dragSrcIdx.current = null; }}
+                  className={cn(
+                    'transition-colors',
+                    dragOverId === c.id ? 'bg-accent/10' : (expandedId === c.id ? 'bg-bg-2' : 'hover:bg-bg-2'),
+                  )}
+                >
+                  {/* Drag handle — chỉ handle mới khởi động drag */}
                   <td className="px-4 py-3 w-10">
-                    <GripVertical className="w-4 h-4 text-ink-3 cursor-grab" />
+                    <span
+                      draggable
+                      onDragStart={(e) => {
+                        dragSrcIdx.current = cIdx;
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', String(cIdx));
+                        e.stopPropagation();
+                      }}
+                      className="inline-flex cursor-grab active:cursor-grabbing"
+                    >
+                      <GripVertical className="w-4 h-4 text-ink-3" />
+                    </span>
                   </td>
 
                   {/* Course thumb + title */}
@@ -340,6 +390,8 @@ function CurriculumPanel({ courseId, courseTitle }) {
   const [addOpen, setAddOpen]       = useState(false);
   const [editLesson, setEditLesson] = useState(null);
   const [quizLesson, setQuizLesson] = useState(null);
+  const [dragOver, setDragOver]     = useState(null);
+  const dragSrc = useRef(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-lessons', courseId],
@@ -362,6 +414,7 @@ function CurriculumPanel({ courseId, courseTitle }) {
   const reorderMutation = useMutation({
     mutationFn: (items) => api.put('/api/admin/lessons/reorder', items),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-lessons', courseId] }),
+    onError: (err) => toast.error(apiMessage(err, 'Không thể sắp xếp bài học')),
   });
 
   const moveLesson = (lesson, dir) => {
@@ -369,9 +422,21 @@ function CurriculumPanel({ courseId, courseTitle }) {
     const swapIdx = idx + dir;
     if (swapIdx < 0 || swapIdx >= lessons.length) return;
     reorderMutation.mutate([
-      { id: lesson.id,          order_index: lessons[swapIdx].order_index },
+      { id: lesson.id,           order_index: lessons[swapIdx].order_index },
       { id: lessons[swapIdx].id, order_index: lesson.order_index },
     ]);
+  };
+
+  const handleDrop = (sectionItems, srcIdx, dstIdx) => {
+    setDragOver(null);
+    dragSrc.current = null;
+    if (srcIdx === dstIdx) return;
+    const newOrder = [...sectionItems];
+    const [moved] = newOrder.splice(srcIdx, 1);
+    newOrder.splice(dstIdx, 0, moved);
+    const sortedIndices = [...sectionItems].map(l => l.order_index).sort((a, b) => a - b);
+    const updates = newOrder.map((l, i) => ({ id: l.id, order_index: sortedIndices[i] }));
+    reorderMutation.mutate(updates);
   };
 
   return (
@@ -423,8 +488,17 @@ function CurriculumPanel({ courseId, courseTitle }) {
             )}
             {section.items.map((l, idx) => (
               <div key={l.id}
-                className="flex items-center gap-3 px-4 py-2.5 border-b border-line last:border-0 hover:bg-bg-2 transition-colors group">
-                <GripVertical className="w-3.5 h-3.5 text-ink-3 cursor-grab shrink-0" />
+                draggable
+                onDragStart={() => { dragSrc.current = idx; }}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(idx); }}
+                onDragLeave={() => setDragOver(null)}
+                onDrop={() => handleDrop(section.items, dragSrc.current, idx)}
+                onDragEnd={() => { setDragOver(null); dragSrc.current = null; }}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-2.5 border-b border-line last:border-0 transition-colors group',
+                  dragOver === idx ? 'bg-accent/10 border-accent/30' : 'hover:bg-bg-2',
+                )}>
+                <GripVertical className="w-3.5 h-3.5 text-ink-3 cursor-grab active:cursor-grabbing shrink-0" />
                 <span className="font-mono text-[10px] text-ink-3 w-5 shrink-0">
                   {String(l.order_index).padStart(2, '0')}
                 </span>

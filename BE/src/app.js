@@ -21,6 +21,7 @@ const { authMiddleware }   = require('./middleware/auth');
 const { myTransactions }   = require('./controllers/orderController');
 const { createSiteReview } = require('./controllers/reviewController');
 const homeController       = require('./controllers/homeController');
+const { platformStats }    = require('./controllers/statsController');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/api/home',                                     homeController.home);
+app.get('/api/stats',                                    platformStats);
 app.use('/api/admin/upload',    uploadRoutes);
 app.use('/api/admin',           adminRoutes);
 app.use('/api/auth',            authRoutes);

@@ -1,17 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactPlayer from 'react-player';
 import {
-  ChevronDown, ChevronLeft, ChevronRight,
+  ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   CheckCircle, Check, Play, Paperclip, ListChecks,
-  MessageSquare, Send, Edit2, Trash2, CornerDownRight,
+  MessageSquare, Send, Edit2, Trash2, CornerDownRight, ChevronsUpDown,
+  PanelRightClose, PanelRightOpen, Heart,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
+import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
 
 const TABS = ['Tổng quan', 'Tài liệu', 'Ghi chú', 'Quiz', 'Thảo luận'];
 
@@ -22,7 +24,32 @@ export default function LessonPlayerPage() {
   const playerRef     = useRef(null);
   const secondsRef    = useRef(0);   // current playback position for auto-save
   const didSeekRef    = useRef(false);
-  const [tab, setTab] = useState('Tổng quan');
+  const [tab, setTab]           = useState('Tổng quan');
+  const [sheetSnap, setSheetSnap]       = useState(0); // 0=collapsed 1=peek 2=expanded
+  const [sidebarOpen, setSidebarOpen]   = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const resizeDrag = useRef({ active: false, startX: 0, startW: 0 });
+
+  function onResizeDown(e) {
+    resizeDrag.current = { active: true, startX: e.clientX, startW: sidebarWidth };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function onResizeMove(e) {
+    if (!resizeDrag.current.active) return;
+    const delta = resizeDrag.current.startX - e.clientX;
+    setSidebarWidth(Math.max(220, Math.min(480, resizeDrag.current.startW + delta)));
+  }
+  function onResizeUp() { resizeDrag.current.active = false; }
+
+  const handleTabClick = (t) => {
+    setTab(t);
+    setSheetSnap(2);
+  };
+
+  const numericCourseId = parseInt(courseId, 10);
+  const { data: wishlistIds = [] } = useWishlistIds();
+  const wishlistToggle = useWishlistToggle();
+  const isWishlisted   = wishlistIds.includes(numericCourseId);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['lesson', lessonId],
@@ -98,9 +125,9 @@ export default function LessonPlayerPage() {
 
   const handleEnded = () => {
     if (!data?.progress?.isCompleted) completeMutation.mutate();
-    // Nudge to Quiz tab if quiz exists and not yet passed
     if (quizData?.quiz && !quizData.quiz.latestAttempt?.passed) {
       setTab('Quiz');
+      setSheetSnap(2);
     }
   };
 
@@ -142,15 +169,41 @@ export default function LessonPlayerPage() {
             onClick={() => nextLesson && navigate(`/learn/${courseId}/${nextLesson.id}`)}>
             <ChevronRight className="w-4 h-4" />
           </Button>
+
+          {/* Wishlist toggle */}
+          <button
+            onClick={() => wishlistToggle.mutate({ courseId: numericCourseId, isWishlisted })}
+            disabled={wishlistToggle.isPending}
+            title={isWishlisted ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
+            className={cn(
+              'w-8 h-8 rounded border grid place-items-center transition-colors ml-1',
+              isWishlisted
+                ? 'border-danger/40 text-danger bg-danger/5 hover:bg-danger/10'
+                : 'border-line text-ink-3 hover:text-ink hover:bg-bg-2',
+            )}
+          >
+            <Heart className={cn('w-4 h-4', isWishlisted && 'fill-danger')} />
+          </button>
+
+          {/* Sidebar toggle — square button */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            title={sidebarOpen ? 'Ẩn danh sách bài học' : 'Hiện danh sách bài học'}
+            className="w-8 h-8 rounded border border-line grid place-items-center text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors ml-1"
+          >
+            {sidebarOpen
+              ? <PanelRightClose className="w-4 h-4" />
+              : <PanelRightOpen  className="w-4 h-4" />}
+          </button>
         </div>
       </header>
 
       {/* ── Body ── */}
       <div className="flex flex-1 min-h-0">
-        {/* Left 70%: video + tabs */}
-        <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
-          {/* Video */}
-          <div className="bg-black shrink-0" style={{ aspectRatio: '16/9', maxHeight: '58vh' }}>
+        {/* Left: video full-height + bottom sheet overlay */}
+        <div className="flex flex-col flex-1 min-w-0 min-h-0 relative overflow-hidden">
+          {/* Video fills all available height */}
+          <div className="flex-1 min-h-0 bg-black relative">
             {lesson.videoUrl ? (
               <ReactPlayer
                 ref={playerRef}
@@ -169,76 +222,103 @@ export default function LessonPlayerPage() {
                 <p className="font-mono text-[13px] text-white/40">Video chưa sẵn sàng</p>
               </div>
             )}
+
+            {/* Toggle bottom sheet — square button, bottom-right of video */}
+            <button
+              onClick={() => setSheetSnap(s => s > 0 ? 0 : 1)}
+              title={sheetSnap > 0 ? 'Ẩn nội dung bài học' : 'Hiện nội dung bài học'}
+              className="absolute bottom-3 right-3 w-8 h-8 rounded border border-white/20 bg-black/50 backdrop-blur-sm grid place-items-center text-white/70 hover:text-white hover:bg-black/70 hover:border-white/40 transition-all z-10"
+            >
+              {sheetSnap > 0
+                ? <ChevronDown className="w-4 h-4" />
+                : <ChevronUp   className="w-4 h-4" />}
+            </button>
           </div>
 
-          {/* Tab bar */}
-          <div className="flex border-b border-line px-4 bg-bg shrink-0">
-            {TABS.map(t => {
-              const hasQuizBadge = t === 'Quiz' && quizData?.quiz && !quizData.quiz.latestAttempt?.passed;
-              return (
-                <button key={t} onClick={() => setTab(t)}
-                  className={cn(
-                    'relative px-3 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                    tab === t
-                      ? 'border-accent text-ink'
-                      : 'border-transparent text-ink-3 hover:text-ink-2',
-                  )}>
-                  {t}
-                  {hasQuizBadge && (
-                    <span className="absolute top-1.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Tab content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {tab === 'Tổng quan' && (
-              lesson.content
-                ? <div
-                    className="prose prose-sm max-w-none text-ink-2 [&_h3]:text-ink [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-1"
-                    dangerouslySetInnerHTML={{ __html: lesson.content }}
-                  />
-                : <p className="font-mono text-[13px] text-ink-3">// Bài học này chưa có mô tả</p>
-            )}
-
-            {tab === 'Tài liệu' && (
-              lesson.hasAttachment
-                ? (
-                  <button onClick={handleDownload}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg text-[13.5px] font-medium hover:bg-bg-2 transition-colors text-ink">
-                    <Paperclip className="w-4 h-4 text-accent" />
-                    Tải tài liệu đính kèm
+          {/* ── Bottom Sheet ── */}
+          <BottomSheet snapIndex={sheetSnap} onSnapChange={setSheetSnap}>
+            {/* DIV 1 — Tab bar */}
+            <div className="flex border-b border-line px-4 bg-bg shrink-0">
+              {TABS.map(t => {
+                const hasQuizBadge = t === 'Quiz' && quizData?.quiz && !quizData.quiz.latestAttempt?.passed;
+                return (
+                  <button key={t} onClick={() => handleTabClick(t)}
+                    className={cn(
+                      'relative px-3 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                      tab === t
+                        ? 'border-accent text-ink'
+                        : 'border-transparent text-ink-3 hover:text-ink-2',
+                    )}>
+                    {t}
+                    {hasQuizBadge && (
+                      <span className="absolute top-1.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
+                    )}
                   </button>
-                )
-                : <p className="font-mono text-[13px] text-ink-3">// Bài học không có tài liệu đính kèm</p>
-            )}
+                );
+              })}
+            </div>
 
-            {tab === 'Ghi chú' && (
-              <p className="font-mono text-[13px] text-ink-3">// Tính năng ghi chú sẽ ra mắt sớm</p>
-            )}
+            {/* DIV 2 — Tab content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {tab === 'Tổng quan' && (
+                lesson.content
+                  ? <div
+                      className="prose prose-sm max-w-none text-ink-2 [&_h3]:text-ink [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-1"
+                      dangerouslySetInnerHTML={{ __html: lesson.content }}
+                    />
+                  : <p className="font-mono text-[13px] text-ink-3">// Bài học này chưa có mô tả</p>
+              )}
 
-            {tab === 'Quiz' && (
-              <QuizPanel
-                quiz={quizData?.quiz ?? null}
-                lessonId={lessonId}
-                onPassed={() => {
-                  refetchQuiz();
-                  queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] });
-                  queryClient.invalidateQueries({ queryKey: ['enrollments'] });
-                }}
-              />
-            )}
+              {tab === 'Tài liệu' && (
+                lesson.hasAttachment
+                  ? (
+                    <button onClick={handleDownload}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg text-[13.5px] font-medium hover:bg-bg-2 transition-colors text-ink">
+                      <Paperclip className="w-4 h-4 text-accent" />
+                      Tải tài liệu đính kèm
+                    </button>
+                  )
+                  : <p className="font-mono text-[13px] text-ink-3">// Bài học không có tài liệu đính kèm</p>
+              )}
 
-            {tab === 'Thảo luận' && (
-              <DiscussionPanel lessonId={lessonId} />
-            )}
-          </div>
+              {tab === 'Ghi chú' && (
+                <p className="font-mono text-[13px] text-ink-3">// Tính năng ghi chú sẽ ra mắt sớm</p>
+              )}
+
+              {tab === 'Quiz' && (
+                <QuizPanel
+                  quiz={quizData?.quiz ?? null}
+                  lessonId={lessonId}
+                  onPassed={() => {
+                    refetchQuiz();
+                    queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] });
+                    queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+                  }}
+                />
+              )}
+
+              {tab === 'Thảo luận' && (
+                <DiscussionPanel lessonId={lessonId} />
+              )}
+            </div>
+          </BottomSheet>
         </div>
 
-        {/* Right 30%: curriculum sidebar */}
-        <aside className="w-[30%] max-w-[360px] min-w-[240px] border-l border-line flex flex-col overflow-hidden shrink-0">
+        {/* Drag divider — resize sidebar width */}
+        {sidebarOpen && (
+          <div
+            className="w-[5px] shrink-0 cursor-col-resize hover:bg-accent/20 active:bg-accent/30 transition-colors touch-none"
+            onPointerDown={onResizeDown}
+            onPointerMove={onResizeMove}
+            onPointerUp={onResizeUp}
+            onPointerCancel={onResizeUp}
+          />
+        )}
+
+        {/* Right: curriculum sidebar — toggleable + resizable */}
+        <aside
+          style={{ width: sidebarOpen ? sidebarWidth : 0 }}
+          className="border-l border-line flex flex-col overflow-hidden shrink-0 transition-[width] duration-200 min-w-0">
           {/* Mark complete button */}
           <div className="p-3 border-b border-line shrink-0">
             <Button
@@ -662,6 +742,87 @@ function CommentForm({ placeholder, initialValue = '', onSubmit, onCancel, submi
         )}
         <span className="font-mono text-[10px] text-ink-3 ml-auto">Ctrl+Enter để gửi</span>
       </div>
+    </div>
+  );
+}
+
+/* ── Bottom Sheet ─────────────────────────────────────────────── */
+// 3 snap points (pixels visible from bottom of container):
+//   0 = collapsed  → only the drag handle (28 px)
+//   1 = peek       → handle + tab bar   (~72 px)
+//   2 = expanded   → 72 % of container height
+function BottomSheet({ children, snapIndex, onSnapChange }) {
+  const sheetRef = useRef(null);
+  const drag     = useRef({ active: false, startY: 0, startTy: 0 });
+
+  function snapTy(idx) {
+    const h = sheetRef.current?.offsetHeight ?? 600;
+    if (idx === 0) return h - 28;
+    if (idx === 1) return h - 72;
+    return Math.round(h * 0.28);
+  }
+
+  // Set initial position without animation
+  useLayoutEffect(() => {
+    if (!sheetRef.current) return;
+    sheetRef.current.style.transition = 'none';
+    sheetRef.current.style.transform  = `translateY(${snapTy(snapIndex)}px)`;
+  }, []); // eslint-disable-line
+
+  // Animate to snap position whenever snapIndex changes
+  useLayoutEffect(() => {
+    if (!sheetRef.current) return;
+    sheetRef.current.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+    sheetRef.current.style.transform  = `translateY(${snapTy(snapIndex)}px)`;
+  }, [snapIndex]); // eslint-disable-line
+
+  function onPointerDown(e) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { active: true, startY: e.clientY, startTy: snapTy(snapIndex) };
+    if (sheetRef.current) sheetRef.current.style.transition = 'none';
+  }
+
+  function onPointerMove(e) {
+    if (!drag.current.active) return;
+    const h  = sheetRef.current?.offsetHeight ?? 600;
+    const ty = Math.max(0, Math.min(h - 28, drag.current.startTy + e.clientY - drag.current.startY));
+    if (sheetRef.current) sheetRef.current.style.transform = `translateY(${ty}px)`;
+  }
+
+  function onPointerUp(e) {
+    if (!drag.current.active) return;
+    drag.current.active = false;
+    const delta = e.clientY - drag.current.startY;
+
+    let next = snapIndex;
+    if (delta < -50) next = Math.min(snapIndex + 1, 2);
+    else if (delta > 50) next = Math.max(snapIndex - 1, 0);
+
+    if (sheetRef.current) {
+      sheetRef.current.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+      sheetRef.current.style.transform  = `translateY(${snapTy(next)}px)`;
+    }
+    if (next !== snapIndex) onSnapChange(next);
+  }
+
+  return (
+    <div
+      ref={sheetRef}
+      className="absolute inset-0 bg-bg rounded-t-xl border-t border-line shadow-[0_-4px_24px_rgba(0,0,0,0.1)] flex flex-col will-change-transform"
+    >
+      {/* Drag handle */}
+      <div
+        className="shrink-0 flex flex-col items-center justify-center h-7 gap-0.5 cursor-ns-resize touch-none select-none"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <div className="w-8 h-1 rounded-full bg-line" />
+        <ChevronsUpDown className="w-3 h-3 text-ink-3 opacity-50" />
+      </div>
+
+      {children}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +9,7 @@ import { toast } from 'sonner';
 import { Logo } from '@/components/logo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { useAuth } from '@/store/auth';
-import { apiMessage } from '@/lib/api';
+import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 /* ── Validation schema (Zod) ─────────────────────────────────── */
@@ -43,8 +44,7 @@ const STRENGTH_LABEL = ['Quá yếu', 'Yếu', 'Trung bình', 'Khá', 'Mạnh'];
 const STRENGTH_COLOR = ['text-danger', 'text-danger', 'text-warn', 'text-js', 'text-success'];
 const STRENGTH_BAR = ['bg-danger', 'bg-danger', 'bg-warn', 'bg-js', 'bg-success'];
 
-const BENEFITS = [
-  'Truy cập ngay 6 khóa miễn phí',
+const BENEFITS_STATIC = [
   'Coupon 30% cho khóa trả phí đầu tiên',
   'Tài liệu Event Loop deep-dive PDF (62 trang)',
   'Lưu tiến độ & ghi chú trên mọi thiết bị',
@@ -57,10 +57,19 @@ const REQS = [
   { label: '1 ký tự đặc biệt', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
 ];
 
+function usePlatformStats() {
+  return useQuery({
+    queryKey: ['platform-stats'],
+    queryFn: () => api.get('/api/stats').then(r => r.data),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const register_action = useAuth((s) => s.register);
   const [showPw, setShowPw] = useState(false);
+  const { data: platformStats } = usePlatformStats();
 
   const {
     register, handleSubmit, watch, formState: { errors, isSubmitting },
@@ -105,7 +114,10 @@ export default function RegisterPage() {
           </p>
 
           <div className="flex flex-col gap-3 mb-8">
-            {BENEFITS.map((t) => (
+            {[
+              `Truy cập ngay ${platformStats?.freeCourses ?? 6} khóa miễn phí`,
+              ...BENEFITS_STATIC,
+            ].map((t) => (
               <div key={t} className="flex items-center gap-3 text-sm text-ink-2">
                 <span className="w-[22px] h-[22px] rounded-full shrink-0 grid place-items-center bg-success/15 text-success">
                   <Check className="w-3 h-3" strokeWidth={3} />
@@ -126,8 +138,14 @@ export default function RegisterPage() {
               ))}
             </div>
             <div>
-              <div className="text-[13px] font-semibold text-ink">+218 dev tham gia tuần này</div>
-              <div className="font-mono text-[11.5px] text-ink-3">★★★★★ 4.86 từ 3,219 đánh giá</div>
+              <div className="text-[13px] font-semibold text-ink">
+                +{(platformStats?.newUsersThisWeek ?? 0).toLocaleString('vi-VN')} dev tham gia tuần này
+              </div>
+              <div className="font-mono text-[11.5px] text-ink-3">
+                {'★'.repeat(Math.round(platformStats?.avgRating ?? 5))}
+                {'☆'.repeat(5 - Math.round(platformStats?.avgRating ?? 5))}
+                {' '}{(platformStats?.avgRating ?? 0).toFixed(1)} từ {(platformStats?.totalReviews ?? 0).toLocaleString('vi-VN')} đánh giá
+              </div>
             </div>
           </div>
         </div>
@@ -225,8 +243,8 @@ export default function RegisterPage() {
           {/* Terms */}
           <label className="flex items-start gap-2.5 my-[18px] text-[12.5px] text-ink-2 leading-[1.5] cursor-pointer">
             <input {...register('terms')} type="checkbox" className="sr-only peer" />
-            <span className={cn('w-[18px] h-[18px] rounded shrink-0 mt-px grid place-items-center text-accent-ink',
-              terms ? 'bg-accent' : 'border border-line')}>
+            <span className={cn('w-[18px] h-[18px] rounded shrink-0 mt-px grid place-items-center',
+              terms ? 'bg-accent text-accent-ink' : 'border-2 border-ink-3 bg-bg-2')}>
               {terms && <Check className="w-3 h-3" strokeWidth={3.5} />}
             </span>
             <span>

@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { createNotification } = require('./notificationController');
 
 /* ─────────────────────────────────────────────────────────────────
    UC20 — Dashboard
@@ -7,10 +8,15 @@ async function dashboard(req, res) {
   try {
     const [statsRows] = await pool.query(`
       SELECT
-        (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'PAID') AS totalRevenue,
-        (SELECT COUNT(*) FROM users)                                               AS totalUsers,
-        (SELECT COUNT(*) FROM courses WHERE status != 'ARCHIVED')                 AS totalCourses,
-        (SELECT COUNT(*) FROM orders)                                              AS totalOrders
+        (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'PAID')                              AS totalRevenue,
+        (SELECT COUNT(*) FROM users)                                                                            AS totalUsers,
+        (SELECT COUNT(*) FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY))                       AS newUsersThisWeek,
+        (SELECT COUNT(*) FROM courses WHERE status != 'ARCHIVED')                                              AS totalCourses,
+        (SELECT COUNT(*) FROM orders)                                                                          AS totalOrders,
+        (SELECT COUNT(*) FROM orders WHERE status = 'PENDING')                                                 AS pendingOrders,
+        (SELECT COUNT(DISTINCT user_id) FROM enrollments)                                                      AS activeStudents,
+        (SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE status='PAID' AND paid_at >= DATE_SUB(NOW(), INTERVAL 30 DAY))  AS revenueThisMonth,
+        (SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE status='PAID' AND paid_at >= DATE_SUB(NOW(), INTERVAL 60 DAY) AND paid_at < DATE_SUB(NOW(), INTERVAL 30 DAY)) AS revenuePrevMonth
     `);
 
     const [revenueRows] = await pool.query(`
@@ -55,7 +61,7 @@ async function dashboard(req, res) {
    UC21 — Course CRUD
    ───────────────────────────────────────────────────────────────── */
 async function adminListCourses(req, res) {
-  const { search = '', status = '', sort = 'newest', page = 1, limit = 15 } = req.query;
+  const { search = '', status = '', sort = 'manual', page = 1, limit = 15 } = req.query;
   const p      = Math.max(1, parseInt(page, 10));
   const lim    = Math.min(50, Math.max(10, parseInt(limit, 10)));
   const offset = (p - 1) * lim;
@@ -68,14 +74,19 @@ async function adminListCourses(req, res) {
   if (status) { wheres.push('c.status = ?'); params.push(status.toUpperCase()); }
 
   const where   = wheres.length ? `WHERE ${wheres.join(' AND ')}` : '';
-  const orderBy = { newest: 'c.created_at DESC', oldest: 'c.created_at ASC', students: 'c.student_count DESC' }[sort] ?? 'c.created_at DESC';
+  const orderBy = {
+    manual:   'c.display_order ASC, c.id ASC',
+    newest:   'c.created_at DESC',
+    oldest:   'c.created_at ASC',
+    students: 'c.student_count DESC',
+  }[sort] ?? 'c.display_order ASC, c.id ASC';
 
   try {
     const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM courses c LEFT JOIN categories cat ON cat.id = c.category_id ${where}`, params);
     const [rows]      = await pool.query(
       `SELECT c.id, c.title, c.slug, c.price, c.level, c.status,
               c.student_count, c.total_lessons, c.rating, c.instructor_name,
-              cat.name AS category, cat.id AS categoryId
+              c.display_order, cat.name AS category, cat.id AS categoryId
        FROM courses c LEFT JOIN categories cat ON cat.id = c.category_id
        ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
       [...params, lim, offset],
@@ -83,6 +94,53 @@ async function adminListCourses(req, res) {
     return res.json({ courses: rows, total: countRows[0].total, page: p, totalPages: Math.ceil(countRows[0].total / lim) });
   } catch (err) {
     console.error('[admin/courses/list]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+async function adminReorderCourses(req, res) {
+  const items = req.body;
+  if (!Array.isArray(items) || !items.length) return res.status(400).json({ message: 'Danh sách không hợp lệ' });
+  try {
+    await Promise.all(items.map(({ id, display_order }) =>
+      pool.query('UPDATE courses SET display_order = ? WHERE id = ?', [display_order, id]),
+    ));
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin/courses/reorder]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+async function adminExportCourses(req, res) {
+  const { search = '', status = '' } = req.query;
+  const wheres = []; const params = [];
+  if (search.trim()) { wheres.push('(c.title LIKE ? OR c.instructor_name LIKE ?)'); params.push(`%${search.trim()}%`, `%${search.trim()}%`); }
+  if (status) { wheres.push('c.status = ?'); params.push(status.toUpperCase()); }
+  const where = wheres.length ? `WHERE ${wheres.join(' AND ')}` : '';
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.id, c.title, c.instructor_name, cat.name AS category,
+              c.price, c.level, c.status, c.student_count, c.total_lessons,
+              c.rating, c.created_at
+       FROM courses c LEFT JOIN categories cat ON cat.id = c.category_id
+       ${where} ORDER BY c.created_at DESC LIMIT 5000`,
+      params,
+    );
+
+    const header = 'ID,Tên khóa học,Giảng viên,Danh mục,Giá (VND),Cấp độ,Trạng thái,Học viên,Bài học,Điểm đánh giá,Ngày tạo\n';
+    const body   = rows.map(r =>
+      [r.id, `"${r.title}"`, `"${r.instructor_name ?? ''}"`, `"${r.category ?? ''}"`,
+       r.price, r.level, r.status, r.student_count, r.total_lessons,
+       r.rating, new Date(r.created_at).toLocaleDateString('vi-VN')].join(','),
+    ).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="courses_${Date.now()}.csv"`);
+    return res.send('﻿' + header + body);
+  } catch (err) {
+    console.error('[admin/courses/export]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
 }
@@ -362,8 +420,10 @@ async function adminDeleteCategory(req, res) {
 /* ─────────────────────────────────────────────────────────────────
    UC24 — User management
    ───────────────────────────────────────────────────────────────── */
+const bcrypt = require('bcryptjs');
+
 async function adminListUsers(req, res) {
-  const { search = '', role = '', status = '', page = 1, limit = 20 } = req.query;
+  const { search = '', role = '', status = '', page = 1, limit = 20, sort = 'newest' } = req.query;
   const p = Math.max(1, parseInt(page, 10));
   const lim = Math.min(50, Math.max(10, parseInt(limit, 10)));
   const offset = (p - 1) * lim;
@@ -374,18 +434,142 @@ async function adminListUsers(req, res) {
   if (status) { wheres.push('u.status = ?'); params.push(status.toUpperCase()); }
   const where = wheres.length ? `WHERE ${wheres.join(' AND ')}` : '';
 
+  const orderBy = { newest: 'u.created_at DESC', oldest: 'u.created_at ASC', name: 'u.full_name ASC', spent: 'totalSpent DESC' }[sort] ?? 'u.created_at DESC';
+
   try {
-    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM users u ${where}`, params);
-    const [rows] = await pool.query(
-      `SELECT u.id, u.email, u.full_name, u.role, u.status, u.created_at,
-              (SELECT COUNT(*) FROM enrollments WHERE user_id = u.id) AS enrollments,
-              (SELECT COUNT(*) FROM orders WHERE user_id = u.id AND status = 'PAID') AS paidOrders
-       FROM users u ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
-      [...params, lim, offset],
-    );
-    return res.json({ users: rows, total: countRows[0].total, page: p, totalPages: Math.ceil(countRows[0].total / lim) });
+    const [[statsRow], [countRows], [rows]] = await Promise.all([
+      pool.query(`
+        SELECT
+          (SELECT COUNT(*) FROM users)                                                             AS totalUsers,
+          (SELECT COUNT(*) FROM users WHERE created_at >= DATE_FORMAT(NOW(),'%Y-%m-01'))          AS newThisMonth,
+          (SELECT COUNT(*) FROM users WHERE role = 'ADMIN')                                       AS admins,
+          (SELECT COUNT(*) FROM users WHERE status = 'LOCKED')                                    AS locked
+      `),
+      pool.query(`SELECT COUNT(*) AS total FROM users u ${where}`, params),
+      pool.query(
+        `SELECT u.id, u.email, u.full_name, u.role, u.status, u.avatar_url, u.created_at,
+                (SELECT COUNT(*) FROM enrollments WHERE user_id = u.id)                            AS enrollments,
+                COALESCE((SELECT SUM(total_amount) FROM orders WHERE user_id = u.id AND status = 'PAID'), 0) AS totalSpent
+         FROM users u ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+        [...params, lim, offset],
+      ),
+    ]);
+
+    return res.json({
+      users: rows,
+      total: countRows[0].total,
+      page: p,
+      totalPages: Math.ceil(countRows[0].total / lim),
+      stats: statsRow[0],
+    });
   } catch (err) {
     console.error('[admin/users/list]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+async function adminCreateUser(req, res) {
+  const { full_name, email, password, role = 'USER' } = req.body;
+  if (!full_name || !email || !password) return res.status(400).json({ message: 'Thiếu: full_name, email, password' });
+  if (!['USER', 'ADMIN'].includes(role.toUpperCase())) return res.status(400).json({ message: 'Role không hợp lệ' });
+  if (password.length < 6) return res.status(400).json({ message: 'Mật khẩu tối thiểu 6 ký tự' });
+
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    const [result] = await pool.query(
+      'INSERT INTO users (full_name, email, password_hash, role, status) VALUES (?,?,?,?,?)',
+      [full_name.trim(), email.trim().toLowerCase(), hash, role.toUpperCase(), 'ACTIVE'],
+    );
+    return res.status(201).json({ id: result.insertId });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'Email đã tồn tại' });
+    console.error('[admin/users/create]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+async function adminUpdateUserRole(req, res) {
+  const id = parseInt(req.params.id, 10);
+  const { role } = req.body;
+  if (!['USER', 'ADMIN'].includes(role?.toUpperCase())) return res.status(400).json({ message: 'Role không hợp lệ' });
+  if (id === req.user.id) return res.status(400).json({ message: 'Không thể tự thay đổi role của mình' });
+  try {
+    await pool.query('UPDATE users SET role = ? WHERE id = ?', [role.toUpperCase(), id]);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin/users/role]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+async function adminBulkUsers(req, res) {
+  const { ids, action } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'ids không được rỗng' });
+  if (!['LOCK', 'UNLOCK'].includes(action?.toUpperCase())) return res.status(400).json({ message: 'action không hợp lệ (LOCK | UNLOCK)' });
+
+  // Prevent admin from locking themselves
+  const safeIds = ids.map(Number).filter(id => id !== req.user.id);
+  if (safeIds.length === 0) return res.status(400).json({ message: 'Không có user nào hợp lệ để thực hiện' });
+
+  const newStatus = action.toUpperCase() === 'LOCK' ? 'LOCKED' : 'ACTIVE';
+  const placeholders = safeIds.map(() => '?').join(',');
+  try {
+    const [result] = await pool.query(
+      `UPDATE users SET status = ? WHERE id IN (${placeholders})`,
+      [newStatus, ...safeIds],
+    );
+    return res.json({ ok: true, affected: result.affectedRows });
+  } catch (err) {
+    console.error('[admin/users/bulk]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+async function adminExportUsers(req, res) {
+  const { search = '', role = '', status = '' } = req.query;
+  const wheres = []; const params = [];
+  if (search.trim()) { wheres.push('(u.email LIKE ? OR u.full_name LIKE ?)'); params.push(`%${search.trim()}%`, `%${search.trim()}%`); }
+  if (role)   { wheres.push('u.role = ?');   params.push(role.toUpperCase()); }
+  if (status) { wheres.push('u.status = ?'); params.push(status.toUpperCase()); }
+  const where = wheres.length ? `WHERE ${wheres.join(' AND ')}` : '';
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id, u.full_name, u.email, u.role, u.status, u.created_at,
+              (SELECT COUNT(*) FROM enrollments WHERE user_id = u.id) AS enrollments,
+              COALESCE((SELECT SUM(total_amount) FROM orders WHERE user_id = u.id AND status = 'PAID'), 0) AS totalSpent
+       FROM users u ${where} ORDER BY u.created_at DESC LIMIT 5000`,
+      params,
+    );
+
+    const header = 'ID,Họ tên,Email,Role,Status,Số khóa học,Tổng chi (VND),Ngày tham gia\n';
+    const body   = rows.map(r =>
+      [r.id, `"${r.full_name}"`, r.email, r.role, r.status, r.enrollments,
+       r.totalSpent, new Date(r.created_at).toLocaleDateString('vi-VN')].join(','),
+    ).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="users_${Date.now()}.csv"`);
+    return res.send('﻿' + header + body); // BOM for Excel UTF-8
+  } catch (err) {
+    console.error('[admin/users/export]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+async function adminGetUserEnrollments(req, res) {
+  const id = parseInt(req.params.id, 10);
+  try {
+    const [rows] = await pool.query(
+      `SELECT e.id, e.course_id, c.title AS courseTitle, c.thumbnail_url,
+              e.progress_percent, e.enrolled_at, e.completed_at
+       FROM enrollments e JOIN courses c ON c.id = e.course_id
+       WHERE e.user_id = ? ORDER BY e.enrolled_at DESC`,
+      [id],
+    );
+    return res.json({ enrollments: rows });
+  } catch (err) {
+    console.error('[admin/users/enrollments]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
 }
@@ -420,19 +604,55 @@ async function adminListOrders(req, res) {
   if (dateTo)   { wheres.push('o.created_at <= ?'); params.push(`${dateTo} 23:59:59`); }
   const where = wheres.length ? `WHERE ${wheres.join(' AND ')}` : '';
 
+  // Same filters minus status — used to compute per-status tab badge counts
+  const countWheres = wheres.filter((w) => w !== 'o.status = ?');
+  const countParams  = [];
+  if (search.trim()) countParams.push(`%${search.trim()}%`, `%${search.trim()}%`);
+  if (dateFrom) countParams.push(dateFrom);
+  if (dateTo)   countParams.push(`${dateTo} 23:59:59`);
+  const countWhere = countWheres.length ? `WHERE ${countWheres.join(' AND ')}` : '';
+
   try {
     const [countRows] = await pool.query(
       `SELECT COUNT(*) AS total FROM orders o JOIN users u ON u.id = o.user_id ${where}`, params,
     );
     const [rows] = await pool.query(
       `SELECT o.id, o.order_code, o.total_amount, o.status, o.payment_method,
-              o.transaction_id, o.created_at, o.paid_at,
+              o.transaction_id, o.created_at, o.paid_at, o.expires_at,
               u.full_name AS userName, u.email
        FROM orders o JOIN users u ON u.id = o.user_id
        ${where} ORDER BY o.created_at DESC LIMIT ? OFFSET ?`,
       [...params, lim, offset],
     );
-    return res.json({ orders: rows, total: countRows[0].total, page: p, totalPages: Math.ceil(countRows[0].total / lim) });
+
+    const [statusCounts] = await pool.query(
+      `SELECT o.status, COUNT(*) AS cnt FROM orders o JOIN users u ON u.id = o.user_id
+       ${countWhere} GROUP BY o.status`,
+      countParams,
+    );
+    const counts = { total: 0 };
+    statusCounts.forEach((r) => { counts[r.status] = r.cnt; counts.total += r.cnt; });
+
+    const [[todayStats]] = await pool.query(`
+      SELECT
+        (SELECT COUNT(*) FROM orders WHERE DATE(created_at) = CURDATE())                          AS todayOrders,
+        (SELECT COUNT(*) FROM orders WHERE status = 'PENDING')                                     AS pendingCount,
+        (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'PAID' AND DATE(paid_at) = CURDATE()) AS todayRevenue,
+        (SELECT COUNT(*) FROM orders WHERE status = 'FAILED' AND DATE(created_at) = CURDATE())     AS todayFailed,
+        (SELECT COUNT(*) FROM orders WHERE status IN ('PAID','FAILED') AND DATE(created_at) = CURDATE()) AS todayResolved
+    `);
+    todayStats.failRate = todayStats.todayResolved > 0
+      ? Number(((todayStats.todayFailed / todayStats.todayResolved) * 100).toFixed(1))
+      : 0;
+
+    return res.json({
+      orders: rows,
+      total: countRows[0].total,
+      page: p,
+      totalPages: Math.ceil(countRows[0].total / lim),
+      counts,
+      todayStats,
+    });
   } catch (err) {
     console.error('[admin/orders/list]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
@@ -483,6 +703,79 @@ async function adminCancelOrder(req, res) {
     return res.json({ ok: true });
   } catch (err) {
     console.error('[admin/orders/cancel]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+async function adminExportOrders(req, res) {
+  const { search = '', status = '', dateFrom, dateTo } = req.query;
+  const wheres = []; const params = [];
+  if (search.trim()) { wheres.push('(o.order_code LIKE ? OR u.email LIKE ?)'); params.push(`%${search.trim()}%`, `%${search.trim()}%`); }
+  if (status)   { wheres.push('o.status = ?'); params.push(status.toUpperCase()); }
+  if (dateFrom) { wheres.push('o.created_at >= ?'); params.push(dateFrom); }
+  if (dateTo)   { wheres.push('o.created_at <= ?'); params.push(`${dateTo} 23:59:59`); }
+  const where = wheres.length ? `WHERE ${wheres.join(' AND ')}` : '';
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT o.order_code, u.full_name AS userName, u.email,
+              o.total_amount, o.status, o.payment_method, o.transaction_id,
+              o.created_at, o.paid_at
+       FROM orders o JOIN users u ON u.id = o.user_id
+       ${where} ORDER BY o.created_at DESC LIMIT 5000`,
+      params,
+    );
+
+    const header = 'Mã đơn,Khách hàng,Email,Số tiền (VND),Trạng thái,Phương thức,Mã GD,Ngày tạo,Ngày thanh toán\n';
+    const body   = rows.map(r =>
+      [r.order_code, `"${r.userName}"`, r.email, r.total_amount, r.status,
+       r.payment_method ?? '', r.transaction_id ?? '',
+       new Date(r.created_at).toLocaleString('vi-VN'),
+       r.paid_at ? new Date(r.paid_at).toLocaleString('vi-VN') : ''].join(','),
+    ).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="orders_${Date.now()}.csv"`);
+    return res.send('﻿' + header + body);
+  } catch (err) {
+    console.error('[admin/orders/export]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+// Manual confirm — for pending orders paid through an out-of-band channel (e.g. bank transfer)
+async function adminConfirmOrder(req, res) {
+  const id = parseInt(req.params.id, 10);
+  try {
+    const [orderRows] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+    if (!orderRows.length) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    const order = orderRows[0];
+
+    if (order.status !== 'PENDING') {
+      return res.status(400).json({ message: 'Đơn hàng không còn ở trạng thái chờ thanh toán' });
+    }
+
+    await pool.query(
+      "UPDATE orders SET status = 'PAID', transaction_id = ?, paid_at = NOW() WHERE id = ?",
+      [`ADMIN-${req.user.id}`, id],
+    );
+
+    const [items] = await pool.query('SELECT course_id FROM order_items WHERE order_id = ?', [id]);
+    if (items.length > 0) {
+      const enrollValues = items.map((i) => [order.user_id, i.course_id, id]);
+      await pool.query('INSERT IGNORE INTO enrollments (user_id, course_id, order_id) VALUES ?', [enrollValues]);
+    }
+
+    createNotification(order.user_id, {
+      type:  'order_paid',
+      title: 'Thanh toán thành công',
+      body:  `Đơn hàng #${order.order_code} đã được admin xác nhận thanh toán. Bắt đầu học ngay!`,
+      link:  '/me',
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin/orders/confirm]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
 }
@@ -562,10 +855,11 @@ async function adminUpdateReviewStatus(req, res) {
 
 module.exports = {
   dashboard,
-  adminListCourses, adminGetCourse, adminCreateCourse, adminUpdateCourse, adminDeleteCourse,
+  adminListCourses, adminExportCourses, adminGetCourse, adminCreateCourse, adminUpdateCourse, adminDeleteCourse, adminReorderCourses,
   adminListLessons, adminCreateLesson, adminUpdateLesson, adminReorderLessons, adminDeleteLesson,
   adminListCategories, adminCreateCategory, adminUpdateCategory, adminDeleteCategory,
-  adminListUsers, adminUpdateUserStatus,
-  adminListOrders, adminGetOrder, adminCancelOrder,
+  adminListUsers, adminCreateUser, adminUpdateUserStatus, adminUpdateUserRole,
+  adminBulkUsers, adminExportUsers, adminGetUserEnrollments,
+  adminListOrders, adminExportOrders, adminGetOrder, adminCancelOrder, adminConfirmOrder,
   adminListReviews, adminUpdateReviewStatus,
 };

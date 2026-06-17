@@ -68,3 +68,14 @@ api.interceptors.response.use(
 export function apiMessage(err, fallback = 'Đã có lỗi xảy ra') {
   return err?.response?.data?.message ?? err?.message ?? fallback;
 }
+
+// ── Helper: download a CSV from an API endpoint ───────────────
+export async function downloadCsv(path, params, filename) {
+  const res = await api.get(path, { params, responseType: 'blob' });
+  const url  = URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
+  const link = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

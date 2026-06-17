@@ -4,7 +4,7 @@ import { Search, Download, X, Circle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
-import { api, apiMessage } from '@/lib/api';
+import { api, apiMessage, downloadCsv } from '@/lib/api';
 import { formatVND } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -76,7 +76,11 @@ export default function AdminOrdersPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
             cập nhật real-time · cách 30s
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
+          <button
+            onClick={() => downloadCsv('/api/admin/orders/export', { search, status: activeTab }, `orders_${Date.now()}.csv`)
+              .then(() => toast.success('Đã xuất file CSV'))
+              .catch(() => toast.error('Xuất thất bại'))}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
             <Download className="w-3.5 h-3.5" /> Export
           </button>
         </div>
@@ -179,7 +183,14 @@ export default function AdminOrdersPage() {
                 <td className="px-4 py-3 font-mono text-[12px] text-ink-3">
                   {new Date(o.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                 </td>
-                <td className="px-4 py-3"><StatusBadge status={o.status?.toLowerCase()} /></td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={o.status?.toLowerCase()} />
+                  {o.status === 'PENDING' && o.expires_at && (
+                    <p className="font-mono text-[10px] text-ink-3 mt-1">
+                      Hết hạn: {new Date(o.expires_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                    </p>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5 justify-end">
                     {o.status === 'PENDING' && (
@@ -255,6 +266,8 @@ function OrderDetailModal({ orderId, onClose }) {
                   ['Phương thức', data.order.payment_method],
                   ['Tổng tiền', <span key="p" className="font-mono font-semibold">{formatVND(data.order.total_amount)}</span>],
                   ['Ngày tạo', new Date(data.order.created_at).toLocaleString('vi-VN')],
+                  data.order.status === 'PENDING' && data.order.expires_at &&
+                    ['Hết hạn thanh toán', <span key="x" className="font-mono text-warning">{new Date(data.order.expires_at).toLocaleString('vi-VN')}</span>],
                   data.order.paid_at && ['Thanh toán lúc', new Date(data.order.paid_at).toLocaleString('vi-VN')],
                 ].filter(Boolean).map(([label, value]) => (
                   <div key={label}>

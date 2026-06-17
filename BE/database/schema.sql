@@ -174,9 +174,11 @@ CREATE TABLE IF NOT EXISTS orders (
   transaction_id VARCHAR(100),
   paid_at        TIMESTAMP NULL,
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at     TIMESTAMP NULL,
   FOREIGN KEY (user_id) REFERENCES users(id),
   INDEX idx_user_status (user_id, status),
-  INDEX idx_order_code (order_code)
+  INDEX idx_order_code (order_code),
+  INDEX idx_status_expires (status, expires_at)
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
