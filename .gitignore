@@ -26,6 +26,8 @@ Readthis.md
 vnpaymail.txt
 *.java
 image.png
+shots/
+z/
 
 # Uploaded user files
 BE/uploads/
