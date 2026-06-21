@@ -7,6 +7,7 @@ import {
   CheckCircle, Check, Play, Paperclip, ListChecks,
   MessageSquare, Send, Edit2, Trash2, CornerDownRight, ChevronsUpDown,
   PanelRightClose, PanelRightOpen, Heart,
+  AlertTriangle, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
@@ -17,6 +18,36 @@ import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
 
 const TABS = ['Tổng quan', 'Tài liệu', 'Ghi chú', 'Quiz', 'Thảo luận'];
 
+/* ── Reusable warning modal ───────────────────────────────────── */
+function WarningModal({ icon: Icon = AlertTriangle, title, children, onClose, actions }) {
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-bg border border-line rounded-2xl p-6 w-[400px] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-10 h-10 rounded-full bg-warn/15 text-warn grid place-items-center shrink-0">
+            <Icon className="w-5 h-5" />
+          </div>
+          <div className="flex-1 pt-0.5">
+            <h3 className="font-display font-semibold text-[15px] text-ink">{title}</h3>
+          </div>
+          <button onClick={onClose} className="text-ink-3 hover:text-ink transition-colors mt-0.5">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="mb-5">{children}</div>
+
+        <div className="flex gap-2 justify-end">
+          {actions}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LessonPlayerPage() {
   const { courseId, lessonId } = useParams();
   const navigate      = useNavigate();
@@ -24,10 +55,11 @@ export default function LessonPlayerPage() {
   const playerRef     = useRef(null);
   const secondsRef    = useRef(0);   // current playback position for auto-save
   const didSeekRef    = useRef(false);
-  const [tab, setTab]           = useState('Tổng quan');
+  const [tab, setTab]                   = useState('Tổng quan');
   const [sheetSnap, setSheetSnap]       = useState(0); // 0=collapsed 1=peek 2=expanded
   const [sidebarOpen, setSidebarOpen]   = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [quizBlockedModal, setQuizBlockedModal] = useState(false);
   const resizeDrag = useRef({ active: false, startX: 0, startW: 0 });
 
   function onResizeDown(e) {
@@ -145,6 +177,7 @@ export default function LessonPlayerPage() {
   }
 
   const { lesson, sections, progress } = data;
+  const quizLocked = !!(quizData?.quiz && !quizData.quiz.latestAttempt?.passed);
 
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
@@ -165,8 +198,12 @@ export default function LessonPlayerPage() {
             onClick={() => prevLesson && navigate(`/learn/${courseId}/${prevLesson.id}`)}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button size="sm" variant="ghost" disabled={!nextLesson}
-            onClick={() => nextLesson && navigate(`/learn/${courseId}/${nextLesson.id}`)}>
+          <Button size="sm" variant="ghost"
+            disabled={!nextLesson}
+            onClick={() => {
+              if (quizLocked) { setQuizBlockedModal(true); return; }
+              navigate(`/learn/${courseId}/${nextLesson.id}`);
+            }}>
             <ChevronRight className="w-4 h-4" />
           </Button>
 
@@ -202,37 +239,58 @@ export default function LessonPlayerPage() {
       <div className="flex flex-1 min-h-0">
         {/* Left: video full-height + bottom sheet overlay */}
         <div className="flex flex-col flex-1 min-w-0 min-h-0 relative overflow-hidden">
-          {/* Video fills all available height */}
-          <div className="flex-1 min-h-0 bg-black relative">
-            {lesson.videoUrl ? (
-              <ReactPlayer
-                ref={playerRef}
-                url={lesson.videoUrl}
-                width="100%" height="100%"
-                controls
-                onReady={handleReady}
-                onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
-                onEnded={handleEnded}
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                <div className="w-16 h-16 rounded-full border-2 border-white/20 grid place-items-center">
-                  <Play className="w-8 h-8 text-white/30" />
+          {/* Main content: quiz panel (always shown when lesson has quiz) or video player */}
+          <div className="flex-1 min-h-0 relative" style={{ background: quizData?.quiz ? undefined : 'black' }}>
+            {quizData?.quiz ? (
+              <div className="w-full h-full overflow-y-auto bg-bg">
+                <div className="max-w-2xl mx-auto px-6 py-8">
+                  <div className="flex items-center gap-2 mb-6">
+                    <span className={`w-2 h-2 rounded-full ${quizLocked ? 'bg-accent animate-pulse' : 'bg-success'}`} />
+                    <p className="font-mono text-[12px] text-ink-3 uppercase tracking-widest">
+                      {quizLocked
+                        ? 'Quiz bắt buộc — hoàn thành để mở khoá bài tiếp theo'
+                        : 'Quiz đã hoàn thành ✓'}
+                    </p>
+                  </div>
+                  <QuizPanel
+                    quiz={quizData.quiz}
+                    onPassed={() => refetchQuiz()}
+                  />
                 </div>
-                <p className="font-mono text-[13px] text-white/40">Video chưa sẵn sàng</p>
               </div>
-            )}
+            ) : (
+              <>
+                {lesson.videoUrl ? (
+                  <ReactPlayer
+                    ref={playerRef}
+                    url={lesson.videoUrl}
+                    width="100%" height="100%"
+                    controls
+                    onReady={handleReady}
+                    onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
+                    onEnded={handleEnded}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                    <div className="w-16 h-16 rounded-full border-2 border-white/20 grid place-items-center">
+                      <Play className="w-8 h-8 text-white/30" />
+                    </div>
+                    <p className="font-mono text-[13px] text-white/40">Video chưa sẵn sàng</p>
+                  </div>
+                )}
 
-            {/* Toggle bottom sheet — square button, bottom-right of video */}
-            <button
-              onClick={() => setSheetSnap(s => s > 0 ? 0 : 1)}
-              title={sheetSnap > 0 ? 'Ẩn nội dung bài học' : 'Hiện nội dung bài học'}
-              className="absolute bottom-3 right-3 w-8 h-8 rounded border border-white/20 bg-black/50 backdrop-blur-sm grid place-items-center text-white/70 hover:text-white hover:bg-black/70 hover:border-white/40 transition-all z-10"
-            >
-              {sheetSnap > 0
-                ? <ChevronDown className="w-4 h-4" />
-                : <ChevronUp   className="w-4 h-4" />}
-            </button>
+                {/* Toggle bottom sheet — square button, bottom-right of video */}
+                <button
+                  onClick={() => setSheetSnap(s => s > 0 ? 0 : 1)}
+                  title={sheetSnap > 0 ? 'Ẩn nội dung bài học' : 'Hiện nội dung bài học'}
+                  className="absolute bottom-3 right-3 w-8 h-8 rounded border border-white/20 bg-black/50 backdrop-blur-sm grid place-items-center text-white/70 hover:text-white hover:bg-black/70 hover:border-white/40 transition-all z-10"
+                >
+                  {sheetSnap > 0
+                    ? <ChevronDown className="w-4 h-4" />
+                    : <ChevronUp   className="w-4 h-4" />}
+                </button>
+              </>
+            )}
           </div>
 
           {/* ── Bottom Sheet ── */}
@@ -346,6 +404,25 @@ export default function LessonPlayerPage() {
           </div>
         </aside>
       </div>
+
+      {/* ── Quiz blocked modal ── */}
+      {quizBlockedModal && (
+        <WarningModal
+          title="Cần hoàn thành quiz trước"
+          onClose={() => setQuizBlockedModal(false)}
+          actions={
+            <Button onClick={() => setQuizBlockedModal(false)}>
+              Quay lại làm quiz
+            </Button>
+          }
+        >
+          <p className="text-sm text-ink-2 leading-[1.65]">
+            Bài học này có quiz bắt buộc. Bạn phải đạt{' '}
+            <strong className="text-ink">{quizData?.quiz?.passScore ?? 80}%</strong>{' '}
+            trở lên để mở khoá bài tiếp theo.
+          </p>
+        </WarningModal>
+      )}
     </div>
   );
 }
@@ -411,10 +488,11 @@ function SidebarSection({ section, currentLessonId, courseId }) {
 
 /* ── Quiz Panel ───────────────────────────────────────────────── */
 function QuizPanel({ quiz, onPassed }) {
-  const [answers,    setAnswers]   = useState({});
-  const [result,     setResult]    = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [retrying,   setRetrying]  = useState(false);
+  const [answers,          setAnswers]         = useState({});
+  const [result,           setResult]          = useState(null);
+  const [submitting,       setSubmitting]       = useState(false);
+  const [retrying,         setRetrying]         = useState(false);
+  const [unansweredModal,  setUnansweredModal]  = useState(false);
 
   if (!quiz) {
     return <p className="font-mono text-[13px] text-ink-3">// Bài học này chưa có quiz</p>;
@@ -429,7 +507,7 @@ function QuizPanel({ quiz, onPassed }) {
 
   const handleSubmit = async () => {
     if (Object.keys(answers).length < quiz.questions.length) {
-      toast.error('Vui lòng trả lời tất cả câu hỏi');
+      setUnansweredModal(true);
       return;
     }
     setSubmitting(true);
@@ -466,7 +544,9 @@ function QuizPanel({ quiz, onPassed }) {
             </p>
           )}
         </div>
-        <Button size="sm" variant="ghost" onClick={() => { setResult(null); setRetrying(true); setAnswers({}); }}
+
+        <Button size="sm" variant="ghost"
+          onClick={() => { setResult(null); setRetrying(true); setAnswers({}); }}
           className="w-full justify-center">
           Làm lại
         </Button>
@@ -514,10 +594,40 @@ function QuizPanel({ quiz, onPassed }) {
 
       <Button
         onClick={handleSubmit}
-        disabled={submitting || Object.keys(answers).length < quiz.questions.length}
+        disabled={submitting}
         className="w-full justify-center">
         {submitting ? 'Đang chấm...' : 'Nộp bài'}
       </Button>
+
+      {/* Unanswered questions modal */}
+      {unansweredModal && (() => {
+        const unanswered = quiz.questions
+          .map((q, i) => ({ idx: i + 1, q }))
+          .filter(({ q }) => !answers[q.id]);
+        return (
+          <WarningModal
+            title="Bạn chưa trả lời hết câu hỏi"
+            onClose={() => setUnansweredModal(false)}
+            actions={
+              <Button onClick={() => setUnansweredModal(false)}>
+                Quay lại làm bài
+              </Button>
+            }
+          >
+            <p className="text-sm text-ink-2 mb-3">
+              Còn <strong className="text-ink">{unanswered.length}</strong> câu chưa được trả lời:
+            </p>
+            <ul className="space-y-1.5">
+              {unanswered.map(({ idx, q }) => (
+                <li key={q.id} className="flex items-start gap-2 text-sm text-ink-2">
+                  <span className="font-mono text-accent shrink-0">#{idx}</span>
+                  <span className="line-clamp-2">{q.question}</span>
+                </li>
+              ))}
+            </ul>
+          </WarningModal>
+        );
+      })()}
     </div>
   );
 }
@@ -747,13 +857,12 @@ function CommentForm({ placeholder, initialValue = '', onSubmit, onCancel, submi
 }
 
 /* ── Bottom Sheet ─────────────────────────────────────────────── */
-// 3 snap points (pixels visible from bottom of container):
-//   0 = collapsed  → only the drag handle (28 px)
-//   1 = peek       → handle + tab bar   (~72 px)
-//   2 = expanded   → 72 % of container height
+// Snap points used only for programmatic control (tab clicks, video end).
+// Free drag: sheet stays exactly where released — no snap-back.
 function BottomSheet({ children, snapIndex, onSnapChange }) {
-  const sheetRef = useRef(null);
-  const drag     = useRef({ active: false, startY: 0, startTy: 0 });
+  const sheetRef        = useRef(null);
+  const drag            = useRef({ active: false, startY: 0, startTy: 0, currentTy: 0 });
+  const skipNextSnapAnim = useRef(false);
 
   function snapTy(idx) {
     const h = sheetRef.current?.offsetHeight ?? 600;
@@ -765,20 +874,25 @@ function BottomSheet({ children, snapIndex, onSnapChange }) {
   // Set initial position without animation
   useLayoutEffect(() => {
     if (!sheetRef.current) return;
+    const ty = snapTy(snapIndex);
     sheetRef.current.style.transition = 'none';
-    sheetRef.current.style.transform  = `translateY(${snapTy(snapIndex)}px)`;
+    sheetRef.current.style.transform  = `translateY(${ty}px)`;
+    drag.current.currentTy = ty;
   }, []); // eslint-disable-line
 
-  // Animate to snap position whenever snapIndex changes
+  // Animate to snap position on programmatic snapIndex changes (tab clicks, etc.)
   useLayoutEffect(() => {
     if (!sheetRef.current) return;
+    if (skipNextSnapAnim.current) { skipNextSnapAnim.current = false; return; }
+    const ty = snapTy(snapIndex);
     sheetRef.current.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-    sheetRef.current.style.transform  = `translateY(${snapTy(snapIndex)}px)`;
+    sheetRef.current.style.transform  = `translateY(${ty}px)`;
+    drag.current.currentTy = ty;
   }, [snapIndex]); // eslint-disable-line
 
   function onPointerDown(e) {
     e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { active: true, startY: e.clientY, startTy: snapTy(snapIndex) };
+    drag.current = { active: true, startY: e.clientY, startTy: drag.current.currentTy, currentTy: drag.current.currentTy };
     if (sheetRef.current) sheetRef.current.style.transition = 'none';
   }
 
@@ -786,23 +900,28 @@ function BottomSheet({ children, snapIndex, onSnapChange }) {
     if (!drag.current.active) return;
     const h  = sheetRef.current?.offsetHeight ?? 600;
     const ty = Math.max(0, Math.min(h - 28, drag.current.startTy + e.clientY - drag.current.startY));
+    drag.current.currentTy = ty;
     if (sheetRef.current) sheetRef.current.style.transform = `translateY(${ty}px)`;
   }
 
   function onPointerUp(e) {
     if (!drag.current.active) return;
     drag.current.active = false;
-    const delta = e.clientY - drag.current.startY;
 
-    let next = snapIndex;
-    if (delta < -50) next = Math.min(snapIndex + 1, 2);
-    else if (delta > 50) next = Math.max(snapIndex - 1, 0);
+    // Stay at exact dragged position — no snap-back
+    const h  = sheetRef.current?.offsetHeight ?? 600;
+    const ty = drag.current.currentTy;
 
-    if (sheetRef.current) {
-      sheetRef.current.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-      sheetRef.current.style.transform  = `translateY(${snapTy(next)}px)`;
+    // Update parent's logical snap state (without triggering animation)
+    let next;
+    if (ty >= h - 50)     next = 0; // nearly collapsed
+    else if (ty >= h * 0.65) next = 1; // peek zone
+    else                   next = 2; // expanded
+
+    if (next !== snapIndex) {
+      skipNextSnapAnim.current = true;
+      onSnapChange(next);
     }
-    if (next !== snapIndex) onSnapChange(next);
   }
 
   return (

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '@/store/theme';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  LineChart, Line,
+  LineChart, Line, ReferenceLine,
 } from 'recharts';
 import { Download, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -95,8 +95,26 @@ function fmtCompact(n) {
 function useChartColors() {
   const mode = useTheme((s) => s.mode);
   return mode === 'dark'
-    ? { grid: 'rgba(255,255,255,0.12)', tick: '#8B9CC8', tickFaint: '#5A6490' }
-    : { grid: 'rgba(15,23,42,0.10)',   tick: '#475569', tickFaint: '#94A3B8' };
+    ? {
+        accent:    '#F7DF1E',
+        grid:      'rgba(255,255,255,0.09)',
+        tick:      '#6B7392',
+        tickFaint: '#3E4660',
+        bg:        '#0B0F19',
+        bg2:       '#161C2F',
+        ink:       '#F4F5F9',
+        ink2:      '#B6BCD0',
+      }
+    : {
+        accent:    '#4F46E5',
+        grid:      'rgba(15,23,42,0.08)',
+        tick:      '#475569',
+        tickFaint: '#94A3B8',
+        bg:        '#F8FAFC',
+        bg2:       '#F1F5F9',
+        ink:       '#0B0F19',
+        ink2:      '#475569',
+      };
 }
 
 export default function AdminDashboardPage() {
@@ -161,14 +179,14 @@ export default function AdminDashboardPage() {
             ? `${(((stats.revenueThisMonth - stats.revenuePrevMonth) / stats.revenuePrevMonth) * 100).toFixed(1)}% vs tháng trước`
             : 'tháng này'}
           positive={(stats?.revenueThisMonth ?? 0) >= (stats?.revenuePrevMonth ?? 0)}
-          sparkData={SPARK.rev} color="var(--color-accent)"
+          sparkData={SPARK.rev} color={chart.accent}
         />
         <StatCard
           label="Tổng học viên"
           value={(stats?.totalUsers ?? 0).toLocaleString()}
           delta={`+${(stats?.newUsersThisWeek ?? 0)} tuần này`}
           positive
-          sparkData={SPARK.users} color="var(--color-success)"
+          sparkData={SPARK.users} color="#34D399"
         />
         <StatCard
           label="Đã đăng ký khóa"
@@ -182,7 +200,7 @@ export default function AdminDashboardPage() {
           value={(stats?.pendingOrders ?? 0).toLocaleString()}
           delta={`/ ${(stats?.totalOrders ?? 0).toLocaleString()} tổng đơn`}
           positive={false}
-          sparkData={SPARK.orders} color="var(--color-danger)"
+          sparkData={SPARK.orders} color="#F43F5E"
         />
       </div>
 
@@ -192,60 +210,29 @@ export default function AdminDashboardPage() {
         <div className="card p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-1">
             <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Revenue · 30 days</p>
-            <span className="font-mono text-[11px] text-success">+12.4% vs prev</span>
+            {(() => {
+              const cur  = stats?.revenueThisMonth ?? 0;
+              const prev = stats?.revenuePrevMonth ?? 0;
+              if (prev > 0) {
+                const pct  = ((cur - prev) / prev * 100).toFixed(1);
+                const up   = cur >= prev;
+                return (
+                  <span className={cn('font-mono text-[11px]', up ? 'text-success' : 'text-danger')}>
+                    {up ? '▲' : '▼'} {Math.abs(pct)}% vs tháng trước
+                  </span>
+                );
+              }
+              return (
+                <span className="font-mono text-[11px] text-ink-3">
+                  tháng này: {fmtCompact(cur)}đ
+                </span>
+              );
+            })()}
           </div>
           <p className="font-mono font-bold text-[22px] mb-4">
             {fmtCompact(stats?.totalRevenue ?? 487_234_000)}đ
           </p>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={revenueChart ?? MOCK_REVENUE} margin={{ top: 5, right: 8, left: 0, bottom: 5 }}>
-              <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="var(--color-accent)" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={chart.grid}
-                vertical={false}
-              />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 10, fill: chart.tick }}
-                tickFormatter={d => {
-                  if (!d) return '';
-                  const [, m, day] = d.split('-');
-                  return `${day}/${m}`;
-                }}
-                axisLine={false} tickLine={false}
-                interval={4}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: chart.tickFaint }}
-                tickFormatter={v => `${(v / 1_000_000).toFixed(0)}M`}
-                axisLine={false} tickLine={false}
-                width={36}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--color-bg-2)',
-                  border: `1px solid ${chart.grid}`,
-                  borderRadius: 8, fontSize: 12,
-                  color: 'var(--color-ink)',
-                }}
-                formatter={v => [formatVND(v), 'Doanh thu']}
-                labelFormatter={d => {
-                  if (!d) return '';
-                  const [, m, day] = d.split('-');
-                  return `${day}/${m}`;
-                }}
-              />
-              <Area type="monotone" dataKey="revenue"
-                stroke="var(--color-accent)" strokeWidth={2}
-                fill="url(#revGrad)" dot={false} activeDot={{ r: 4 }} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <RevenueBarChart data={revenueChart ?? MOCK_REVENUE} chart={chart} />
         </div>
 
         {/* Top courses */}
@@ -319,6 +306,71 @@ export default function AdminDashboardPage() {
 }
 
 /* ── Sub-components ─────────────────────────────────────────────── */
+
+function RevenueBarChart({ data, chart }) {
+  const id = 'revGrad';
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={chart.accent} stopOpacity={0.22} />
+            <stop offset="100%" stopColor={chart.accent} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+
+        <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 10, fill: chart.tick }}
+          tickFormatter={d => {
+            if (!d) return '';
+            const [, m, day] = d.split('-');
+            return `${day}/${m}`;
+          }}
+          axisLine={false} tickLine={false}
+          interval={4}
+        />
+        <YAxis
+          tick={{ fontSize: 10, fill: chart.tickFaint }}
+          tickFormatter={v => `${(v / 1_000_000).toFixed(0)}M`}
+          axisLine={false} tickLine={false}
+          width={36}
+        />
+
+        <Tooltip
+          cursor={{ stroke: chart.tick, strokeWidth: 1, strokeDasharray: '4 2' }}
+          contentStyle={{
+            background: chart.bg,
+            border: `1px solid ${chart.grid}`,
+            borderRadius: 8,
+            fontSize: 12,
+            color: chart.ink,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+          }}
+          itemStyle={{ color: chart.ink2 }}
+          formatter={v => [formatVND(v), 'Doanh thu']}
+          labelFormatter={d => {
+            if (!d) return '';
+            const [, m, day] = d.split('-');
+            return `${day}/${m}`;
+          }}
+        />
+
+        <Area
+          type="monotone"
+          dataKey="revenue"
+          stroke={chart.accent}
+          strokeWidth={2}
+          fill={`url(#${id})`}
+          dot={false}
+          activeDot={{ r: 4, fill: chart.accent, strokeWidth: 0 }}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
 
 function StatCard({ label, value, delta, positive, sparkData, color }) {
   return (

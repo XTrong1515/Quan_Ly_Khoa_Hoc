@@ -3,7 +3,7 @@ const pool = require('../config/db');
 /* ── GET /api/home ────────────────────────────────────────────── */
 async function home(req, res) {
   try {
-    const [[categories], [featured], [newest]] = await Promise.all([
+    const [[categories], [featured], [newest], [reviews]] = await Promise.all([
       pool.query(`
         SELECT c.id, c.name, c.slug, c.icon, c.color,
                COUNT(co.id) AS count
@@ -14,6 +14,7 @@ async function home(req, res) {
       `),
       pool.query(`
         SELECT co.id, co.title, co.slug, co.glyph, co.thumb,
+               co.thumbnail_url,
                co.price, co.original_price AS originalPrice,
                co.level,
                ROUND(co.total_duration_minutes / 60.0, 1) AS hours,
@@ -29,6 +30,7 @@ async function home(req, res) {
       `),
       pool.query(`
         SELECT co.id, co.title, co.slug, co.glyph, co.thumb,
+               co.thumbnail_url,
                co.price, co.original_price AS originalPrice,
                co.level,
                ROUND(co.total_duration_minutes / 60.0, 1) AS hours,
@@ -42,9 +44,22 @@ async function home(req, res) {
         ORDER BY co.created_at DESC
         LIMIT 4
       `),
+      pool.query(`
+        SELECT r.id, r.rating, r.comment,
+               u.full_name AS name, u.avatar_url, u.bio,
+               co.title    AS course
+        FROM   reviews r
+        JOIN   users   u  ON u.id  = r.user_id
+        JOIN   courses co ON co.id = r.course_id
+        WHERE  r.status = 'VISIBLE'
+          AND  r.comment IS NOT NULL
+          AND  r.comment != ''
+        ORDER BY r.rating DESC, r.created_at DESC
+        LIMIT 3
+      `),
     ]);
 
-    return res.json({ categories, featured, newest });
+    return res.json({ categories, featured, newest, reviews });
   } catch (err) {
     console.error('[home]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });

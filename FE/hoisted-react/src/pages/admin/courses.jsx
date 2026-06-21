@@ -79,7 +79,13 @@ export default function AdminCoursesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/api/admin/courses/${id}`),
-    onSuccess: () => { toast.success('Đã xóa khóa học'); qc.invalidateQueries({ queryKey: ['admin-courses'] }); },
+    onSuccess: () => {
+      toast.success('Đã xóa khóa học');
+      qc.invalidateQueries({ queryKey: ['admin-courses'] });
+      qc.invalidateQueries({ queryKey: ['home'] });
+      qc.invalidateQueries({ queryKey: ['courses'] });
+      qc.invalidateQueries({ queryKey: ['course'] });
+    },
     onError: (err) => toast.error(apiMessage(err)),
   });
 
@@ -295,7 +301,13 @@ export default function AdminCoursesPage() {
           initial={modal.data}
           categories={categories}
           onClose={() => setModal(null)}
-          onSaved={() => { setModal(null); qc.invalidateQueries({ queryKey: ['admin-courses'] }); }}
+          onSaved={() => {
+            setModal(null);
+            qc.invalidateQueries({ queryKey: ['admin-courses'] });
+            qc.invalidateQueries({ queryKey: ['home'] });
+            qc.invalidateQueries({ queryKey: ['courses'] });
+            qc.invalidateQueries({ queryKey: ['course'] });
+          }}
         />
       )}
     </div>
@@ -326,6 +338,9 @@ function StatusDropdown({ course }) {
     onSuccess: (_, status) => {
       toast.success(`Đã chuyển sang "${STATUS_OPTIONS.find(o => o.value === status)?.label}"`);
       qc.invalidateQueries({ queryKey: ['admin-courses'] });
+      qc.invalidateQueries({ queryKey: ['home'] });
+      qc.invalidateQueries({ queryKey: ['courses'] });
+      qc.invalidateQueries({ queryKey: ['course'] });
       setOpen(false);
     },
     onError: (err) => toast.error(apiMessage(err)),
