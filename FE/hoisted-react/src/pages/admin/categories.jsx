@@ -97,11 +97,11 @@ export default function AdminCategoriesPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-5 sm:p-8">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1">// Admin / Danh mục</p>
+          <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ danh-mục</span></p>
           <div className="flex items-center gap-3">
             <h1 className="font-display font-bold text-[24px]">Quản lý danh mục</h1>
             {!isLoading && (

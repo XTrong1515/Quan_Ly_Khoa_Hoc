@@ -12,7 +12,7 @@ async function platformStats(req, res) {
         (SELECT ROUND(AVG(rating), 1) FROM courses WHERE status = 'PUBLISHED' AND rating > 0)     AS avgRating,
         (SELECT COUNT(*)   FROM reviews WHERE status = 'APPROVED')                                AS totalReviews
     `);
-    return res.json(row);
+    return res.json({ ...row, avgRating: row.avgRating != null ? Number(row.avgRating) : 0 });
   } catch (err) {
     console.error('[stats]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });

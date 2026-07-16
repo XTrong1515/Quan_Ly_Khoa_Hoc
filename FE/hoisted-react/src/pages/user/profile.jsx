@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Check, Upload, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Check, Upload, Trash2, User, KeyRound, ImageUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { AccountShell } from '@/components/layout/account-shell.jsx';
+import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { useAuth } from '@/store/auth';
 import { api, apiMessage } from '@/lib/api';
@@ -45,23 +46,31 @@ const passwordSchema = z
 /* ── Page ────────────────────────────────────────────────────── */
 export default function ProfileSettingsPage() {
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 font-mono text-[12px] text-ink-3 mb-5">
-        <Link to="/" className="hover:text-ink-2 transition-colors">Trang chủ</Link>
-        <span>/</span>
-        <Link to="/me" className="hover:text-ink-2 transition-colors">Tài khoản</Link>
-        <span>/</span>
-        <span className="text-ink-2">Cài đặt</span>
-      </div>
-
-      <h1 className="text-2xl font-bold text-ink mb-8">Cài đặt tài khoản</h1>
-
-      <div className="flex flex-col gap-4">
+    <AccountShell title="Cài đặt tài khoản" desc="Hồ sơ, ảnh đại diện và bảo mật">
+      <Seo title="Cài đặt tài khoản — Hoisted" />
+      <div className="max-w-2xl flex flex-col gap-5">
         <AvatarSection />
         <InfoSection />
         <PasswordSection />
       </div>
+    </AccountShell>
+  );
+}
+
+/* Card header shared by the three settings sections */
+function SectionHead({ icon: Icon, title, desc, aside }) {
+  return (
+    <div className="flex items-start justify-between gap-4 mb-5">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-accent/10 text-accent grid place-items-center flex-shrink-0">
+          <Icon className="w-[18px] h-[18px]" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 className="font-display font-semibold text-[15px] leading-tight">{title}</h2>
+          {desc && <p className="text-[12.5px] text-ink-3 mt-0.5">{desc}</p>}
+        </div>
+      </div>
+      {aside}
     </div>
   );
 }
@@ -106,7 +115,7 @@ function AvatarSection() {
 
   return (
     <div className="card p-6">
-      <p className="eyebrow mb-4">// Avatar</p>
+      <SectionHead icon={ImageUp} title="Ảnh đại diện" desc="Hiển thị trên hồ sơ và bình luận của bạn" />
       <div className="flex items-center gap-5">
         {/* Avatar preview */}
         {user?.avatar ? (
@@ -208,21 +217,19 @@ function InfoSection() {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="card p-6">
-        {/* Section header */}
-        <div className="flex justify-between items-start mb-5">
-          <div>
-            <p className="eyebrow">// Thông tin cá nhân</p>
-            <p className="text-[13px] text-ink-2 mt-1.5">Hồ sơ public</p>
-          </div>
-          {dirtyCount > 0 && (
-            <span className="font-mono text-[11.5px] text-warn">
-              {dirtyCount} thay đổi chưa lưu
+        <SectionHead
+          icon={User}
+          title="Thông tin cá nhân"
+          desc="Hồ sơ public của bạn"
+          aside={dirtyCount > 0 && (
+            <span className="font-mono text-[11.5px] text-warn whitespace-nowrap">
+              ● {dirtyCount} thay đổi chưa lưu
             </span>
           )}
-        </div>
+        />
 
         {/* 2-column grid: name / username, email / phone */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Họ và tên" error={errors.name?.message}>
             <input
               {...register('name')}
@@ -319,7 +326,7 @@ function PasswordSection() {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="card p-6">
-        <p className="eyebrow mb-5">// Đổi mật khẩu</p>
+        <SectionHead icon={KeyRound} title="Đổi mật khẩu" desc="Các thiết bị khác sẽ bị đăng xuất sau khi đổi" />
 
         {/* Mật khẩu hiện tại — full width */}
         <Field label="Mật khẩu hiện tại" error={errors.currentPassword?.message}>
@@ -336,7 +343,7 @@ function PasswordSection() {
         </Field>
 
         {/* Mật khẩu mới + xác nhận — 2 cột */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <Field label="Mật khẩu mới" error={errors.newPassword?.message}>
             <div className="relative">
               <input

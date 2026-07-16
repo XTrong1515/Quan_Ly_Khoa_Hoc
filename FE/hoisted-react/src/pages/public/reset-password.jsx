@@ -3,10 +3,12 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Check, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Check, ShieldCheck, KeyRound, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Logo } from '@/components/logo.jsx';
+import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
+import { AuthScreen } from './forgot-password.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -60,107 +62,136 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6"
-           style={{ background: 'linear-gradient(180deg, #0F1525 0%, #0B0F19 100%)' }}>
-        <div className="text-center">
-          <p className="text-danger font-mono mb-4">Link không hợp lệ.</p>
-          <Link to="/forgot-password" className="text-accent underline">Yêu cầu link mới →</Link>
+      <AuthScreen>
+        <Seo title="Link không hợp lệ — Hoisted" />
+        <div className="mb-8"><Logo size={18} /></div>
+        <div className="bg-bg rounded-2xl border border-line p-8 text-center shadow-2xl shadow-black/40">
+          <div className="w-14 h-14 rounded-2xl bg-danger/10 grid place-items-center mx-auto mb-5">
+            <AlertTriangle className="w-6 h-6 text-danger" aria-hidden="true" />
+          </div>
+          <h1 className="display text-[24px] mb-2">Link không hợp lệ</h1>
+          <p className="text-ink-2 text-[13.5px] leading-relaxed mb-6">
+            Link đặt lại mật khẩu bị thiếu hoặc đã hết hạn. Yêu cầu một link mới để tiếp tục.
+          </p>
+          <Link to="/forgot-password">
+            <Button size="lg" className="w-full justify-center">Yêu cầu link mới →</Button>
+          </Link>
         </div>
-      </div>
+      </AuthScreen>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6"
-         style={{ background: 'linear-gradient(180deg, #0F1525 0%, #0B0F19 100%)' }}>
-      <div className="w-full max-w-[420px]">
-        <div className="mb-8"><Logo size={18} /></div>
+    <AuthScreen>
+      <Seo title="Đặt lại mật khẩu — Hoisted" />
+      <div className="mb-8"><Logo size={18} /></div>
 
-        {done ? (
-          <div className="bg-bg rounded-xl border border-line p-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-success/15 grid place-items-center mx-auto mb-4">
-              <ShieldCheck className="w-6 h-6 text-success" />
-            </div>
-            <h1 className="display text-[22px] mb-2">Mật khẩu đã được đặt lại</h1>
-            <p className="text-ink-3 text-[13.5px] mb-6">Bạn có thể đăng nhập bằng mật khẩu mới.</p>
-            <Button size="lg" className="w-full justify-center" onClick={() => navigate('/login')}>
-              Đến trang đăng nhập →
-            </Button>
+      {done ? (
+        <div className="bg-bg rounded-2xl border border-line p-8 text-center shadow-2xl shadow-black/40">
+          <div className="w-14 h-14 rounded-2xl bg-success/10 grid place-items-center mx-auto mb-5 shadow-[0_0_36px_rgb(52_211_153/0.2)]">
+            <ShieldCheck className="w-6 h-6 text-success" aria-hidden="true" />
           </div>
-        ) : (
-          <div className="bg-bg rounded-xl border border-line p-8">
-            <h1 className="display text-[22px] mb-1">Đặt lại mật khẩu</h1>
-            <p className="text-ink-3 text-[13.5px] mb-6">Tạo mật khẩu mới cho tài khoản của bạn.</p>
+          <h1 className="display text-[24px] mb-2">Mật khẩu đã được đặt lại</h1>
+          <p className="text-ink-3 text-[13.5px] mb-6">Bạn có thể đăng nhập bằng mật khẩu mới.</p>
+          <Button
+            size="lg"
+            className="w-full justify-center shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+            onClick={() => navigate('/login')}
+          >
+            Đến trang đăng nhập →
+          </Button>
+        </div>
+      ) : (
+        <div className="bg-bg rounded-2xl border border-line p-8 shadow-2xl shadow-black/40">
+          <p className="eyebrow mb-4">
+            <span className="text-accent">~/hoisted</span> <span className="text-ink-3">/ đặt-lại-mật-khẩu</span>
+          </p>
+          <div className="w-11 h-11 rounded-xl bg-accent/10 grid place-items-center mb-4">
+            <KeyRound className="w-5 h-5 text-accent" aria-hidden="true" />
+          </div>
+          <h1 className="display text-[24px] mb-1.5">Đặt lại mật khẩu</h1>
+          <p className="text-ink-3 text-[13.5px] mb-6">Tạo mật khẩu mới cho tài khoản của bạn.</p>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-              {/* New password */}
-              <div>
-                <label className="font-mono text-[12.5px] font-medium text-ink-2 mb-1.5 block">
-                  Mật khẩu mới
-                </label>
-                <div className="relative">
-                  <input
-                    {...register('password')}
-                    type={showPw ? 'text' : 'password'}
-                    className="input h-[42px] text-sm pr-10 font-mono w-full"
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                  />
-                  <button type="button" onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-2 top-2 w-7 h-[26px] grid place-items-center text-ink-3 hover:text-ink">
-                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="mt-1 text-xs text-danger font-mono">{errors.password.message}</p>
-                )}
-                {pw && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {REQS.map((r) => {
-                      const ok = r.test(pw);
-                      return (
-                        <span key={r.label} className={cn(
-                          'flex items-center gap-1 font-mono text-[11px]',
-                          ok ? 'text-success' : 'text-ink-3',
-                        )}>
-                          <span className={cn(
-                            'w-3 h-3 rounded-full grid place-items-center',
-                            ok ? 'bg-success' : 'border border-line',
-                          )}>
-                            {ok && <Check className="w-2 h-2 text-[#0B0F19]" strokeWidth={4} />}
-                          </span>
-                          {r.label}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Confirm */}
-              <div>
-                <label className="font-mono text-[12.5px] font-medium text-ink-2 mb-1.5 block">
-                  Xác nhận mật khẩu
-                </label>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            {/* New password */}
+            <div>
+              <label htmlFor="rp-password" className="font-mono text-[12.5px] font-medium text-ink-2 mb-1.5 block">
+                Mật khẩu mới
+              </label>
+              <div className="relative">
                 <input
-                  {...register('confirm')}
-                  type="password"
-                  className="input h-[42px] text-sm font-mono w-full"
+                  id="rp-password"
+                  {...register('password')}
+                  type={showPw ? 'text' : 'password'}
+                  className="input h-[44px] text-sm pr-11 font-mono w-full rounded-xl"
                   placeholder="••••••••"
                   autoComplete="new-password"
+                  autoFocus
                 />
-                {errors.confirm && (
-                  <p className="mt-1 text-xs text-danger font-mono">{errors.confirm.message}</p>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPw((v) => !v)}
+                  aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg grid place-items-center text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors cursor-pointer"
+                >
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+              {errors.password && (
+                <p className="mt-1.5 text-xs text-danger font-mono" role="alert">{errors.password.message}</p>
+              )}
+              {pw && (
+                <div className="flex flex-wrap gap-2.5 mt-2.5">
+                  {REQS.map((r) => {
+                    const ok = r.test(pw);
+                    return (
+                      <span key={r.label} className={cn(
+                        'flex items-center gap-1.5 font-mono text-[11px]',
+                        ok ? 'text-success' : 'text-ink-3',
+                      )}>
+                        <span className={cn(
+                          'w-[13px] h-[13px] rounded-full grid place-items-center',
+                          ok ? 'bg-success' : 'border border-line',
+                        )} aria-hidden="true">
+                          {ok && <Check className="w-2 h-2 text-[#0B0F19]" strokeWidth={4} />}
+                        </span>
+                        {r.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
-              <Button type="submit" size="lg" disabled={isSubmitting} className="justify-center mt-1">
-                {isSubmitting ? 'Đang lưu…' : 'Đặt lại mật khẩu →'}
-              </Button>
-            </form>
-          </div>
-        )}
-      </div>
-    </div>
+            {/* Confirm */}
+            <div>
+              <label htmlFor="rp-confirm" className="font-mono text-[12.5px] font-medium text-ink-2 mb-1.5 block">
+                Xác nhận mật khẩu
+              </label>
+              <input
+                id="rp-confirm"
+                {...register('confirm')}
+                type="password"
+                className="input h-[44px] text-sm font-mono w-full rounded-xl"
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
+              {errors.confirm && (
+                <p className="mt-1.5 text-xs text-danger font-mono" role="alert">{errors.confirm.message}</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isSubmitting}
+              className="justify-center mt-1 shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+            >
+              {isSubmitting ? 'Đang lưu…' : 'Đặt lại mật khẩu →'}
+            </Button>
+          </form>
+        </div>
+      )}
+    </AuthScreen>
   );
 }

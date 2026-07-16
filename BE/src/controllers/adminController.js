@@ -4,8 +4,13 @@ const { createNotification } = require('./notificationController');
 /* ─────────────────────────────────────────────────────────────────
    UC20 — Dashboard
    ───────────────────────────────────────────────────────────────── */
+const REVENUE_RANGES = [7, 30, 60, 365];
+
 async function dashboard(req, res) {
   try {
+    const range = REVENUE_RANGES.includes(Number(req.query.range))
+      ? Number(req.query.range)
+      : 30;
     const [statsRows] = await pool.query(`
       SELECT
         (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'PAID')                              AS totalRevenue,
@@ -24,10 +29,10 @@ async function dashboard(req, res) {
              CAST(SUM(total_amount) AS DECIMAL(14,2)) AS revenue
       FROM orders
       WHERE status = 'PAID'
-        AND paid_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+        AND paid_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
       GROUP BY DATE_FORMAT(paid_at, '%Y-%m-%d')
       ORDER BY date ASC
-    `);
+    `, [range - 1]);
 
     const [topCourses] = await pool.query(`
       SELECT c.title, c.student_count AS students,

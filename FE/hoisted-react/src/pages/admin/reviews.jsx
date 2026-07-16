@@ -33,8 +33,11 @@ export default function AdminReviewsPage() {
   });
 
   return (
-    <div className="p-8">
-      <h1 className="font-display font-bold text-[24px] mb-6">Đánh giá</h1>
+    <div className="p-5 sm:p-8">
+      <div className="mb-6">
+        <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ đánh-giá</span></p>
+        <h1 className="font-display font-bold text-[24px]">Quản lý đánh giá</h1>
+      </div>
 
       {/* Filters */}
       <div className="flex gap-3 mb-5 flex-wrap">

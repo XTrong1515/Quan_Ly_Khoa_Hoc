@@ -105,11 +105,11 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-5 sm:p-8">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1">// Admin / Người dùng</p>
+          <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ người-dùng</span></p>
           <h1 className="font-display font-bold text-[24px]">Quản lý người dùng</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -134,12 +134,14 @@ export default function AdminUsersPage() {
           { label: 'Admin',              value: stats.admins,        delta: null,    positive: true  },
           { label: 'Đã khóa',            value: stats.locked,        delta: null,    positive: false },
         ].map(({ label, value, positive }) => (
-          <div key={label} className="card p-5">
-            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1.5">{label}</p>
-            <p className="font-mono font-bold text-[22px] text-ink leading-none mb-1">
+          <div key={label} className="card p-5 hover:border-accent/25 transition-colors">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', positive ? 'bg-success' : 'bg-danger')} aria-hidden="true" />
+              <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
+            </div>
+            <p className="font-mono font-bold text-[24px] text-ink leading-none tabular-nums">
               {value != null ? Number(value).toLocaleString() : '—'}
             </p>
-            <div className={cn('w-1.5 h-1.5 rounded-full', positive ? 'bg-success' : 'bg-danger')} />
           </div>
         ))}
       </div>

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, CreditCard, ShoppingBag, AlertTriangle, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { Clock, CreditCard, ShoppingBag, AlertTriangle, ChevronLeft, CheckCircle2, Check, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
 import { api, apiMessage } from '@/lib/api';
@@ -38,6 +39,58 @@ function splitTime(ms) {
   };
 }
 
+/* ── Checkout stepper: Giỏ hàng → Thanh toán → Hoàn tất ─────────── */
+function Stepper({ current }) {
+  const steps = ['Giỏ hàng', 'Thanh toán', 'Hoàn tất'];
+  return (
+    <ol className="flex items-center gap-2 mb-8" aria-label="Tiến trình thanh toán">
+      {steps.map((s, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <li key={s} className="flex items-center gap-2">
+            {i > 0 && <span className={cn('w-8 h-px', done || active ? 'bg-accent' : 'bg-line')} aria-hidden="true" />}
+            <span className={cn(
+              'flex items-center gap-2 font-mono text-[12px]',
+              active ? 'text-accent font-semibold' : done ? 'text-ink-2' : 'text-ink-3',
+            )}>
+              <span className={cn(
+                'w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold',
+                done ? 'bg-accent/15 text-accent' : active ? 'bg-accent text-accent-ink' : 'border border-line',
+              )} aria-hidden="true">
+                {done ? <Check className="w-3 h-3" strokeWidth={3} /> : i + 1}
+              </span>
+              <span className="hidden sm:inline">{s}</span>
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/* Centered status screen shared by paid / expired states */
+function StatusScreen({ tone, icon: Icon, eyebrow, title, children, actions }) {
+  return (
+    <div className="relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
+      <div className="relative max-w-xl mx-auto px-6 py-24 text-center">
+        <div className={cn(
+          'w-20 h-20 rounded-2xl grid place-items-center mx-auto mb-6',
+          tone === 'success' ? 'bg-success/10 text-success shadow-[0_0_40px_rgb(52_211_153/0.25)]'
+                             : 'bg-danger/10 text-danger shadow-[0_0_40px_rgb(244_63_94/0.2)]',
+        )}>
+          <Icon className="w-9 h-9" aria-hidden="true" />
+        </div>
+        <p className="eyebrow mb-2">{eyebrow}</p>
+        <h1 className="display text-[28px] mb-3">{title}</h1>
+        <div className="text-ink-2 text-[14px] leading-relaxed mb-8">{children}</div>
+        <div className="flex flex-wrap gap-3 justify-center">{actions}</div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Page ────────────────────────────────────────────────────────── */
 export default function PaymentPendingPage() {
   const { orderId } = useParams();
@@ -70,22 +123,26 @@ export default function PaymentPendingPage() {
   /* ── Loading ── */
   if (isLoading) {
     return (
-      <div className="max-w-xl mx-auto px-6 py-20 animate-pulse space-y-4">
+      <div className="max-w-xl mx-auto px-6 py-20 animate-pulse motion-reduce:animate-none space-y-4" aria-hidden="true">
         <div className="h-4 bg-bg-3 rounded w-1/4" />
         <div className="h-8 bg-bg-3 rounded w-1/2" />
-        <div className="h-48 bg-bg-3 rounded-xl" />
-        <div className="h-12 bg-bg-3 rounded-lg" />
+        <div className="h-48 bg-bg-3 rounded-2xl" />
+        <div className="h-12 bg-bg-3 rounded-xl" />
       </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <div className="max-w-xl mx-auto px-6 py-20 text-center">
-        <p className="font-mono text-ink-3 mb-3">// 404</p>
-        <p className="text-ink-2 mb-5">Không tìm thấy đơn hàng.</p>
-        <Link to="/me/orders"><Button variant="ghost">← Đơn hàng của tôi</Button></Link>
-      </div>
+      <StatusScreen
+        tone="danger"
+        icon={AlertTriangle}
+        eyebrow="// không tìm thấy"
+        title="Không tìm thấy đơn hàng"
+        actions={<Link to="/me/orders"><Button variant="ghost">← Đơn hàng của tôi</Button></Link>}
+      >
+        Đơn hàng không tồn tại hoặc không thuộc tài khoản của bạn.
+      </StatusScreen>
     );
   }
 
@@ -96,41 +153,48 @@ export default function PaymentPendingPage() {
   /* ── Paid state ── */
   if (isPaid) {
     return (
-      <div className="max-w-xl mx-auto px-6 py-20 text-center">
-        <div className="w-16 h-16 rounded-full bg-success/10 grid place-items-center mx-auto mb-5">
-          <CheckCircle2 className="w-8 h-8 text-success" />
-        </div>
-        <p className="eyebrow mb-2">// đã thanh toán</p>
-        <h1 className="display text-[26px] mb-3">Thanh toán thành công!</h1>
-        <p className="text-ink-2 text-[14px] mb-7">
+      <>
+        <Seo title="Thanh toán thành công — Hoisted" />
+        <StatusScreen
+          tone="success"
+          icon={CheckCircle2}
+          eyebrow="// đã thanh toán"
+          title="Thanh toán thành công!"
+          actions={
+            <>
+              <Link to="/me"><Button size="lg">Bắt đầu học ngay →</Button></Link>
+              <Link to="/me/orders"><Button size="lg" variant="ghost">Xem đơn hàng</Button></Link>
+            </>
+          }
+        >
           Đơn hàng <span className="font-mono font-semibold text-ink">{data.order_code}</span> đã được xác nhận.
-        </p>
-        <div className="flex gap-3 justify-center">
-          <Link to="/me"><Button>Bắt đầu học ngay →</Button></Link>
-          <Link to="/me/orders"><Button variant="ghost">Xem đơn hàng</Button></Link>
-        </div>
-      </div>
+          Khóa học đã mở trong mục "Học tập của tôi".
+        </StatusScreen>
+      </>
     );
   }
 
   /* ── Cancelled / expired state ── */
   if (isCancelled || isExpired) {
     return (
-      <div className="max-w-xl mx-auto px-6 py-20 text-center">
-        <div className="w-16 h-16 rounded-full bg-danger/10 grid place-items-center mx-auto mb-5">
-          <AlertTriangle className="w-8 h-8 text-danger" />
-        </div>
-        <p className="eyebrow mb-2">// đơn hàng hết hạn</p>
-        <h1 className="display text-[26px] mb-3">Đơn hàng đã hết hạn</h1>
-        <p className="text-ink-2 text-[14px] mb-7">
+      <>
+        <Seo title="Đơn hàng hết hạn — Hoisted" />
+        <StatusScreen
+          tone="danger"
+          icon={AlertTriangle}
+          eyebrow="// đơn hàng hết hạn"
+          title="Đơn hàng đã hết hạn"
+          actions={
+            <>
+              <Link to="/courses"><Button size="lg">Mua lại</Button></Link>
+              <Link to="/me/orders"><Button size="lg" variant="ghost">← Đơn hàng của tôi</Button></Link>
+            </>
+          }
+        >
           Đơn hàng <span className="font-mono font-semibold text-ink">{data.order_code}</span> đã quá 24h
           và được hủy tự động. Bạn có thể thêm khóa học vào giỏ và đặt lại.
-        </p>
-        <div className="flex gap-3 justify-center">
-          <Link to="/courses"><Button>Mua lại</Button></Link>
-          <Link to="/me/orders"><Button variant="ghost">← Đơn hàng của tôi</Button></Link>
-        </div>
-      </div>
+        </StatusScreen>
+      </>
     );
   }
 
@@ -145,100 +209,134 @@ export default function PaymentPendingPage() {
   const urgency = remainingMs != null && remainingMs < 3_600_000; // < 1h
 
   return (
-    <div className="max-w-xl mx-auto px-6 py-12">
-      {/* Back */}
-      <Link
-        to="/me/orders"
-        className="inline-flex items-center gap-1 font-mono text-[12px] text-ink-3 hover:text-ink mb-6 transition-colors">
-        <ChevronLeft className="w-3.5 h-3.5" /> Đơn hàng của tôi
-      </Link>
-
-      <p className="eyebrow mb-2">// thanh toán</p>
-      <h1 className="display text-[28px] mb-1">Hoàn tất thanh toán</h1>
-      <div className="flex items-center gap-2 mb-8">
-        <span className="font-mono text-[13px] text-ink-2">{data.order_code}</span>
-        <StatusBadge status={data.status} />
+    <div className="relative overflow-hidden">
+      <Seo title={`Thanh toán đơn ${data.order_code} — Hoisted`} />
+      <div className="absolute inset-x-0 top-0 h-[320px] pointer-events-none" aria-hidden="true">
+        <div className="absolute inset-0 bg-grid mask-fade-y" />
+        <div
+          className="absolute inset-0"
+          style={{ backgroundImage: 'radial-gradient(ellipse 60% 80% at 50% 0%, rgb(var(--accent) / .08) 0%, transparent 60%)' }}
+        />
       </div>
 
-      {/* ── Countdown card ── */}
-      <div className={cn(
-        'card p-6 mb-6 text-center border-2 transition-colors',
-        urgency ? 'border-danger/40 bg-danger/5' : 'border-accent/30',
-      )}>
-        <div className="flex items-center justify-center gap-1.5 mb-3">
-          <Clock className={cn('w-4 h-4', urgency ? 'text-danger' : 'text-accent')} />
-          <p className={cn('font-mono text-[12px] font-semibold uppercase tracking-wide',
-            urgency ? 'text-danger' : 'text-accent',
-          )}>
-            Thời gian còn lại để thanh toán
-          </p>
+      <div className="relative max-w-xl mx-auto px-5 sm:px-6 py-10">
+        {/* Back */}
+        <Link
+          to="/me/orders"
+          className="inline-flex items-center gap-1 font-mono text-[12px] text-ink-3 hover:text-ink mb-6 transition-colors"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" aria-hidden="true" /> Đơn hàng của tôi
+        </Link>
+
+        <Stepper current={1} />
+
+        <h1 className="display text-[28px] sm:text-[32px] mb-2">Hoàn tất thanh toán</h1>
+        <div className="flex items-center gap-2.5 mb-8">
+          <span className="font-mono text-[13px] text-ink-2">{data.order_code}</span>
+          <StatusBadge status={data.status} />
         </div>
 
-        {/* HH : MM : SS */}
-        <div className="flex items-end justify-center gap-2 mb-3">
-          {[
-            { val: time.h,  label: 'giờ'  },
-            { val: time.m,  label: 'phút' },
-            { val: time.s,  label: 'giây' },
-          ].map(({ val, label }, i) => (
-            <div key={label} className="flex items-end gap-2">
-              {i > 0 && (
-                <span className={cn(
-                  'text-[32px] font-mono font-bold pb-5 leading-none',
-                  urgency ? 'text-danger' : 'text-ink',
-                )}>:</span>
-              )}
-              <div className="flex flex-col items-center">
-                <span className={cn(
-                  'font-mono font-bold text-[52px] leading-none tabular-nums',
-                  urgency ? 'text-danger' : 'text-ink',
-                )}>{val}</span>
-                <span className="font-mono text-[11px] text-ink-3 mt-1 uppercase tracking-wide">{label}</span>
+        {/* ── Countdown board ── */}
+        <div className={cn(
+          'card p-6 sm:p-7 mb-5 text-center border-2 transition-colors relative overflow-hidden',
+          urgency ? 'border-danger/40' : 'border-accent/30',
+        )}>
+          <div
+            className="absolute inset-0 pointer-events-none"
+            aria-hidden="true"
+            style={{
+              background: urgency
+                ? 'radial-gradient(ellipse at 50% 0%, rgb(244 63 94 / .07) 0%, transparent 60%)'
+                : 'radial-gradient(ellipse at 50% 0%, rgb(var(--accent) / .07) 0%, transparent 60%)',
+            }}
+          />
+          <div className="relative">
+            <div className="flex items-center justify-center gap-1.5 mb-5">
+              <Clock className={cn('w-4 h-4', urgency ? 'text-danger' : 'text-accent')} aria-hidden="true" />
+              <p className={cn(
+                'font-mono text-[11.5px] font-semibold uppercase tracking-[0.08em]',
+                urgency ? 'text-danger' : 'text-accent',
+              )}>
+                Thời gian còn lại để thanh toán
+              </p>
+            </div>
+
+            {/* HH : MM : SS flight-board cells */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4" role="timer" aria-label={`Còn ${time.h} giờ ${time.m} phút ${time.s} giây`}>
+              {[
+                { val: time.h, label: 'giờ'  },
+                { val: time.m, label: 'phút' },
+                { val: time.s, label: 'giây' },
+              ].map(({ val, label }, i) => (
+                <div key={label} className="flex items-center gap-2 sm:gap-3">
+                  {i > 0 && (
+                    <span className={cn(
+                      'text-[28px] font-mono font-bold leading-none pb-6',
+                      urgency ? 'text-danger/60' : 'text-ink-3',
+                    )} aria-hidden="true">:</span>
+                  )}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={cn(
+                      'soft w-[72px] sm:w-[84px] py-3.5 rounded-xl border',
+                      urgency ? 'border-danger/25' : 'border-line',
+                    )}>
+                      <span className={cn(
+                        'font-mono font-bold text-[38px] sm:text-[44px] leading-none tabular-nums',
+                        urgency ? 'text-danger' : 'text-ink',
+                      )}>{val}</span>
+                    </div>
+                    <span className="font-mono text-[10.5px] text-ink-3 uppercase tracking-[0.1em]">{label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {expiryLabel && (
+              <p className="font-mono text-[12px] text-ink-3">
+                Hết hạn vào <span className="text-ink-2 font-semibold">{expiryLabel}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Order items ── */}
+        <div className="card p-5 sm:p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ShoppingBag className="w-4 h-4 text-accent" aria-hidden="true" />
+            <h2 className="font-display font-semibold text-[14px]">Nội dung đơn hàng</h2>
+          </div>
+          <div className="space-y-2.5">
+            {(data.items ?? []).map((item) => (
+              <div key={item.course_id} className="flex items-center justify-between gap-3 text-[13.5px]">
+                <span className="text-ink-2 flex-1 leading-snug">{item.course_title}</span>
+                <span className="font-mono font-semibold text-ink shrink-0 tabular-nums">{formatVND(item.price)}</span>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="border-t border-line mt-4 pt-4 flex justify-between items-end">
+            <span className="font-semibold text-[14px]">Tổng cộng</span>
+            <span className="font-mono font-bold text-[24px] text-ink leading-none tabular-nums">
+              {formatVND(data.total_amount)}
+            </span>
+          </div>
         </div>
 
-        {expiryLabel && (
-          <p className="font-mono text-[12px] text-ink-3">
-            Hết hạn vào <span className="text-ink-2 font-semibold">{expiryLabel}</span>
-          </p>
-        )}
+        {/* ── Actions ── */}
+        <Button
+          size="lg"
+          className="w-full justify-center mb-4 shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+          disabled={payMutation.isPending}
+          onClick={() => payMutation.mutate()}
+        >
+          <CreditCard className="w-4 h-4" aria-hidden="true" />
+          {payMutation.isPending ? 'Đang chuyển đến VNPay…' : 'Thanh toán qua VNPay'}
+        </Button>
+
+        <p className="flex items-center justify-center gap-1.5 font-mono text-[11px] text-ink-3 text-center">
+          <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
+          Bảo mật SSL · Sau 24h đơn hàng sẽ tự động hủy
+        </p>
       </div>
-
-      {/* ── Order items ── */}
-      <div className="card p-5 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <ShoppingBag className="w-4 h-4 text-ink-3" />
-          <h2 className="font-semibold text-[14px]">Nội dung đơn hàng</h2>
-        </div>
-        <div className="space-y-2.5">
-          {(data.items ?? []).map((item) => (
-            <div key={item.course_id} className="flex items-center justify-between gap-3 text-[13.5px]">
-              <span className="text-ink-2 flex-1 leading-snug">{item.course_title}</span>
-              <span className="font-mono font-semibold text-ink shrink-0">{formatVND(item.price)}</span>
-            </div>
-          ))}
-        </div>
-        <div className="border-t border-line mt-4 pt-3 flex justify-between items-center">
-          <span className="font-semibold text-[14px]">Tổng cộng</span>
-          <span className="font-mono font-bold text-[22px] text-ink">{formatVND(data.total_amount)}</span>
-        </div>
-      </div>
-
-      {/* ── Actions ── */}
-      <Button
-        size="lg"
-        className="w-full justify-center mb-3"
-        disabled={payMutation.isPending}
-        onClick={() => payMutation.mutate()}>
-        <CreditCard className="w-4 h-4" />
-        {payMutation.isPending ? 'Đang chuyển đến VNPay…' : 'Thanh toán qua VNPay'}
-      </Button>
-
-      <p className="font-mono text-[11px] text-ink-3 text-center">
-        Bảo mật SSL • Sau 24h đơn hàng sẽ tự động hủy
-      </p>
     </div>
   );
 }

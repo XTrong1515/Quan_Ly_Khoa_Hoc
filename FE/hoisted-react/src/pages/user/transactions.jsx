@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Receipt } from 'lucide-react';
+import { Receipt, Wallet, Hash } from 'lucide-react';
+import { AccountShell } from '@/components/layout/account-shell.jsx';
+import { Reveal } from '@/components/reveal.jsx';
+import { Seo } from '@/components/seo.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { api } from '@/lib/api';
@@ -20,63 +23,103 @@ export default function TransactionsPage() {
   const total = transactions.reduce((sum, t) => (t.status === 'PAID' ? sum + Number(t.amount) : sum), 0);
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      <p className="eyebrow mb-2">// lịch sử giao dịch</p>
-      <h1 className="display text-[28px] mb-2">Giao dịch</h1>
+    <AccountShell title="Giao dịch" desc="Lịch sử thanh toán qua VNPay">
+      <Seo title="Lịch sử giao dịch — Hoisted" />
 
       {!isLoading && transactions.length > 0 && (
-        <div className="mb-6 p-4 bg-bg-2 rounded-xl border border-line flex items-center gap-4">
-          <div>
-            <p className="font-mono text-[11.5px] text-ink-3 uppercase tracking-wide">Tổng đã thanh toán</p>
-            <p className="font-mono font-bold text-[24px] text-ink">{formatVND(total)}</p>
+        <Reveal>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-7 max-w-xl">
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-accent/10 text-accent grid place-items-center flex-shrink-0">
+                <Wallet className="w-5 h-5" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="font-mono text-[11px] text-ink-3 uppercase tracking-wide mb-1">Tổng đã thanh toán</p>
+                <p className="font-mono font-bold text-[22px] text-ink leading-none tabular-nums">{formatVND(total)}</p>
+              </div>
+            </div>
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-indigo/10 text-indigo grid place-items-center flex-shrink-0">
+                <Hash className="w-5 h-5" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="font-mono text-[11px] text-ink-3 uppercase tracking-wide mb-1">Số giao dịch</p>
+                <p className="font-mono font-bold text-[22px] text-ink leading-none tabular-nums">{transactions.length}</p>
+              </div>
+            </div>
           </div>
-          <div className="ml-auto text-right">
-            <p className="font-mono text-[11.5px] text-ink-3">Số giao dịch</p>
-            <p className="font-mono font-bold text-[20px] text-ink">{transactions.length}</p>
-          </div>
-        </div>
+        </Reveal>
       )}
 
       {isLoading ? (
-        <div className="space-y-2">
+        <div className="space-y-2" aria-hidden="true">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="card p-4 animate-pulse h-16 bg-bg-2" />
+            <div key={i} className="card p-4 animate-pulse motion-reduce:animate-none h-16" />
           ))}
         </div>
       ) : transactions.length === 0 ? (
-        <div className="py-20 text-center">
-          <Receipt className="w-10 h-10 text-ink-3 mx-auto mb-4" />
-          <p className="font-mono text-ink-3 mb-2">// chưa có giao dịch nào</p>
-          <Link to="/courses"><Button variant="ghost">Mua khóa học ngay</Button></Link>
+        <div className="card relative overflow-hidden py-20 px-6 text-center">
+          <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-accent/10 text-accent grid place-items-center mx-auto mb-5">
+              <Receipt className="w-7 h-7" aria-hidden="true" />
+            </div>
+            <h3 className="font-display font-bold text-[17px] mb-1.5">Chưa có giao dịch nào</h3>
+            <p className="text-ink-2 text-[13.5px] mb-6">Giao dịch thanh toán sẽ được ghi lại tại đây.</p>
+            <Link to="/courses"><Button variant="ghost">Mua khóa học ngay</Button></Link>
+          </div>
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-4 py-2.5 border-b border-line bg-bg-2 font-mono text-[11px] text-ink-3 uppercase tracking-wide">
-            <span>Mã đơn</span>
-            <span>Ngày</span>
-            <span>Phương thức</span>
-            <span>Số tiền</span>
-            <span>Trạng thái</span>
-          </div>
-          {transactions.map((t) => (
-            <div key={t.id}
-              className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-4 py-3 border-b border-line last:border-0 hover:bg-bg-2 transition items-center">
-              <div>
-                <p className="font-mono font-semibold text-[13px] text-ink">{t.order_code}</p>
-                {t.transaction_id && (
-                  <p className="font-mono text-[11px] text-ink-3">TxnID: {t.transaction_id}</p>
-                )}
-              </div>
-              <span className="font-mono text-[12.5px] text-ink-2">
-                {new Date(t.paid_at ?? t.created_at).toLocaleDateString('vi-VN')}
-              </span>
-              <span className="font-mono text-[12.5px] text-ink-2">{t.payment_method ?? 'VNPay'}</span>
-              <span className="font-mono font-bold text-[14px] text-ink">{formatVND(t.amount)}</span>
-              <StatusBadge status={t.status} />
+        <Reveal>
+          <div className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left">
+                <thead>
+                  <tr className="border-b border-line bg-bg-2">
+                    <Th>Mã đơn</Th>
+                    <Th>Ngày</Th>
+                    <Th>Phương thức</Th>
+                    <Th className="text-right">Số tiền</Th>
+                    <Th>Trạng thái</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map((t) => (
+                    <tr key={t.id} className="border-b border-line last:border-0 hover:bg-bg-2 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <p className="font-mono font-semibold text-[13px] text-ink">{t.order_code}</p>
+                        {t.transaction_id && (
+                          <p className="font-mono text-[11px] text-ink-3 mt-0.5">TxnID: {t.transaction_id}</p>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-[12.5px] text-ink-2 whitespace-nowrap">
+                        {new Date(t.paid_at ?? t.created_at).toLocaleDateString('vi-VN')}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-[12.5px] text-ink-2">
+                        {t.payment_method ?? 'VNPay'}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono font-bold text-[14px] text-ink text-right tabular-nums whitespace-nowrap">
+                        {formatVND(t.amount)}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <StatusBadge status={t.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
-        </div>
+          </div>
+        </Reveal>
       )}
-    </div>
+    </AccountShell>
+  );
+}
+
+function Th({ children, className = '' }) {
+  return (
+    <th className={`px-5 py-3 font-mono text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] ${className}`}>
+      {children}
+    </th>
   );
 }
