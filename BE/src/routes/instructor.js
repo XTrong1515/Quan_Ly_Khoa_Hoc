@@ -4,6 +4,9 @@ const { requireOwnership, requireLessonsOwnership } = require('../middleware/own
 const ctrl  = require('../controllers/instructorController');
 const admin = require('../controllers/adminController');
 const quiz  = require('../controllers/quizController');
+const media = require('../controllers/mediaController');
+const exercise = require('../controllers/exerciseController');
+const { codeRunLimiter } = require('../middleware/rateLimit');
 
 // Khu vực giảng viên — đường dẫn giống /api/admin để FE dùng chung component (apiBase)
 router.use(authMiddleware, requireRole('INSTRUCTOR'));
@@ -30,6 +33,17 @@ router.post('/courses/:courseId/lessons', requireOwnership('course', 'courseId')
 router.put('/lessons/reorder',            requireLessonsOwnership, admin.adminReorderLessons);
 router.put('/lessons/:id',                ownLesson, ctrl.requireOwnSection, admin.adminUpdateLesson);
 router.delete('/lessons/:id',             ownLesson, admin.adminDeleteLesson);
+
+// Bài tập lập trình
+router.get('/lessons/:id/exercise',           ownLesson, exercise.getForAuthor);
+router.put('/lessons/:id/exercise',           ownLesson, exercise.saveForAuthor);
+router.delete('/lessons/:id/exercise',        ownLesson, exercise.deleteForAuthor);
+router.post('/lessons/:id/exercise/validate', ownLesson, codeRunLimiter, exercise.validateForAuthor);
+
+// Video / tài liệu trên object storage
+router.post('/lessons/:id/uploads',       ownLesson, media.createUpload);
+router.put('/lessons/:id/media',          ownLesson, media.attachMedia);
+router.delete('/lessons/:id/media/:kind', ownLesson, media.removeMedia);
 
 // Quiz
 router.get('/lessons/:lessonId/quiz',  requireOwnership('lesson', 'lessonId'), quiz.getQuizAdmin);

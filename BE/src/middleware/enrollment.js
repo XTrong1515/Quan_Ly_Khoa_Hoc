@@ -21,7 +21,7 @@ function requireEnrollment({ allowPreview = false } = {}) {
 
     try {
       const [lessonRows] = await pool.query(
-        `SELECT l.course_id, l.is_preview, c.slug AS courseSlug
+        `SELECT l.course_id, l.is_preview, c.slug AS courseSlug, c.instructor_id
          FROM lessons l
          JOIN courses c ON c.id = l.course_id
          WHERE l.id = ?`,
@@ -32,11 +32,15 @@ function requireEnrollment({ allowPreview = false } = {}) {
         return res.status(404).json({ message: 'Không tìm thấy bài học' });
       }
 
-      const { course_id, is_preview, courseSlug } = lessonRows[0];
+      const { course_id, is_preview, courseSlug, instructor_id } = lessonRows[0];
 
-      if (allowPreview && is_preview) {
+      // Admin và giảng viên sở hữu khóa học được xem nội dung để kiểm tra (không có enrollment)
+      const isStaff = req.user.role === 'ADMIN' || (req.user.role === 'INSTRUCTOR' && instructor_id === userId);
+
+      if ((allowPreview && is_preview) || isStaff) {
         req.lessonCourseId = course_id;
         req.enrollmentId   = null;
+        req.staffView      = isStaff;
         return next();
       }
 

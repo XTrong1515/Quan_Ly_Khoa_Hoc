@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactPlayer from 'react-player';
@@ -7,7 +7,7 @@ import {
   CheckCircle, Check, Play, Paperclip, ListChecks,
   MessageSquare, Send, Edit2, Trash2, CornerDownRight, ChevronsUpDown,
   PanelRightClose, PanelRightOpen, Heart,
-  AlertTriangle, X,
+  AlertTriangle, X, Code2, MonitorPlay,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
@@ -17,6 +17,33 @@ import { useAuth } from '@/store/auth';
 import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
 
 const TABS = ['Tổng quan', 'Tài liệu', 'Ghi chú', 'Quiz', 'Thảo luận'];
+
+// Khung làm bài tập (kèm editor) chỉ tải khi bài học có bài tập
+const ExerciseWorkspace = lazy(() =>
+  import('@/components/exercise/exercise-workspace.jsx').then((m) => ({ default: m.ExerciseWorkspace })));
+
+/* ── Watermark động trên video ────────────────────────────────── */
+// Răn đe quay màn hình & truy vết người làm lộ: email người xem, mờ, đổi vị trí mỗi 20s.
+const WATERMARK_SPOTS = [
+  { top: '8%',  left: '6%'  }, { top: '12%', right: '8%' }, { top: '45%', left: '30%' },
+  { bottom: '22%', right: '10%' }, { bottom: '18%', left: '8%' },
+];
+function VideoWatermark({ text }) {
+  const [spot, setSpot] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setSpot(i => (i + 1 + Math.floor(Math.random() * 3)) % WATERMARK_SPOTS.length), 20_000);
+    return () => clearInterval(id);
+  }, []);
+  if (!text) return null;
+  return (
+    <div className="absolute inset-0 pointer-events-none select-none z-[5] overflow-hidden" aria-hidden="true">
+      <span className="absolute font-mono text-[12px] text-white/25 whitespace-nowrap transition-all duration-1000"
+        style={WATERMARK_SPOTS[spot]}>
+        {text}
+      </span>
+    </div>
+  );
+}
 
 /* ── Reusable warning modal ───────────────────────────────────── */
 function WarningModal({ icon: Icon = AlertTriangle, title, children, onClose, actions }) {
@@ -52,8 +79,11 @@ export default function LessonPlayerPage() {
   const { courseId, lessonId } = useParams();
   const navigate      = useNavigate();
   const queryClient   = useQueryClient();
+  const { user }      = useAuth();
   const playerRef     = useRef(null);
   const secondsRef    = useRef(0);   // current playback position for auto-save
+  const resumeAtRef   = useRef(null); // vị trí phát tiếp sau khi xin lại link video hết hạn
+  const lastRefreshRef = useRef(0);
   const didSeekRef    = useRef(false);
   const [tab, setTab]                   = useState('Tổng quan');
   const [sheetSnap, setSheetSnap]       = useState(0); // 0=collapsed 1=peek 2=expanded
@@ -83,12 +113,23 @@ export default function LessonPlayerPage() {
   const wishlistToggle = useWishlistToggle();
   const isWishlisted   = wishlistIds.includes(numericCourseId);
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch: refetchLesson } = useQuery({
     queryKey: ['lesson', lessonId],
     queryFn: () => api.get(`/api/lessons/${lessonId}`).then(r => r.data),
     staleTime: 0,
     retry: (failCount, err) => err?.response?.status !== 403 && failCount < 2,
   });
+
+  // Cùng query key với ExerciseWorkspace → dùng chung cache
+  const { data: exerciseData } = useQuery({
+    queryKey: ['lesson-exercise', String(lessonId)],
+    queryFn: () => api.get(`/api/lessons/${lessonId}/exercise`).then(r => r.data),
+    enabled: !isLoading && !isError,
+  });
+  const hasExercise = !!exerciseData?.exercise;
+  const [view, setView] = useState(null); // 'video' | 'exercise' — null = tự chọn
+  useEffect(() => { setView(null); }, [lessonId]);
+  const mainView = hasExercise ? (view ?? (data?.lesson?.videoUrl ? 'video' : 'exercise')) : 'video';
 
   const { data: quizData, refetch: refetchQuiz } = useQuery({
     queryKey: ['lesson-quiz', lessonId],
@@ -107,12 +148,16 @@ export default function LessonPlayerPage() {
     }
   }, [isError, error, navigate]);
 
+  const enrollmentRef = useRef(null);
+  enrollmentRef.current = data?.enrollmentId ?? null;
+  const isStaffView = !!data?.staffView;
+
   /* ── Auto-save progress every 10 s ── */
   useEffect(() => {
     didSeekRef.current = false;
     secondsRef.current = 0;
     const id = setInterval(() => {
-      if (secondsRef.current > 0) {
+      if (secondsRef.current > 0 && enrollmentRef.current) {
         api.put(`/api/lesson-progress/${lessonId}`, {
           lastWatchedSeconds: Math.floor(secondsRef.current),
         }).catch(() => {});
@@ -134,10 +179,12 @@ export default function LessonPlayerPage() {
 
   /* ── Download attachment ── */
   const handleDownload = async () => {
+    const tabRef = window.open('', '_blank'); // mở ngay trong click → không bị chặn popup
     try {
       const { data: d } = await api.get(`/api/lessons/${lessonId}/attachment`);
-      window.open(d.url, '_blank');
+      if (tabRef) tabRef.location.href = d.url; else window.location.assign(d.url);
     } catch (err) {
+      tabRef?.close();
       toast.error(apiMessage(err, 'Không thể tải tài liệu'));
     }
   };
@@ -149,14 +196,32 @@ export default function LessonPlayerPage() {
   const nextLesson = currentIdx < allLessons.length - 1 ? allLessons[currentIdx + 1] : null;
 
   const handleReady = () => {
+    if (resumeAtRef.current !== null) {
+      playerRef.current?.seekTo(resumeAtRef.current, 'seconds');
+      resumeAtRef.current = null;
+      didSeekRef.current = true;
+      return;
+    }
     if (!didSeekRef.current && data?.progress?.lastWatchedSeconds > 5) {
       playerRef.current?.seekTo(data.progress.lastWatchedSeconds, 'seconds');
       didSeekRef.current = true;
     }
   };
 
+  // Link presigned hết hạn → lỗi khi tải tiếp → xin link mới và phát tiếp tại chỗ cũ (tối đa 1 lần / 10s)
+  const handleVideoError = () => {
+    if (data?.lesson?.videoSource !== 'storage') return;
+    if (Date.now() - lastRefreshRef.current < 10_000) {
+      toast.error('Không phát được video. Vui lòng tải lại trang.');
+      return;
+    }
+    lastRefreshRef.current = Date.now();
+    resumeAtRef.current = secondsRef.current;
+    refetchLesson();
+  };
+
   const handleEnded = () => {
-    if (!data?.progress?.isCompleted) completeMutation.mutate();
+    if (data?.enrollmentId && !data?.progress?.isCompleted) completeMutation.mutate();
     if (quizData?.quiz && !quizData.quiz.latestAttempt?.passed) {
       setTab('Quiz');
       setSheetSnap(2);
@@ -240,7 +305,18 @@ export default function LessonPlayerPage() {
         {/* Left: video full-height + bottom sheet overlay */}
         <div className="flex flex-col flex-1 min-w-0 min-h-0 relative overflow-hidden">
           {/* Main content: quiz panel (always shown when lesson has quiz) or video player */}
-          <div className="flex-1 min-h-0 relative" style={{ background: quizData?.quiz ? undefined : 'black' }}>
+          <div className="flex-1 min-h-0 relative" style={{ background: quizData?.quiz || mainView === 'exercise' ? undefined : 'black' }}>
+            {hasExercise && !quizData?.quiz && lesson.videoUrl && (
+              <div className="absolute top-3 left-3 z-20 flex rounded-lg border border-line bg-bg/90 backdrop-blur p-0.5 shadow">
+                {[['video', 'Video', MonitorPlay], ['exercise', 'Bài tập', Code2]].map(([v, label, Icon]) => (
+                  <button key={v} onClick={() => setView(v)}
+                    className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors',
+                      mainView === v ? 'bg-accent text-bg' : 'text-ink-2 hover:text-ink')}>
+                    <Icon className="w-3.5 h-3.5" /> {label}
+                  </button>
+                ))}
+              </div>
+            )}
             {quizData?.quiz ? (
               <div className="w-full h-full overflow-y-auto bg-bg">
                 <div className="max-w-2xl mx-auto px-6 py-8">
@@ -258,18 +334,35 @@ export default function LessonPlayerPage() {
                   />
                 </div>
               </div>
+            ) : mainView === 'exercise' ? (
+              <Suspense fallback={<p className="p-6 font-mono text-[12px] text-ink-3">Đang tải bài tập…</p>}>
+                <div className={cn('h-full', lesson.videoUrl && 'pt-12')}>
+                  <ExerciseWorkspace
+                    lessonId={lessonId}
+                    onSolved={() => {
+                      queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] });
+                      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+                    }}
+                  />
+                </div>
+              </Suspense>
             ) : (
               <>
                 {lesson.videoUrl ? (
-                  <ReactPlayer
-                    ref={playerRef}
-                    url={lesson.videoUrl}
-                    width="100%" height="100%"
-                    controls
-                    onReady={handleReady}
-                    onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
-                    onEnded={handleEnded}
-                  />
+                  <div className="w-full h-full relative" onContextMenu={(e) => e.preventDefault()}>
+                    <ReactPlayer
+                      ref={playerRef}
+                      url={lesson.videoUrl}
+                      width="100%" height="100%"
+                      controls
+                      config={{ file: { attributes: { controlsList: 'nodownload noremoteplayback', disablePictureInPicture: true } } }}
+                      onReady={handleReady}
+                      onError={handleVideoError}
+                      onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
+                      onEnded={handleEnded}
+                    />
+                    <VideoWatermark text={user?.email ? `${user.email} · #${user.id}` : null} />
+                  </div>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                     <div className="w-16 h-16 rounded-full border-2 border-white/20 grid place-items-center">
@@ -379,6 +472,11 @@ export default function LessonPlayerPage() {
           className="border-l border-line flex flex-col overflow-hidden shrink-0 transition-[width] duration-200 min-w-0">
           {/* Mark complete button */}
           <div className="p-3 border-b border-line shrink-0">
+            {isStaffView ? (
+              <p className="font-mono text-[11px] text-js bg-js/10 rounded-lg px-3 py-2 text-center">
+                Chế độ xem của giảng viên / admin — không ghi tiến độ
+              </p>
+            ) : (
             <Button
               size="sm"
               className="w-full justify-center"
@@ -389,6 +487,7 @@ export default function LessonPlayerPage() {
                 ? <><Check className="w-3.5 h-3.5" /> Đã hoàn thành</>
                 : <><CheckCircle className="w-3.5 h-3.5" /> Đánh dấu hoàn thành</>}
             </Button>
+            )}
           </div>
 
           {/* Curriculum accordion */}

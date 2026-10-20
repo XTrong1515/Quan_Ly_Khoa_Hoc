@@ -1,4 +1,17 @@
 const pool = require('../config/db');
+const storage = require('../utils/storage');
+
+/** URL phát video: file trên storage → presigned GET ngắn hạn; nếu không thì link ngoài (YouTube...). */
+async function resolveVideo(lesson) {
+  if (lesson.video_key) {
+    return {
+      videoUrl: await storage.presignDownload(lesson.video_key),
+      videoSource: 'storage',
+      videoExpiresAt: new Date(Date.now() + storage.VIDEO_URL_TTL * 1000).toISOString(),
+    };
+  }
+  return { videoUrl: lesson.video_url, videoSource: lesson.video_url ? 'external' : null, videoExpiresAt: null };
+}
 
 /* ── GET /api/lessons/:id/preview ────────────────────────────── */
 async function preview(req, res) {
@@ -6,7 +19,7 @@ async function preview(req, res) {
 
   try {
     const [rows] = await pool.query(
-      `SELECT l.id, l.title, l.duration_minutes, l.video_url, l.is_preview,
+      `SELECT l.id, l.title, l.duration_minutes, l.video_url, l.video_key, l.is_preview,
               c.title AS courseTitle, c.slug AS courseSlug
        FROM lessons l
        JOIN courses c ON c.id = l.course_id
@@ -17,7 +30,9 @@ async function preview(req, res) {
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy bài học' });
     if (!rows[0].is_preview) return res.status(403).json({ message: 'Bài học này yêu cầu đăng ký khóa học' });
 
-    return res.json({ lesson: rows[0] });
+    const { video_key: _key, ...lesson } = rows[0];
+    const video = await resolveVideo(rows[0]);
+    return res.json({ lesson: { ...lesson, video_url: video.videoUrl, videoExpiresAt: video.videoExpiresAt } });
   } catch (err) {
     console.error('[lessons/preview]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
@@ -34,8 +49,8 @@ async function detail(req, res) {
 
   try {
     const [lessonRows] = await pool.query(
-      `SELECT l.id, l.title, l.video_url, l.content, l.duration_minutes,
-              l.attachment_url, l.is_preview,
+      `SELECT l.id, l.title, l.video_url, l.video_key, l.content, l.duration_minutes,
+              l.attachment_url, l.attachment_key, l.attachment_name, l.is_preview,
               c.title AS courseTitle, c.slug AS courseSlug
        FROM lessons l
        JOIN courses c ON c.id = l.course_id
@@ -102,10 +117,11 @@ async function detail(req, res) {
       lesson: {
         id: lesson.id,
         title: lesson.title,
-        videoUrl: lesson.video_url,
+        ...(await resolveVideo(lesson)),
         content: lesson.content,
         durationMinutes: lesson.duration_minutes,
-        hasAttachment: !!lesson.attachment_url,
+        hasAttachment: !!(lesson.attachment_key || lesson.attachment_url),
+        attachmentName: lesson.attachment_name,
         courseId,
         courseTitle: lesson.courseTitle,
         courseSlug: lesson.courseSlug,
@@ -113,6 +129,7 @@ async function detail(req, res) {
       sections: Object.values(sectionsMap).sort((a, b) => a.order - b.order),
       progress,
       enrollmentId,
+      staffView: !!req.staffView, // admin / giảng viên sở hữu đang xem — FE không ghi tiến độ
     });
   } catch (err) {
     console.error('[lessons/detail]', err);
@@ -127,12 +144,18 @@ async function attachment(req, res) {
 
   try {
     const [rows] = await pool.query(
-      'SELECT attachment_url FROM lessons WHERE id = ?',
+      'SELECT attachment_url, attachment_key, attachment_name FROM lessons WHERE id = ?',
       [lessonId],
     );
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy bài học' });
 
-    const { attachment_url } = rows[0];
+    const { attachment_url, attachment_key, attachment_name } = rows[0];
+    if (attachment_key) {
+      const url = await storage.presignDownload(attachment_key, {
+        expiresIn: storage.FILE_URL_TTL, filename: attachment_name || 'tai-lieu.pdf', inline: true,
+      });
+      return res.json({ url, expiresIn: storage.FILE_URL_TTL });
+    }
     if (!attachment_url) return res.status(404).json({ message: 'Bài học không có tài liệu đính kèm' });
 
     return res.json({ url: attachment_url });

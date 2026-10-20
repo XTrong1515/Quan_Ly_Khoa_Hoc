@@ -29,6 +29,21 @@ router.put('/lessons/reorder',            ctrl.adminReorderLessons);
 router.put('/lessons/:id',                ctrl.adminUpdateLesson);
 router.delete('/lessons/:id',             ctrl.adminDeleteLesson);
 
+// Video / tài liệu trên object storage (requireOwnership: admin bypass, chỉ để lấy courseId)
+const media = require('../controllers/mediaController');
+const { requireOwnership } = require('../middleware/ownership');
+router.post('/lessons/:id/uploads',        requireOwnership('lesson'), media.createUpload);
+router.put('/lessons/:id/media',           requireOwnership('lesson'), media.attachMedia);
+router.delete('/lessons/:id/media/:kind',  requireOwnership('lesson'), media.removeMedia);
+
+// Bài tập lập trình
+const exercise = require('../controllers/exerciseController');
+const { codeRunLimiter } = require('../middleware/rateLimit');
+router.get('/lessons/:id/exercise',           requireOwnership('lesson'), exercise.getForAuthor);
+router.put('/lessons/:id/exercise',           requireOwnership('lesson'), exercise.saveForAuthor);
+router.delete('/lessons/:id/exercise',        requireOwnership('lesson'), exercise.deleteForAuthor);
+router.post('/lessons/:id/exercise/validate', requireOwnership('lesson'), codeRunLimiter, exercise.validateForAuthor);
+
 // UC23 — Category CRUD
 router.get('/categories',       ctrl.adminListCategories);
 router.post('/categories',      ctrl.adminCreateCategory);

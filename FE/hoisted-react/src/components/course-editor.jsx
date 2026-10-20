@@ -5,12 +5,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Plus, Edit2, Trash2, X, ChevronDown, ChevronUp,
-  GripVertical, ImageIcon, Link2, Upload, ListChecks,
+  GripVertical, ImageIcon, Link2, Upload, ListChecks, Code2,
 } from 'lucide-react';
+import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { ExerciseEditorModal } from '@/components/exercise/exercise-editor-modal.jsx';
 
 /*
  * Bộ soạn khóa học dùng chung cho Admin (/api/admin) và Giảng viên (/api/instructor).
@@ -66,6 +68,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
   const [addOpen, setAddOpen]       = useState(false);
   const [editLesson, setEditLesson] = useState(null);
   const [quizLesson, setQuizLesson] = useState(null);
+  const [exerciseLesson, setExerciseLesson] = useState(null);
   const [dragOver, setDragOver]     = useState(null);
   const dragSrc = useRef(null);
 
@@ -186,6 +189,16 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                     Preview
                   </span>
                 )}
+                {l.video_key && (
+                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-success/10 text-success uppercase shrink-0" title="Video lưu trên storage">
+                    Video
+                  </span>
+                )}
+                {l.attachment_key && (
+                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-indigo/10 text-indigo uppercase shrink-0" title={l.attachment_name ?? 'PDF'}>
+                    PDF
+                  </span>
+                )}
                 <span className="font-mono text-[10px] text-ink-3 shrink-0">{l.duration_minutes}m</span>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => moveLesson(l, -1)} disabled={idx === 0}
@@ -203,6 +216,10 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                   <button onClick={() => setQuizLesson(l)} title="Quản lý Quiz"
                     className="p-1 rounded hover:bg-bg-3 text-ink-3 hover:text-accent transition-colors">
                     <ListChecks className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setExerciseLesson(l)} title="Bài tập lập trình"
+                    className="p-1 rounded hover:bg-bg-3 text-ink-3 hover:text-accent transition-colors">
+                    <Code2 className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => { if (window.confirm(`Xóa "${l.title}"?`)) deleteMutation.mutate(l.id); }}
@@ -222,6 +239,10 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
           <p className="px-4 py-4 font-mono text-[12px] text-ink-3">// Chưa có bài học</p>
         )}
       </div>
+
+      {exerciseLesson && (
+        <ExerciseEditorModal apiBase={apiBase} lesson={exerciseLesson} onClose={() => setExerciseLesson(null)} />
+      )}
 
       {quizLesson && (
         <QuizEditorModal
@@ -262,7 +283,8 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
   };
 
   return (
-    <div className="flex flex-wrap gap-3 items-end mb-3 px-4 py-3 bg-bg-2 border border-line rounded-lg">
+    <div className="mb-3 px-4 py-3 bg-bg-2 border border-line rounded-lg">
+    <div className="flex flex-wrap gap-3 items-end">
       <div className="flex-1 min-w-[180px]">
         <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tên bài học *</label>
         <input value={title} onChange={e => setTitle(e.target.value)}
@@ -295,6 +317,114 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
         <Button size="sm" onClick={save} disabled={saving}>{saving ? '...' : 'Lưu'}</Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>Hủy</Button>
       </div>
+    </div>
+
+    {initial ? (
+      <div className="grid sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-line">
+        <MediaField apiBase={apiBase} courseId={courseId} lesson={initial} kind="video" />
+        <MediaField apiBase={apiBase} courseId={courseId} lesson={initial} kind="attachment" />
+      </div>
+    ) : (
+      <p className="mt-2 font-mono text-[10.5px] text-ink-3">// Lưu bài học trước, sau đó mở "Sửa" để tải video / tài liệu PDF lên.</p>
+    )}
+    </div>
+  );
+}
+
+/* ── Upload video / PDF lên object storage (presigned PUT) ──────── */
+const MEDIA_CFG = {
+  video: {
+    label: 'Video bài giảng', accept: 'video/mp4,video/webm', maxMB: 1024,
+    hint: 'MP4 / WebM — lưu private, học viên xem qua link có hạn. Ưu tiên hơn Video URL.',
+  },
+  attachment: {
+    label: 'Tài liệu PDF', accept: 'application/pdf', maxMB: 50,
+    hint: 'PDF — chỉ học viên đã mua mở được.',
+  },
+};
+
+function MediaField({ apiBase, courseId, lesson, kind }) {
+  const qc  = useQueryClient();
+  const cfg = MEDIA_CFG[kind];
+  const inputRef = useRef(null);
+  const [current, setCurrent]   = useState(kind === 'video' ? lesson.video_key : lesson.attachment_key);
+  const [name, setName]         = useState(kind === 'video' ? null : lesson.attachment_name);
+  const [progress, setProgress] = useState(null); // null = không upload; 0..100
+  const busy = progress !== null;
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ['course-lessons', apiBase, courseId] });
+
+  const upload = async (file) => {
+    if (!file) return;
+    if (file.size > cfg.maxMB * 1024 * 1024) { toast.error(`Tối đa ${cfg.maxMB} MB`); return; }
+    setProgress(0);
+    try {
+      const { data: slot } = await api.post(`${apiBase}/lessons/${lesson.id}/uploads`, {
+        kind, contentType: file.type, size: file.size,
+      });
+      // axios thuần: KHÔNG gửi Authorization — header lạ làm sai chữ ký presigned URL
+      await axios.put(slot.uploadUrl, file, {
+        headers: slot.headers,
+        onUploadProgress: (e) => setProgress(e.total ? Math.round((e.loaded / e.total) * 100) : 0),
+      });
+      await api.put(`${apiBase}/lessons/${lesson.id}/media`, { kind, key: slot.key, filename: file.name });
+      setCurrent(slot.key);
+      setName(file.name);
+      toast.success(`Đã tải lên ${cfg.label.toLowerCase()}`);
+      refresh();
+    } catch (err) {
+      toast.error(apiMessage(err, 'Tải lên thất bại'));
+    } finally {
+      setProgress(null);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const remove = async () => {
+    if (!window.confirm(`Gỡ ${cfg.label.toLowerCase()} khỏi bài học?`)) return;
+    try {
+      await api.delete(`${apiBase}/lessons/${lesson.id}/media/${kind}`);
+      setCurrent(null); setName(null);
+      toast.success('Đã gỡ file');
+      refresh();
+    } catch (err) { toast.error(apiMessage(err)); }
+  };
+
+  return (
+    <div className="p-3 rounded-lg border border-line bg-bg">
+      <p className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mb-1.5">{cfg.label}</p>
+      {current ? (
+        <p className="text-[12px] text-success truncate mb-2" title={name ?? current}>
+          ✓ {name ?? current.split('/').pop()}
+        </p>
+      ) : (
+        <p className="text-[12px] text-ink-3 mb-2">Chưa có file</p>
+      )}
+
+      {busy ? (
+        <div>
+          <div className="h-1.5 rounded-full bg-bg-3 overflow-hidden">
+            <div className="h-full bg-accent transition-[width]" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="font-mono text-[10px] text-ink-3 mt-1">Đang tải lên… {progress}%</p>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <input ref={inputRef} type="file" accept={cfg.accept} className="hidden"
+            onChange={(e) => upload(e.target.files?.[0])} />
+          <button type="button" onClick={() => inputRef.current?.click()}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-accent text-accent text-[11px] font-medium hover:bg-accent/10">
+            <Upload className="w-3 h-3" /> {current ? 'Thay file' : 'Chọn file'}
+          </button>
+          {current && (
+            <button type="button" onClick={remove}
+              className="px-2.5 py-1 rounded-md text-[11px] text-ink-3 hover:text-danger hover:bg-danger/10">
+              Gỡ
+            </button>
+          )}
+        </div>
+      )}
+      <p className="font-mono text-[9.5px] text-ink-3 mt-2 leading-snug">{cfg.hint}</p>
     </div>
   );
 }

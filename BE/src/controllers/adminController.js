@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { createNotification } = require('./notificationController');
+const storage = require('../utils/storage');
 
 /* ─────────────────────────────────────────────────────────────────
    UC20 — Dashboard
@@ -338,6 +339,7 @@ async function adminListLessons(req, res) {
     const [lessons] = await pool.query(
       `SELECT l.id, l.title, l.duration_minutes, l.order_index, l.is_preview,
               l.video_url, l.attachment_url, l.section_id,
+              l.video_key, l.attachment_key, l.attachment_name,
               cs.title AS sectionTitle
        FROM lessons l
        LEFT JOIN course_sections cs ON cs.id = l.section_id
@@ -417,10 +419,12 @@ async function adminReorderLessons(req, res) {
 async function adminDeleteLesson(req, res) {
   const lessonId = parseInt(req.params.id, 10);
   try {
-    const [rows] = await pool.query('SELECT course_id FROM lessons WHERE id = ?', [lessonId]);
+    const [rows] = await pool.query('SELECT course_id, video_key, attachment_key FROM lessons WHERE id = ?', [lessonId]);
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy' });
     await pool.query('DELETE FROM lessons WHERE id = ?', [lessonId]);
     await _updateCourseTotals(rows[0].course_id);
+    // Không để file mồ côi trên storage
+    await Promise.all([storage.deleteObject(rows[0].video_key), storage.deleteObject(rows[0].attachment_key)]);
     return res.json({ ok: true });
   } catch (err) {
     console.error('[admin/lessons/delete]', err);

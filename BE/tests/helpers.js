@@ -69,7 +69,11 @@ async function createLesson(courseId, { sectionId = null } = {}) {
   return { id: result.insertId };
 }
 
+async function enroll(user, courseId) {
+  await pool.query('INSERT INTO enrollments (user_id, course_id) VALUES (?, ?)', [user.id, courseId]);
+}
+
 module.exports = {
   pool, resetDb, createUser, authHeader, DEFAULT_PASSWORD,
-  createCategory, createCourse, createLesson,
+  createCategory, createCourse, createLesson, enroll,
 };

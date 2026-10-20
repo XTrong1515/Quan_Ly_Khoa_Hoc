@@ -671,6 +671,14 @@ function WriteReviewSection({ courseId }) {
 
 /* ── Preview modal (UC04) ────────────────────────────────────────── */
 function PreviewModal({ lesson, onClose }) {
+  // Link video chỉ cấp qua endpoint preview (danh sách bài học công khai không chứa link)
+  const { data, isLoading } = useQuery({
+    queryKey: ['lesson-preview', lesson.id],
+    queryFn: () => api.get(`/api/lessons/${lesson.id}/preview`).then(r => r.data),
+    staleTime: 60_000,
+  });
+  const videoUrl = data?.lesson?.video_url;
+
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -700,11 +708,14 @@ function PreviewModal({ lesson, onClose }) {
           </button>
         </div>
         <div className="aspect-video bg-black">
-          {lesson.video_url ? (
+          {isLoading ? (
+            <div className="w-full h-full grid place-items-center font-mono text-[13px] text-ink-3">Đang tải…</div>
+          ) : videoUrl ? (
             <ReactPlayer
-              url={lesson.video_url}
+              url={videoUrl}
               width="100%" height="100%"
               controls playing
+              config={{ file: { attributes: { controlsList: 'nodownload', disablePictureInPicture: true } } }}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-3">

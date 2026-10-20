@@ -133,8 +133,9 @@ async function detail(req, res) {
 
     const [[lessonRows], [reviews]] = await Promise.all([
       pool.query(
+        // Không trả video_url: link video chỉ cấp qua /api/lessons/:id (đã mua) hoặc /:id/preview (bài xem thử)
         `SELECT l.id, cs.title AS section_title, l.title, l.order_index AS position,
-                l.duration_minutes, l.is_preview, l.video_url
+                l.duration_minutes, l.is_preview
          FROM lessons l
          LEFT JOIN course_sections cs ON cs.id = l.section_id
          WHERE l.course_id = ? ORDER BY l.order_index ASC`,

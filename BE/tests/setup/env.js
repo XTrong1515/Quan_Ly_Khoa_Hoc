@@ -7,3 +7,5 @@ const { TEST_DB } = require('./test-db');
 
 process.env.NODE_ENV = 'test';
 process.env.DB_NAME  = TEST_DB;
+process.env.CODE_RUN_RATE_LIMIT = '1000'; // test giới hạn tần suất riêng trong exercise.test.js
+process.env.CODE_RUNNER = 'isolated-vm';
