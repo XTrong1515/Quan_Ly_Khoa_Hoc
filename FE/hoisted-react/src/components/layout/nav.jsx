@@ -144,6 +144,11 @@ export function Nav() {
                   <MenuItem to="/me/profile" icon={Settings} onClick={() => setMenuOpen(false)}>
                     Cài đặt tài khoản
                   </MenuItem>
+                  {role === 'instructor' && (
+                    <MenuItem to="/instructor" onClick={() => setMenuOpen(false)} accent>
+                      ✎ Khu vực giảng viên
+                    </MenuItem>
+                  )}
                   {role === 'admin' && (
                     <MenuItem to="/admin" onClick={() => setMenuOpen(false)} accent>
                       ⚙ Admin

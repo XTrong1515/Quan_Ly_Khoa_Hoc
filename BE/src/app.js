@@ -4,6 +4,7 @@ const express = require('express');
 const cors    = require('cors');
 
 const adminRoutes          = require('./routes/admin');
+const instructorRoutes     = require('./routes/instructor');
 const uploadRoutes         = require('./routes/upload');
 const authRoutes           = require('./routes/auth');
 const userRoutes           = require('./routes/user');
@@ -38,6 +39,8 @@ app.get('/api/home',                                     homeController.home);
 app.get('/api/stats',                                    platformStats);
 app.use('/api/admin/upload',    uploadRoutes);
 app.use('/api/admin',           adminRoutes);
+app.use('/api/instructor/upload', uploadRoutes);
+app.use('/api/instructor',      instructorRoutes);
 app.use('/api/auth',            authRoutes);
 app.use('/api/user',            userRoutes);
 app.use('/api/courses',         reviewRoutes);   // /:id/reviews* — before /:slug catch-all

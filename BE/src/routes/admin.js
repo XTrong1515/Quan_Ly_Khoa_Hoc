@@ -13,11 +13,14 @@ router.get('/courses',          ctrl.adminListCourses);
 router.get('/courses/export',   ctrl.adminExportCourses);
 router.get('/courses/:id',      ctrl.adminGetCourse);
 router.post('/courses',     ctrl.adminCreateCourse);
+// Course reorder (must be before /:id to avoid param conflict)
+router.put('/courses/reorder',  ctrl.adminReorderCourses);
 router.put('/courses/:id',  ctrl.adminUpdateCourse);
 router.delete('/courses/:id', ctrl.adminDeleteCourse);
 
-// Course reorder (must be before /:id to avoid param conflict)
-router.put('/courses/reorder',            ctrl.adminReorderCourses);
+// Duyệt khóa học do giảng viên gửi
+router.put('/courses/:id/approve', ctrl.adminApproveCourse);
+router.put('/courses/:id/reject',  ctrl.adminRejectCourse);
 
 // UC22 — Lesson CRUD (reorder before /:id to avoid param conflict)
 router.get('/courses/:courseId/lessons',  ctrl.adminListLessons);

@@ -14,6 +14,8 @@ const MAP = {
   visible:   { color: 'text-success bg-success/15',  label: 'Hiển thị' },
   hidden:    { color: 'text-ink-3 bg-bg-2',          label: 'Đã ẩn' },
   review:    { color: 'text-js bg-js/15',            label: 'Đang duyệt' },
+  pending_review: { color: 'text-js bg-js/15',       label: 'Chờ duyệt' },
+  rejected:  { color: 'text-danger bg-danger/15',    label: 'Bị từ chối' },
 };
 
 export function StatusBadge({ status, className }) {

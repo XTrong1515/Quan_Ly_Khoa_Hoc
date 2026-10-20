@@ -1,7 +1,7 @@
 const path    = require('path');
 const router  = require('express').Router();
 const multer  = require('multer');
-const { authMiddleware, requireAdmin } = require('../middleware/auth');
+const { authMiddleware, requireRole } = require('../middleware/auth');
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '../../uploads'),
@@ -21,8 +21,8 @@ const upload = multer({
   },
 });
 
-/* POST /api/admin/upload/image */
-router.post('/image', authMiddleware, requireAdmin, upload.single('image'), (req, res) => {
+/* POST /api/admin/upload/image · /api/instructor/upload/image */
+router.post('/image', authMiddleware, requireRole('ADMIN', 'INSTRUCTOR'), upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'File không hợp lệ hoặc vượt quá 5MB' });
   const host = `${req.protocol}://${req.get('host')}`;
   return res.json({ url: `${host}/uploads/${req.file.filename}` });

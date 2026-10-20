@@ -80,10 +80,11 @@ async function adminListCourses(req, res) {
 
   const where   = wheres.length ? `WHERE ${wheres.join(' AND ')}` : '';
   const orderBy = {
-    manual:   'c.display_order ASC, c.id ASC',
-    newest:   'c.created_at DESC',
-    oldest:   'c.created_at ASC',
-    students: 'c.student_count DESC',
+    manual:    'c.display_order ASC, c.id ASC',
+    newest:    'c.created_at DESC',
+    oldest:    'c.created_at ASC',
+    students:  'c.student_count DESC',
+    submitted: 'c.submitted_at ASC',
   }[sort] ?? 'c.display_order ASC, c.id ASC';
 
   try {
@@ -91,12 +92,22 @@ async function adminListCourses(req, res) {
     const [rows]      = await pool.query(
       `SELECT c.id, c.title, c.slug, c.price, c.level, c.status,
               c.student_count, c.total_lessons, c.rating, c.instructor_name,
+              c.instructor_id, u.email AS instructor_email,
+              c.submitted_at, c.reject_reason,
               c.display_order, cat.name AS category, cat.id AS categoryId
-       FROM courses c LEFT JOIN categories cat ON cat.id = c.category_id
+       FROM courses c
+       LEFT JOIN categories cat ON cat.id = c.category_id
+       LEFT JOIN users u ON u.id = c.instructor_id
        ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
       [...params, lim, offset],
     );
-    return res.json({ courses: rows, total: countRows[0].total, page: p, totalPages: Math.ceil(countRows[0].total / lim) });
+    const [[{ pendingReview }]] = await pool.query(
+      "SELECT COUNT(*) AS pendingReview FROM courses WHERE status = 'PENDING_REVIEW'",
+    );
+    return res.json({
+      courses: rows, total: countRows[0].total, page: p,
+      totalPages: Math.ceil(countRows[0].total / lim), pendingReview,
+    });
   } catch (err) {
     console.error('[admin/courses/list]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
@@ -165,28 +176,45 @@ async function adminGetCourse(req, res) {
   }
 }
 
+/** instructorId → { id, name } của user có role INSTRUCTOR; null nếu bỏ gán; undefined nếu không hợp lệ. */
+async function _resolveInstructor(instructorId) {
+  if (instructorId === null || instructorId === '') return null;
+  const [rows] = await pool.query(
+    "SELECT id, full_name AS name FROM users WHERE id = ? AND role = 'INSTRUCTOR'", [instructorId],
+  );
+  return rows[0];
+}
+
 async function adminCreateCourse(req, res) {
   const {
     title, slug, shortDescription, description,
     price = 0, originalPrice, level = 'BEGINNER',
-    categoryId, instructorName, glyph, thumb = 'yellow', tag,
+    categoryId, instructorId, glyph, thumb = 'yellow', tag,
     whatYouLearn, requirements, status = 'DRAFT',
     thumbnailUrl,
   } = req.body;
+  let { instructorName } = req.body;
 
   if (!title || !slug || !categoryId) {
     return res.status(400).json({ message: 'Thiếu: title, slug, categoryId' });
   }
 
   try {
+    let instructor = null;
+    if (instructorId !== undefined) {
+      instructor = await _resolveInstructor(instructorId);
+      if (instructor === undefined) return res.status(400).json({ message: 'Giảng viên không hợp lệ' });
+      if (instructor) instructorName = instructor.name;
+    }
+
     const [result] = await pool.query(
       `INSERT INTO courses
          (title, slug, short_description, description, price, original_price, level,
-          category_id, instructor_name, glyph, thumb, tag, thumbnail_url,
+          category_id, instructor_name, instructor_id, glyph, thumb, tag, thumbnail_url,
           what_you_learn, requirements, status)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [title, slug, shortDescription ?? null, description ?? null,
-       price, originalPrice ?? null, level, categoryId, instructorName ?? null,
+       price, originalPrice ?? null, level, categoryId, instructorName ?? null, instructor?.id ?? null,
        glyph ?? null, thumb, tag ?? null, thumbnailUrl ?? null,
        whatYouLearn ? JSON.stringify(whatYouLearn) : null,
        requirements ? JSON.stringify(requirements) : null,
@@ -216,9 +244,17 @@ async function adminUpdateCourse(req, res) {
   if (req.body.whatYouLearn !== undefined) { updates.push('what_you_learn = ?'); params.push(JSON.stringify(req.body.whatYouLearn)); }
   if (req.body.requirements  !== undefined) { updates.push('requirements = ?');   params.push(JSON.stringify(req.body.requirements)); }
 
-  if (!updates.length) return res.status(400).json({ message: 'Không có gì để cập nhật' });
+  if (!updates.length && req.body.instructorId === undefined) {
+    return res.status(400).json({ message: 'Không có gì để cập nhật' });
+  }
 
   try {
+    if (req.body.instructorId !== undefined) {
+      const instructor = await _resolveInstructor(req.body.instructorId);
+      if (instructor === undefined) return res.status(400).json({ message: 'Giảng viên không hợp lệ' });
+      updates.push('instructor_id = ?'); params.push(instructor?.id ?? null);
+      if (instructor) { updates.push('instructor_name = ?'); params.push(instructor.name); }
+    }
     params.push(id);
     await pool.query(`UPDATE courses SET ${updates.join(', ')} WHERE id = ?`, params);
     return res.json({ ok: true });
@@ -241,6 +277,43 @@ async function adminDeleteCourse(req, res) {
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
 }
+
+/* ── Duyệt khóa học: PENDING_REVIEW → PUBLISHED | REJECTED ─────── */
+async function _reviewCourse(req, res, decision) {
+  const id = parseInt(req.params.id, 10);
+  const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+  if (decision === 'REJECTED' && !reason) {
+    return res.status(400).json({ message: 'Vui lòng nhập lý do từ chối' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE courses
+       SET status = ?, reject_reason = ?, reviewed_at = NOW(), reviewed_by = ?
+       WHERE id = ? AND status = 'PENDING_REVIEW'`,
+      [decision, decision === 'REJECTED' ? reason.slice(0, 500) : null, req.user.id, id],
+    );
+    if (!result.affectedRows) {
+      return res.status(409).json({ message: 'Khóa học không ở trạng thái chờ duyệt' });
+    }
+
+    const [[course]] = await pool.query('SELECT title, slug, instructor_id FROM courses WHERE id = ?', [id]);
+    if (course?.instructor_id) {
+      await createNotification(course.instructor_id, decision === 'PUBLISHED'
+        ? { type: 'course_approved', title: 'Khóa học đã được duyệt',
+            body: `"${course.title}" đã được xuất bản.`, link: `/courses/${course.slug}` }
+        : { type: 'course_rejected', title: 'Khóa học bị từ chối',
+            body: `"${course.title}": ${reason}`, link: '/instructor/courses' });
+    }
+    return res.json({ ok: true, status: decision });
+  } catch (err) {
+    console.error('[admin/courses/review]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+const adminApproveCourse = (req, res) => _reviewCourse(req, res, 'PUBLISHED');
+const adminRejectCourse  = (req, res) => _reviewCourse(req, res, 'REJECTED');
 
 /* ─────────────────────────────────────────────────────────────────
    UC22 — Lesson CRUD
@@ -448,6 +521,7 @@ async function adminListUsers(req, res) {
           (SELECT COUNT(*) FROM users)                                                             AS totalUsers,
           (SELECT COUNT(*) FROM users WHERE created_at >= DATE_FORMAT(NOW(),'%Y-%m-01'))          AS newThisMonth,
           (SELECT COUNT(*) FROM users WHERE role = 'ADMIN')                                       AS admins,
+          (SELECT COUNT(*) FROM users WHERE role = 'INSTRUCTOR')                                  AS instructors,
           (SELECT COUNT(*) FROM users WHERE status = 'LOCKED')                                    AS locked
       `),
       pool.query(`SELECT COUNT(*) AS total FROM users u ${where}`, params),
@@ -476,7 +550,7 @@ async function adminListUsers(req, res) {
 async function adminCreateUser(req, res) {
   const { full_name, email, password, role = 'USER' } = req.body;
   if (!full_name || !email || !password) return res.status(400).json({ message: 'Thiếu: full_name, email, password' });
-  if (!['USER', 'ADMIN'].includes(role.toUpperCase())) return res.status(400).json({ message: 'Role không hợp lệ' });
+  if (!['USER', 'INSTRUCTOR', 'ADMIN'].includes(role.toUpperCase())) return res.status(400).json({ message: 'Role không hợp lệ' });
   if (password.length < 6) return res.status(400).json({ message: 'Mật khẩu tối thiểu 6 ký tự' });
 
   try {
@@ -496,7 +570,7 @@ async function adminCreateUser(req, res) {
 async function adminUpdateUserRole(req, res) {
   const id = parseInt(req.params.id, 10);
   const { role } = req.body;
-  if (!['USER', 'ADMIN'].includes(role?.toUpperCase())) return res.status(400).json({ message: 'Role không hợp lệ' });
+  if (!['USER', 'INSTRUCTOR', 'ADMIN'].includes(role?.toUpperCase())) return res.status(400).json({ message: 'Role không hợp lệ' });
   if (id === req.user.id) return res.status(400).json({ message: 'Không thể tự thay đổi role của mình' });
   try {
     await pool.query('UPDATE users SET role = ? WHERE id = ?', [role.toUpperCase(), id]);
@@ -861,6 +935,7 @@ async function adminUpdateReviewStatus(req, res) {
 module.exports = {
   dashboard,
   adminListCourses, adminExportCourses, adminGetCourse, adminCreateCourse, adminUpdateCourse, adminDeleteCourse, adminReorderCourses,
+  adminApproveCourse, adminRejectCourse,
   adminListLessons, adminCreateLesson, adminUpdateLesson, adminReorderLessons, adminDeleteLesson,
   adminListCategories, adminCreateCategory, adminUpdateCategory, adminDeleteCategory,
   adminListUsers, adminCreateUser, adminUpdateUserStatus, adminUpdateUserRole,

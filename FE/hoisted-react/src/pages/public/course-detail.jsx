@@ -91,7 +91,8 @@ export default function CourseDetailPage() {
     );
   }
 
-  const { course, lessons = [], reviews = [], isEnrolled = false } = data;
+  const { course, lessons = [], reviews = [], isEnrolled = false, instructor } = data;
+  const instructorName = instructor?.name ?? course.instructor;
   const isFree       = parseFloat(course.price) === 0;
   const inCart       = items.some((i) => i.courseId === course.id);
   const isWishlisted = wishlistIds.includes(course.id);
@@ -210,12 +211,12 @@ export default function CourseDetailPage() {
             <div className="flex items-center gap-3 mb-10">
               <div className="p-[2px] rounded-full bg-gradient-to-br from-accent to-indigo">
                 <div className="w-9 h-9 rounded-full bg-bg-1 grid place-items-center font-bold text-[13px] text-ink">
-                  {course.instructor?.[0]?.toUpperCase()}
+                  {instructorName?.[0]?.toUpperCase()}
                 </div>
               </div>
               <div className="text-[13px] leading-tight">
                 <span className="text-ink-3">Giảng viên</span>
-                <p className="text-ink font-semibold">{course.instructor}</p>
+                <p className="text-ink font-semibold">{instructorName}</p>
               </div>
             </div>
 
@@ -284,13 +285,18 @@ export default function CourseDetailPage() {
             {tab === 'instructor' && (
               <div className="card p-6 flex flex-col sm:flex-row gap-5 items-start">
                 <div className="p-[3px] rounded-2xl bg-gradient-to-br from-accent to-indigo flex-shrink-0">
-                  <div className="w-16 h-16 rounded-[13px] bg-bg-1 grid place-items-center font-display font-bold text-[22px] text-ink">
-                    {course.instructor?.[0]?.toUpperCase()}
-                  </div>
+                  {instructor?.avatar ? (
+                    <img src={instructor.avatar} alt={instructorName}
+                      className="w-16 h-16 rounded-[13px] object-cover bg-bg-1" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-[13px] bg-bg-1 grid place-items-center font-display font-bold text-[22px] text-ink">
+                      {instructorName?.[0]?.toUpperCase()}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <p className="font-display font-bold text-[18px] mb-1">{course.instructor}</p>
-                  <p className="text-ink-3 text-[13px] mb-3">Senior JavaScript Engineer</p>
+                <div className="min-w-0">
+                  <p className="font-display font-bold text-[18px] mb-1">{instructorName}</p>
+                  {instructor?.headline && <p className="text-ink-3 text-[13px] mb-3">{instructor.headline}</p>}
                   <div className="flex flex-wrap gap-4 text-[12.5px] text-ink-2">
                     <span className="flex items-center gap-1.5">
                       <Star className="w-3.5 h-3.5 fill-accent text-accent" aria-hidden="true" />
@@ -298,9 +304,18 @@ export default function CourseDetailPage() {
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 text-ink-3" aria-hidden="true" />
-                      {course.students?.toLocaleString('vi-VN')} học viên
+                      {(instructor?.studentCount ?? course.students)?.toLocaleString('vi-VN')} học viên
                     </span>
+                    {instructor && (
+                      <span className="flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-ink-3" aria-hidden="true" />
+                        {instructor.courseCount} khóa học
+                      </span>
+                    )}
                   </div>
+                  {instructor?.bio && (
+                    <p className="mt-4 text-[13.5px] text-ink-2 leading-[1.7] whitespace-pre-line">{instructor.bio}</p>
+                  )}
                 </div>
               </div>
             )}

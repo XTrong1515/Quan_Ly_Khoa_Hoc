@@ -3,3 +3,6 @@ node_modules
 .env.local
 *.log
 npm-debug.log*
+
+# MinIO local data
+.minio-data/

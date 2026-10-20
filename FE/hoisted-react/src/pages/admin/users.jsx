@@ -18,9 +18,11 @@ const initials    = (name) => (name||'?').split(' ').map(w=>w[0]).join('').slice
 
 /* ── Role badge ─────────────────────────────────────────────────── */
 const ROLE_CFG = {
-  ADMIN: { label: 'Admin',   color: 'text-accent bg-accent/10' },
-  USER:  { label: 'Student', color: 'text-ink-3 bg-bg-2'       },
+  ADMIN:      { label: 'Admin',      color: 'text-accent bg-accent/10' },
+  INSTRUCTOR: { label: 'Giảng viên', color: 'text-indigo bg-indigo/10' },
+  USER:       { label: 'Student',    color: 'text-ink-3 bg-bg-2'       },
 };
+const ROLE_OPTIONS = [['USER', 'Student'], ['INSTRUCTOR', 'Giảng viên'], ['ADMIN', 'Admin']];
 function RoleBadge({ role }) {
   const cfg = ROLE_CFG[role] ?? ROLE_CFG.USER;
   return <span className={cn('inline-flex font-mono text-[10px] font-bold px-2 py-0.5 rounded uppercase', cfg.color)}>{cfg.label}</span>;
@@ -127,10 +129,11 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {[
           { label: 'Tổng người dùng',    value: stats.totalUsers,    delta: null,    positive: true  },
           { label: 'Học viên mới tháng', value: stats.newThisMonth,  delta: null,    positive: true  },
+          { label: 'Giảng viên',         value: stats.instructors,   delta: null,    positive: true  },
           { label: 'Admin',              value: stats.admins,        delta: null,    positive: true  },
           { label: 'Đã khóa',            value: stats.locked,        delta: null,    positive: false },
         ].map(({ label, value, positive }) => (
@@ -155,7 +158,7 @@ export default function AdminUsersPage() {
             className="w-full pl-9 pr-3 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent" />
         </div>
         {[
-          { value: role,   set: v => { setRole(v); setPage(1); },   opts: [['','Mọi vai trò'],['USER','Student'],['ADMIN','Admin']] },
+          { value: role,   set: v => { setRole(v); setPage(1); },   opts: [['','Mọi vai trò'], ...ROLE_OPTIONS] },
           { value: status, set: v => { setStatus(v); setPage(1); }, opts: [['','Mọi status'],['ACTIVE','Hoạt động'],['LOCKED','Khóa']] },
           { value: sort,   set: v => { setSort(v); setPage(1); },   opts: [['newest','Mới nhất'],['oldest','Cũ nhất'],['name','Tên A-Z'],['spent','Chi nhiều nhất']] },
         ].map(({ value, set, opts }, i) => (
@@ -305,7 +308,7 @@ function UserRow({ user: u, selected, expanded, onSelect, onToggleExpand, onTogg
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowRoleMenu(false)} />
                 <div className="absolute left-0 top-full mt-1 z-20 bg-bg border border-line rounded-lg shadow-lg overflow-hidden min-w-[130px]">
-                  {[['USER','Student'],['ADMIN','Admin']].map(([r, label]) => (
+                  {ROLE_OPTIONS.map(([r, label]) => (
                     <button key={r}
                       onClick={() => { onChangeRole(r); setShowRoleMenu(false); }}
                       className={cn(
@@ -442,8 +445,7 @@ function CreateUserModal({ onClose, onCreated }) {
           <div>
             <label className="font-mono text-[11px] text-ink-3 uppercase tracking-wide block mb-1.5">Vai trò</label>
             <select value={form.role} onChange={set('role')} className="input w-full">
-              <option value="USER">Student</option>
-              <option value="ADMIN">Admin</option>
+              {ROLE_OPTIONS.map(([r, label]) => <option key={r} value={r}>{label}</option>)}
             </select>
           </div>
 

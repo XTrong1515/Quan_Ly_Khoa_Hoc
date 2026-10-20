@@ -7,7 +7,7 @@ export const useAuth = create(
   persist(
     (set, get) => ({
       user: null,         // { id, name, email, avatar, role }
-      role: 'guest',      // 'guest' | 'user' | 'admin'
+      role: 'guest',      // 'guest' | 'user' | 'instructor' | 'admin'
       token: null,
       refreshToken: null,
 

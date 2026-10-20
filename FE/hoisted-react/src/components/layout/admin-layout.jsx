@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Tag, Users,
-  ShoppingCart, Star, LogOut, ArrowLeft, Menu, X,
+  ShoppingCart, Star, LogOut, ArrowLeft, Menu, X, GraduationCap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
 
-const NAV_GROUPS = [
+const ADMIN_NAV = [
   {
     label: 'Vận hành',
     items: [
@@ -26,7 +26,17 @@ const NAV_GROUPS = [
   {
     label: 'Người dùng',
     items: [
-      { to: '/admin/users', label: 'Học viên', icon: Users },
+      { to: '/admin/users', label: 'Người dùng', icon: Users },
+    ],
+  },
+];
+
+const INSTRUCTOR_NAV = [
+  {
+    label: 'Giảng dạy',
+    items: [
+      { to: '/instructor',         label: 'Tổng quan', icon: LayoutDashboard, exact: true },
+      { to: '/instructor/courses', label: 'Khóa học của tôi', icon: GraduationCap },
     ],
   },
 ];
@@ -35,11 +45,11 @@ function getInitials(name) {
   return (name || '?').split(' ').map(w => w[0]).join('').slice(-2).toUpperCase();
 }
 
-function Sidebar({ pathname, user, logout, onNavigate }) {
+function Sidebar({ pathname, user, logout, onNavigate, navGroups, home, consoleLabel, roleLabel }) {
   return (
     <div className="flex flex-col h-full bg-bg-1">
       {/* Brand */}
-      <Link to="/admin" onClick={onNavigate} className="flex items-center gap-3 px-5 h-16 border-b border-line">
+      <Link to={home} onClick={onNavigate} className="flex items-center gap-3 px-5 h-16 border-b border-line">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-indigo grid place-items-center font-mono font-bold text-[13px] text-[#0B0F19] shadow-[0_4px_14px_rgb(var(--accent)/0.3)]">
           {'{}'}
         </div>
@@ -47,13 +57,13 @@ function Sidebar({ pathname, user, logout, onNavigate }) {
           <p className="font-mono font-extrabold text-[15px] text-ink tracking-tight">
             Hoisted<span className="text-accent">()</span>
           </p>
-          <p className="font-mono text-[9.5px] text-ink-3 uppercase tracking-[0.14em]">Admin console</p>
+          <p className="font-mono text-[9.5px] text-ink-3 uppercase tracking-[0.14em]">{consoleLabel}</p>
         </div>
       </Link>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-5 overflow-y-auto space-y-6" aria-label="Điều hướng admin">
-        {NAV_GROUPS.map((group) => (
+      <nav className="flex-1 px-3 py-5 overflow-y-auto space-y-6" aria-label={`Điều hướng ${roleLabel}`}>
+        {navGroups.map((group) => (
           <div key={group.label}>
             <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.14em] px-3 mb-2">
               {group.label}
@@ -99,7 +109,7 @@ function Sidebar({ pathname, user, logout, onNavigate }) {
             <p className="font-display font-semibold text-[12.5px] text-ink truncate">
               {user?.name ?? user?.email}
             </p>
-            <p className="font-mono text-[10px] text-accent">admin</p>
+            <p className="font-mono text-[10px] text-accent">{roleLabel}</p>
           </div>
         </div>
         <Link
@@ -119,16 +129,17 @@ function Sidebar({ pathname, user, logout, onNavigate }) {
   );
 }
 
-export function AdminLayout() {
+function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel }) {
   const { pathname } = useLocation();
   const { logout, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const shell = { navGroups, home, consoleLabel, roleLabel };
 
   return (
     <div className="flex min-h-dvh bg-bg">
       {/* ── Sidebar (desktop) ── */}
       <aside className="w-[236px] shrink-0 border-r border-line sticky top-0 h-dvh hidden lg:block">
-        <Sidebar pathname={pathname} user={user} logout={logout} />
+        <Sidebar pathname={pathname} user={user} logout={logout} {...shell} />
       </aside>
 
       {/* ── Sidebar (mobile drawer) ── */}
@@ -152,6 +163,7 @@ export function AdminLayout() {
               user={user}
               logout={logout}
               onNavigate={() => setMobileOpen(false)}
+              {...shell}
             />
           </div>
         </div>
@@ -170,7 +182,7 @@ export function AdminLayout() {
           </button>
           <p className="font-mono font-extrabold text-[14px] text-ink tracking-tight">
             Hoisted<span className="text-accent">()</span>
-            <span className="font-normal text-ink-3 text-[11px] ml-2">admin</span>
+            <span className="font-normal text-ink-3 text-[11px] ml-2">{roleLabel}</span>
           </p>
         </div>
 
@@ -180,4 +192,12 @@ export function AdminLayout() {
       </div>
     </div>
   );
+}
+
+export function AdminLayout() {
+  return <ConsoleLayout navGroups={ADMIN_NAV} home="/admin" consoleLabel="Admin console" roleLabel="admin" />;
+}
+
+export function InstructorLayout() {
+  return <ConsoleLayout navGroups={INSTRUCTOR_NAV} home="/instructor" consoleLabel="Instructor studio" roleLabel="giảng viên" />;
 }

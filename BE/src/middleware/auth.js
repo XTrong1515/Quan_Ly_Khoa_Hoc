@@ -20,4 +20,14 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = { authMiddleware, requireAdmin };
+/** Cho phép khi role thuộc danh sách, vd requireRole('INSTRUCTOR', 'ADMIN'). */
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!roles.includes(req.user?.role)) {
+      return res.status(403).json({ message: 'Không có quyền truy cập' });
+    }
+    next();
+  };
+}
+
+module.exports = { authMiddleware, requireAdmin, requireRole };

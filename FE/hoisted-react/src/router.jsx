@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Nav } from './components/layout/nav.jsx';
 import { Footer } from './components/layout/footer.jsx';
-import { AdminLayout } from './components/layout/admin-layout.jsx';
+import { AdminLayout, InstructorLayout } from './components/layout/admin-layout.jsx';
 import { useAuth } from './store/auth';
 
 // Public
@@ -32,6 +32,10 @@ import AdminOrdersPage       from './pages/admin/orders.jsx';
 import AdminReviewsPage      from './pages/admin/reviews.jsx';
 import AdminCategoriesPage   from './pages/admin/categories.jsx';
 
+// Instructor
+import InstructorDashboardPage from './pages/instructor/dashboard.jsx';
+import InstructorCoursesPage   from './pages/instructor/courses.jsx';
+
 /* ── Layout shells ────────────────────────────────────────────── */
 function PublicLayout() {
   return (
@@ -57,6 +61,12 @@ function RequireAuth({ children }) {
 function RequireAdmin({ children }) {
   const { role } = useAuth();
   if (role !== 'admin') return <Navigate to="/" replace />;
+  return children;
+}
+function RequireInstructor({ children }) {
+  const { role } = useAuth();
+  if (role === 'guest') return <Navigate to="/login" replace />;
+  if (role !== 'instructor') return <Navigate to="/" replace />;
   return children;
 }
 
@@ -98,6 +108,12 @@ export function Router() {
         <Route path="/admin/orders"       element={<AdminOrdersPage />} />
         <Route path="/admin/reviews"      element={<AdminReviewsPage />} />
         <Route path="/admin/categories"   element={<AdminCategoriesPage />} />
+      </Route>
+
+      {/* Instructor — cùng layout console, menu riêng */}
+      <Route element={<RequireInstructor><InstructorLayout /></RequireInstructor>}>
+        <Route path="/instructor"         element={<InstructorDashboardPage />} />
+        <Route path="/instructor/courses" element={<InstructorCoursesPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

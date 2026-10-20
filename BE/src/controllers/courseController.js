@@ -121,7 +121,7 @@ async function detail(req, res) {
 
   try {
     const [courseRows] = await pool.query(
-      `SELECT ${COURSE_COLS}, co.description, co.thumbnail_url
+      `SELECT ${COURSE_COLS}, co.description, co.thumbnail_url, co.instructor_id
        FROM courses co
        LEFT JOIN categories cat ON cat.id = co.category_id
        WHERE co.slug = ? AND co.status = 'PUBLISHED'`,
@@ -160,7 +160,21 @@ async function detail(req, res) {
       isEnrolled = enrollRows.length > 0;
     }
 
-    return res.json({ course, lessons: lessonRows, reviews, isEnrolled });
+    let instructor = null;
+    if (course.instructor_id) {
+      const [[row]] = await pool.query(
+        `SELECT u.id, u.full_name AS name, u.avatar_url AS avatar, u.headline, u.bio,
+                (SELECT COUNT(*) FROM courses WHERE instructor_id = u.id AND status = 'PUBLISHED') AS courseCount,
+                (SELECT COALESCE(SUM(student_count), 0) FROM courses WHERE instructor_id = u.id AND status = 'PUBLISHED') AS studentCount
+         FROM users u WHERE u.id = ?`,
+        [course.instructor_id],
+      );
+      // SUM() trả DECIMAL → mysql2 trả chuỗi
+      instructor = row ? { ...row, studentCount: Number(row.studentCount) } : null;
+    }
+    delete course.instructor_id;
+
+    return res.json({ course, lessons: lessonRows, reviews, isEnrolled, instructor });
   } catch (err) {
     console.error('[courses/detail]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
