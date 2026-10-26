@@ -5,6 +5,7 @@ const cors    = require('cors');
 
 const adminRoutes          = require('./routes/admin');
 const instructorRoutes     = require('./routes/instructor');
+const aiRoutes             = require('./routes/ai');
 const uploadRoutes         = require('./routes/upload');
 const authRoutes           = require('./routes/auth');
 const userRoutes           = require('./routes/user');
@@ -53,6 +54,7 @@ app.use('/api/quizzes',         quizRoutes);
 app.use('/api/discussions',     discussionRoutes);
 app.use('/api/wishlists',       wishlistRoutes);
 app.use('/api/notifications',   notificationRoutes);
+app.use('/api/ai',              aiRoutes);
 app.get('/api/transactions/me', authMiddleware, myTransactions);
 app.post('/api/site-reviews',   authMiddleware, createSiteReview);
 

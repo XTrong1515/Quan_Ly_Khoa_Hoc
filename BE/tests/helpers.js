@@ -73,7 +73,21 @@ async function enroll(user, courseId) {
   await pool.query('INSERT INTO enrollments (user_id, course_id) VALUES (?, ?)', [user.id, courseId]);
 }
 
+/** Đơn hàng PENDING cho các khóa học (giá lấy từ DB). Trả { id, code }. */
+async function createOrder(user, courseIds) {
+  seq += 1;
+  const [courses] = await pool.query('SELECT id, title, price FROM courses WHERE id IN (?)', [courseIds]);
+  const total = courses.reduce((s, c) => s + Number(c.price), 0);
+  const code = `T${Date.now()}${seq}`;
+  const [r] = await pool.query(
+    "INSERT INTO orders (user_id, order_code, total_amount, status, expires_at) VALUES (?, ?, ?, 'PENDING', DATE_ADD(NOW(), INTERVAL 1 DAY))",
+    [user.id, code, total],
+  );
+  await pool.query('INSERT INTO order_items (order_id, course_id, course_title, price) VALUES ?', [courses.map((c) => [r.insertId, c.id, c.title, c.price])]);
+  return { id: r.insertId, code };
+}
+
 module.exports = {
   pool, resetDb, createUser, authHeader, DEFAULT_PASSWORD,
-  createCategory, createCourse, createLesson, enroll,
+  createCategory, createCourse, createLesson, enroll, createOrder,
 };

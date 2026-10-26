@@ -36,9 +36,13 @@ router.post('/lessons/:id/uploads',        requireOwnership('lesson'), media.cre
 router.put('/lessons/:id/media',           requireOwnership('lesson'), media.attachMedia);
 router.delete('/lessons/:id/media/:kind',  requireOwnership('lesson'), media.removeMedia);
 
+// AI sinh bản nháp câu hỏi quiz
+const ai = require('../controllers/aiController');
+const { codeRunLimiter, aiGenerateLimiter } = require('../middleware/rateLimit');
+router.post('/lessons/:id/ai/quiz', requireOwnership('lesson'), aiGenerateLimiter, ai.generateQuizDraft);
+
 // Bài tập lập trình
 const exercise = require('../controllers/exerciseController');
-const { codeRunLimiter } = require('../middleware/rateLimit');
 router.get('/lessons/:id/exercise',           requireOwnership('lesson'), exercise.getForAuthor);
 router.put('/lessons/:id/exercise',           requireOwnership('lesson'), exercise.saveForAuthor);
 router.delete('/lessons/:id/exercise',        requireOwnership('lesson'), exercise.deleteForAuthor);
@@ -58,6 +62,15 @@ router.post('/users/bulk',            ctrl.adminBulkUsers);
 router.put('/users/:id/status',       ctrl.adminUpdateUserStatus);
 router.put('/users/:id/role',         ctrl.adminUpdateUserRole);
 router.get('/users/:id/enrollments',  ctrl.adminGetUserEnrollments);
+
+// Đối soát & chi trả doanh thu giảng viên
+const payout = require('../controllers/payoutController');
+router.get('/payouts/summary',    payout.payoutSummary);
+router.get('/payouts',            payout.listPayouts);
+router.post('/payouts',           payout.createPayout);
+router.put('/payouts/:id/paid',   payout.markPayoutPaid);
+router.delete('/payouts/:id',     payout.cancelPayout);
+router.put('/users/:id/commission', payout.setCommission);
 
 // UC25 — Order management
 router.get('/orders',            ctrl.adminListOrders);

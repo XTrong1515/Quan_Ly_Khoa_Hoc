@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ExerciseEditorModal } from '@/components/exercise/exercise-editor-modal.jsx';
+import { AiQuizGenerator } from '@/components/ai/ai-quiz-generator.jsx';
 
 /*
  * Bộ soạn khóa học dùng chung cho Admin (/api/admin) và Giảng viên (/api/instructor).
@@ -867,6 +868,10 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
 
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
           {isLoading && <p className="font-mono text-[12px] text-ink-3">Đang tải...</p>}
+
+          {!isLoading && (
+            <AiQuizGenerator apiBase={apiBase} lesson={lesson} quizId={quiz?.id ?? null} onAdded={refresh} />
+          )}
 
           {!isLoading && !quiz && (
             /* ── Create quiz ── */

@@ -9,3 +9,9 @@ process.env.NODE_ENV = 'test';
 process.env.DB_NAME  = TEST_DB;
 process.env.CODE_RUN_RATE_LIMIT = '1000'; // test giới hạn tần suất riêng trong exercise.test.js
 process.env.CODE_RUNNER = 'isolated-vm';
+process.env.AI_CHAT_RATE_LIMIT = '1000';
+process.env.AI_GENERATE_RATE_LIMIT = '1000';
+// Mặc định test chạy như khi CHƯA cấu hình VNPay (dotenv không ghi đè biến đã tồn tại);
+// test riêng tự bật VNPay để kiểm tra chữ ký
+process.env.VNPAY_TMN_CODE = '';
+process.env.VNPAY_HASH_SECRET = '';

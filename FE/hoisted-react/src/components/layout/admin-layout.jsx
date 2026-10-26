@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Tag, Users,
-  ShoppingCart, Star, LogOut, ArrowLeft, Menu, X, GraduationCap,
+  ShoppingCart, Star, LogOut, ArrowLeft, Menu, X, GraduationCap, Wallet, UserCircle, Banknote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
@@ -13,6 +13,7 @@ const ADMIN_NAV = [
     items: [
       { to: '/admin',        label: 'Dashboard', icon: LayoutDashboard, exact: true },
       { to: '/admin/orders', label: 'Đơn hàng',  icon: ShoppingCart },
+      { to: '/admin/payouts', label: 'Chi trả GV', icon: Banknote },
     ],
   },
   {
@@ -37,6 +38,8 @@ const INSTRUCTOR_NAV = [
     items: [
       { to: '/instructor',         label: 'Tổng quan', icon: LayoutDashboard, exact: true },
       { to: '/instructor/courses', label: 'Khóa học của tôi', icon: GraduationCap },
+      { to: '/instructor/revenue', label: 'Doanh thu', icon: Wallet },
+      { to: '/instructor/profile', label: 'Hồ sơ & nhận tiền', icon: UserCircle },
     ],
   },
 ];

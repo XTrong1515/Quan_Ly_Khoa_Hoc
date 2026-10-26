@@ -88,6 +88,7 @@ async function enrollFree(req, res) {
       'INSERT INTO enrollments (user_id, course_id) VALUES (?, ?)',
       [userId, courseId],
     );
+    await pool.query('UPDATE courses SET student_count = student_count + 1 WHERE id = ?', [courseId]);
 
     return res.status(201).json({ enrollmentId: result.insertId });
   } catch (err) {

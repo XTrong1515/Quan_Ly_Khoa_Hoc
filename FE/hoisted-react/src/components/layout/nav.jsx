@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, Bell, ShoppingCart, Moon, Sun, LogOut, BookOpen, Settings, ChevronDown, X, Heart, Check } from 'lucide-react';
+import { Search, Bell, ShoppingCart, Moon, Sun, LogOut, BookOpen, Settings, ChevronDown, X, Heart, Check, Sparkles } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Logo } from '../logo.jsx';
@@ -140,6 +140,9 @@ export function Nav() {
                   </MenuItem>
                   <MenuItem to="/me/wishlist" icon={Heart} onClick={() => setMenuOpen(false)}>
                     Khóa học yêu thích
+                  </MenuItem>
+                  <MenuItem to="/assistant" icon={Sparkles} onClick={() => setMenuOpen(false)}>
+                    Trợ lý AI
                   </MenuItem>
                   <MenuItem to="/me/profile" icon={Settings} onClick={() => setMenuOpen(false)}>
                     Cài đặt tài khoản

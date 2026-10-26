@@ -23,6 +23,8 @@ import ProfileSettingsPage   from './pages/user/profile.jsx';
 import MyOrdersPage          from './pages/user/my-orders.jsx';
 import TransactionsPage      from './pages/user/transactions.jsx';
 import WishlistPage          from './pages/user/wishlist.jsx';
+import AssistantPage         from './pages/user/assistant.jsx';
+import { ChatWidget }        from './components/ai/chat-widget.jsx';
 
 // Admin
 import AdminDashboardPage    from './pages/admin/dashboard.jsx';
@@ -31,10 +33,13 @@ import AdminUsersPage        from './pages/admin/users.jsx';
 import AdminOrdersPage       from './pages/admin/orders.jsx';
 import AdminReviewsPage      from './pages/admin/reviews.jsx';
 import AdminCategoriesPage   from './pages/admin/categories.jsx';
+import AdminPayoutsPage      from './pages/admin/payouts.jsx';
 
 // Instructor
 import InstructorDashboardPage from './pages/instructor/dashboard.jsx';
 import InstructorCoursesPage   from './pages/instructor/courses.jsx';
+import InstructorRevenuePage   from './pages/instructor/revenue.jsx';
+import InstructorProfilePage   from './pages/instructor/profile.jsx';
 
 /* ── Layout shells ────────────────────────────────────────────── */
 function PublicLayout() {
@@ -43,6 +48,7 @@ function PublicLayout() {
       <Nav />
       <div className="flex-1"><Outlet /></div>
       <Footer />
+      <ChatWidget />
     </div>
   );
 }
@@ -88,6 +94,7 @@ export function Router() {
         <Route path="/me/orders"          element={<RequireAuth><MyOrdersPage /></RequireAuth>} />
         <Route path="/me/transactions"    element={<RequireAuth><TransactionsPage /></RequireAuth>} />
         <Route path="/me/wishlist"        element={<RequireAuth><WishlistPage /></RequireAuth>} />
+        <Route path="/assistant"          element={<RequireAuth><AssistantPage /></RequireAuth>} />
       </Route>
 
       <Route element={<BareLayout />}>
@@ -108,12 +115,15 @@ export function Router() {
         <Route path="/admin/orders"       element={<AdminOrdersPage />} />
         <Route path="/admin/reviews"      element={<AdminReviewsPage />} />
         <Route path="/admin/categories"   element={<AdminCategoriesPage />} />
+        <Route path="/admin/payouts"      element={<AdminPayoutsPage />} />
       </Route>
 
       {/* Instructor — cùng layout console, menu riêng */}
       <Route element={<RequireInstructor><InstructorLayout /></RequireInstructor>}>
         <Route path="/instructor"         element={<InstructorDashboardPage />} />
         <Route path="/instructor/courses" element={<InstructorCoursesPage />} />
+        <Route path="/instructor/revenue" element={<InstructorRevenuePage />} />
+        <Route path="/instructor/profile" element={<InstructorProfilePage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

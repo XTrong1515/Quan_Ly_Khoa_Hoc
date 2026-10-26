@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const pool   = require('../config/db');
 const { createNotification } = require('./notificationController');
+const { markOrderPaid } = require('../services/orders');
 
 const VNPAY_URL  = process.env.VNPAY_URL  || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
 const TMN_CODE   = process.env.VNPAY_TMN_CODE   || '';
@@ -170,16 +171,21 @@ async function verifyPayment(req, res) {
   const orderCode     = params.vnp_TxnRef;
   const responseCode  = params.vnp_ResponseCode;
   const transactionId = params.vnp_TransactionNo;
-  const isDev         = params.dev_mock === '1' || params.dev_mock === 1;
+  // Thanh toán giả lập CHỈ khi chưa cấu hình VNPay và không chạy production.
+  // (Trước đây chỉ cần gửi dev_mock=1 là bỏ qua kiểm tra chữ ký → tự đánh dấu PAID không cần trả tiền.)
+  const vnpayConfigured = Boolean(TMN_CODE && HASH_SECRET);
+  const wantsMock       = params.dev_mock === '1' || params.dev_mock === 1;
+  const mockAllowed     = !vnpayConfigured && process.env.NODE_ENV !== 'production';
 
   if (!orderCode) return res.status(400).json({ message: 'Thiếu thông tin đơn hàng' });
 
   try {
-    // Verify VNPay signature (skip for dev mock or unconfigured)
-    if (!isDev && TMN_CODE && HASH_SECRET) {
+    if (vnpayConfigured) {
       if (!verifyVNPaySignature(params)) {
         return res.status(400).json({ message: 'Chữ ký thanh toán không hợp lệ' });
       }
+    } else if (!(wantsMock && mockAllowed)) {
+      return res.status(400).json({ message: 'Cổng thanh toán chưa được cấu hình' });
     }
 
     const [orders] = await pool.query(
@@ -197,46 +203,29 @@ async function verifyPayment(req, res) {
     }
 
     const success = responseCode === '00';
-    const conn    = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-
-      if (success) {
-        await conn.query(
-          `UPDATE orders SET status = 'PAID', transaction_id = ?, paid_at = NOW() WHERE id = ?`,
-          [transactionId ?? null, order.id],
-        );
-
-        const [items] = await conn.query('SELECT course_id FROM order_items WHERE order_id = ?', [order.id]);
-        if (items.length > 0) {
-          const enrollValues = items.map((i) => [userId, i.course_id, order.id]);
-          await conn.query('INSERT IGNORE INTO enrollments (user_id, course_id, order_id) VALUES ?', [enrollValues]);
-        }
-
+    if (success) {
+      // markOrderPaid chỉ chuyển đơn còn PENDING → 2 callback đồng thời không xử lý trùng
+      const { changed } = await markOrderPaid(order.id, { transactionId: transactionId ?? null });
+      if (changed) {
         // Fire-and-forget notification — outside transaction so it never blocks payment
         setImmediate(() => {
           createNotification(userId, {
             type:  'order_paid',
             title: 'Thanh toán thành công',
-            body:  `Đơn hàng #${order.order_code} đã được xác nhận. Bắt đầu học ngay!`,
+            body:  `Đơn hàng #${orderCode} đã được xác nhận. Bắt đầu học ngay!`,
             link:  '/me',
           });
         });
-      } else {
-        await conn.query(
-          `UPDATE orders SET status = 'FAILED', transaction_id = ? WHERE id = ?`,
-          [transactionId ?? null, order.id],
-        );
       }
-
-      await conn.commit();
-      return res.json({ success, status: success ? 'PAID' : 'FAILED', orderCode, orderId: order.id });
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
+    } else {
+      await pool.query(
+        `UPDATE orders SET status = 'FAILED', transaction_id = ? WHERE id = ? AND status = 'PENDING'`,
+        [transactionId ?? null, order.id],
+      );
     }
+
+    const [[current]] = await pool.query('SELECT status FROM orders WHERE id = ?', [order.id]);
+    return res.json({ success: current.status === 'PAID', status: current.status, orderCode, orderId: order.id });
   } catch (err) {
     console.error('[orders/verify]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });

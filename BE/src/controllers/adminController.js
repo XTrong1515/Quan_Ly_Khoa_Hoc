@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { createNotification } = require('./notificationController');
 const storage = require('../utils/storage');
+const { markOrderPaid } = require('../services/orders');
 
 /* ─────────────────────────────────────────────────────────────────
    UC20 — Dashboard
@@ -834,19 +835,9 @@ async function adminConfirmOrder(req, res) {
     if (!orderRows.length) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
     const order = orderRows[0];
 
-    if (order.status !== 'PENDING') {
+    const { changed } = await markOrderPaid(id, { transactionId: `ADMIN-${req.user.id}` });
+    if (!changed) {
       return res.status(400).json({ message: 'Đơn hàng không còn ở trạng thái chờ thanh toán' });
-    }
-
-    await pool.query(
-      "UPDATE orders SET status = 'PAID', transaction_id = ?, paid_at = NOW() WHERE id = ?",
-      [`ADMIN-${req.user.id}`, id],
-    );
-
-    const [items] = await pool.query('SELECT course_id FROM order_items WHERE order_id = ?', [id]);
-    if (items.length > 0) {
-      const enrollValues = items.map((i) => [order.user_id, i.course_id, id]);
-      await pool.query('INSERT IGNORE INTO enrollments (user_id, course_id, order_id) VALUES ?', [enrollValues]);
     }
 
     createNotification(order.user_id, {

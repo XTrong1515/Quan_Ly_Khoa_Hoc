@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS users (
   bio           TEXT NULL,
   headline      VARCHAR(255) NULL,
   commission_rate DECIMAL(5,2) NULL,                 -- NULL = dùng PLATFORM_COMMISSION
+  bank_name           VARCHAR(100) NULL,
+  bank_account_number VARCHAR(30) NULL,
+  bank_account_name   VARCHAR(100) NULL,
   role          ENUM('USER', 'INSTRUCTOR', 'ADMIN') DEFAULT 'USER',
   status        ENUM('ACTIVE', 'LOCKED') DEFAULT 'ACTIVE',
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -198,6 +201,9 @@ CREATE TABLE IF NOT EXISTS order_items (
   course_id    INT NOT NULL,
   course_title VARCHAR(255) NOT NULL,
   price        DECIMAL(12,2) NOT NULL,
+  instructor_id      INT NULL,              -- chụp lúc thanh toán (Giai đoạn 5)
+  commission_rate    DECIMAL(5,2) NULL,     -- % nền tảng giữ lại
+  instructor_earning DECIMAL(12,2) NULL,
   FOREIGN KEY (order_id)  REFERENCES orders(id) ON DELETE CASCADE,
   FOREIGN KEY (course_id) REFERENCES courses(id)
 );
@@ -441,4 +447,48 @@ CREATE TABLE IF NOT EXISTS code_submissions (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (exercise_id) REFERENCES coding_exercises(id) ON DELETE CASCADE,
   INDEX idx_user_exercise (user_id, exercise_id, created_at)
+);
+
+-- ── Giai đoạn 4: trợ lý AI (xem database/ai_migration.js) ──
+CREATE TABLE IF NOT EXISTS ai_conversations (
+  id          INT PRIMARY KEY AUTO_INCREMENT,
+  user_id     INT NOT NULL,
+  title       VARCHAR(120) NOT NULL,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user_updated (user_id, updated_at)
+);
+
+CREATE TABLE IF NOT EXISTS ai_messages (
+  id               INT PRIMARY KEY AUTO_INCREMENT,
+  conversation_id  INT NOT NULL,
+  role             ENUM('user','assistant') NOT NULL,
+  content          TEXT NOT NULL,
+  courses          JSON NULL,
+  tokens_in        INT NULL,
+  tokens_out       INT NULL,
+  latency_ms       INT NULL,
+  created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (conversation_id) REFERENCES ai_conversations(id) ON DELETE CASCADE,
+  INDEX idx_conversation (conversation_id, id)
+);
+
+-- ── Giai đoạn 5: chi trả doanh thu giảng viên (xem database/revenue_migration.js) ──
+CREATE TABLE IF NOT EXISTS instructor_payouts (
+  id             INT PRIMARY KEY AUTO_INCREMENT,
+  instructor_id  INT NOT NULL,
+  amount         DECIMAL(12,2) NOT NULL,
+  period_from    DATE NULL,
+  period_to      DATE NULL,
+  status         ENUM('PENDING','PAID') NOT NULL DEFAULT 'PENDING',
+  bank_snapshot  VARCHAR(255) NULL,
+  bank_ref       VARCHAR(100) NULL,
+  note           VARCHAR(500) NULL,
+  created_by     INT NULL,
+  paid_by        INT NULL,
+  paid_at        TIMESTAMP NULL,
+  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (instructor_id) REFERENCES users(id),
+  INDEX idx_instructor_status (instructor_id, status)
 );
