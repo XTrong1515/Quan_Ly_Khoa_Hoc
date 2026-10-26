@@ -108,11 +108,12 @@ describe('POST /api/orders/verify — bảo mật callback thanh toán', () => {
   });
 
   it('VNPay ĐÃ cấu hình: gửi dev_mock=1 không còn bỏ qua được kiểm tra chữ ký', async () => {
-    let isolatedApp;
+    let isolatedApp; let isolatedPool;
     jest.isolateModules(() => {
       process.env.VNPAY_TMN_CODE = 'TESTCODE';
       process.env.VNPAY_HASH_SECRET = 'TESTSECRET';
       isolatedApp = require('../src/app');
+      isolatedPool = require('../src/config/db');
       process.env.VNPAY_TMN_CODE = '';
       process.env.VNPAY_HASH_SECRET = '';
     });
@@ -121,6 +122,7 @@ describe('POST /api/orders/verify — bảo mật callback thanh toán', () => {
       .send({ vnp_TxnRef: order.code, vnp_ResponseCode: '00', dev_mock: '1' });
     expect(res.status).toBe(400);
     expect(await statusOf(order.id)).toBe('PENDING');
+    await isolatedPool.end();
   });
 
   it('thanh toán thất bại → FAILED; không ghi đè đơn đã PAID', async () => {

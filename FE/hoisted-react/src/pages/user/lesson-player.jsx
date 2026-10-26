@@ -5,7 +5,7 @@ import ReactPlayer from 'react-player';
 import {
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   CheckCircle, Check, Play, Paperclip, ListChecks,
-  MessageSquare, Send, Edit2, Trash2, CornerDownRight, ChevronsUpDown,
+  Send, Edit2, Trash2, CornerDownRight, ChevronsUpDown,
   PanelRightClose, PanelRightOpen, Heart,
   AlertTriangle, X, Code2, MonitorPlay,
 } from 'lucide-react';
@@ -598,7 +598,6 @@ function QuizPanel({ quiz, onPassed }) {
   }
 
   const latestAttempt = quiz.latestAttempt;
-  const showForm   = retrying || (!latestAttempt && !result);
   const showResult = result ?? (latestAttempt && !retrying ? latestAttempt : null);
 
   const handleSelect = (questionId, optionId) =>
@@ -737,7 +736,7 @@ function DiscussionPanel({ lessonId }) {
   const qc = useQueryClient();
   const queryKey = ['discussions', lessonId];
 
-  const { data, isLoading, fetchNextPage, hasNextPage } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey,
     queryFn: () => api.get(`/api/lessons/${lessonId}/discussions`).then(r => r.data),
     staleTime: 30_000,
@@ -875,7 +874,6 @@ function CommentItem({ comment, currentUserId, onReply, onDelete, onEdit, replyi
       {comment.replies?.length > 0 && (
         <div className="ml-10 space-y-3 pl-3 border-l border-line">
           {comment.replies.map(r => {
-            const rIsOwn    = r.author.id === currentUserId;
             const rInitials = r.author.name?.[0]?.toUpperCase() ?? '?';
             return (
               <div key={r.id} className="flex gap-2.5">
@@ -987,7 +985,7 @@ function BottomSheet({ children, snapIndex, onSnapChange }) {
     sheetRef.current.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
     sheetRef.current.style.transform  = `translateY(${ty}px)`;
     drag.current.currentTy = ty;
-  }, [snapIndex]); // eslint-disable-line
+  }, [snapIndex]);
 
   function onPointerDown(e) {
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -1003,7 +1001,7 @@ function BottomSheet({ children, snapIndex, onSnapChange }) {
     if (sheetRef.current) sheetRef.current.style.transform = `translateY(${ty}px)`;
   }
 
-  function onPointerUp(e) {
+  function onPointerUp() {
     if (!drag.current.active) return;
     drag.current.active = false;
 

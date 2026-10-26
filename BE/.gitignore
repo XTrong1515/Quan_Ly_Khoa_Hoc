@@ -6,3 +6,9 @@ npm-debug.log*
 
 # MinIO local data
 .minio-data/
+
+# Kết quả Jest thô (chứa đường dẫn máy local)
+tests/report/jest-results.json
+
+# Bản sao lưu CSDL (chứa dữ liệu người dùng)
+backups/

@@ -1,8 +1,9 @@
-const bcrypt = require('bcryptjs');
+const bcrypt = require('../utils/hash');
 const crypto = require('crypto');
 const pool = require('../config/db');
 const { signAccess, signRefresh, verifyRefresh } = require('../utils/jwt');
 const { sendResetPasswordEmail } = require('../utils/mailer');
+const { passwordError } = require('../utils/password');
 
 const SALT_ROUNDS = 12;
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 ngày
@@ -23,6 +24,8 @@ async function register(req, res) {
   if (!name?.trim() || !email?.trim() || !password) {
     return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
   }
+  const pwError = passwordError(password);
+  if (pwError) return res.status(400).json({ message: pwError });
 
   try {
     const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
@@ -206,6 +209,8 @@ async function forgotPassword(req, res) {
 async function resetPassword(req, res) {
   const { token, password } = req.body;
   if (!token || !password) return res.status(400).json({ message: 'Thiếu token hoặc mật khẩu mới' });
+  const pwError = passwordError(password);
+  if (pwError) return res.status(400).json({ message: pwError });
 
   try {
     const [rows] = await pool.query(

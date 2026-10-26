@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Download, X, Circle } from 'lucide-react';
+import { Search, Download, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';

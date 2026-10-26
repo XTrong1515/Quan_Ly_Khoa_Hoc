@@ -2,6 +2,7 @@ require('dotenv').config();
 const path    = require('path');
 const express = require('express');
 const cors    = require('cors');
+const helmet  = require('helmet');
 
 const adminRoutes          = require('./routes/admin');
 const instructorRoutes     = require('./routes/instructor');
@@ -26,6 +27,10 @@ const homeController       = require('./controllers/homeController');
 const { platformStats }    = require('./controllers/statsController');
 
 const app = express();
+
+// Header bảo mật (X-Content-Type-Options, X-Frame-Options, HSTS, CSP…); ẩn "X-Powered-By: Express".
+// CORP = cross-origin để FE (khác cổng) vẫn hiển thị ảnh trong /uploads.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 app.use(cors({
   origin: process.env.FE_ORIGIN || 'http://localhost:5173',

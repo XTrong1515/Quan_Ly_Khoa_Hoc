@@ -1,5 +1,6 @@
-const bcrypt = require('bcryptjs');
+const bcrypt = require('../utils/hash');
 const pool = require('../config/db');
+const { passwordError } = require('../utils/password');
 
 const SALT_ROUNDS = 12;
 
@@ -53,6 +54,8 @@ async function changePassword(req, res) {
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ message: 'Thiếu mật khẩu hiện tại hoặc mật khẩu mới' });
   }
+  const pwError = passwordError(newPassword);
+  if (pwError) return res.status(400).json({ message: pwError });
 
   try {
     const [rows] = await pool.query('SELECT password_hash FROM users WHERE id = ?', [userId]);

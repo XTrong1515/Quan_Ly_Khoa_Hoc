@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const { createNotification } = require('./notificationController');
 const storage = require('../utils/storage');
 const { markOrderPaid } = require('../services/orders');
+const { passwordError } = require('../utils/password');
 
 /* ─────────────────────────────────────────────────────────────────
    UC20 — Dashboard
@@ -503,7 +504,7 @@ async function adminDeleteCategory(req, res) {
 /* ─────────────────────────────────────────────────────────────────
    UC24 — User management
    ───────────────────────────────────────────────────────────────── */
-const bcrypt = require('bcryptjs');
+const bcrypt = require('../utils/hash');
 
 async function adminListUsers(req, res) {
   const { search = '', role = '', status = '', page = 1, limit = 20, sort = 'newest' } = req.query;
@@ -556,7 +557,8 @@ async function adminCreateUser(req, res) {
   const { full_name, email, password, role = 'USER' } = req.body;
   if (!full_name || !email || !password) return res.status(400).json({ message: 'Thiếu: full_name, email, password' });
   if (!['USER', 'INSTRUCTOR', 'ADMIN'].includes(role.toUpperCase())) return res.status(400).json({ message: 'Role không hợp lệ' });
-  if (password.length < 6) return res.status(400).json({ message: 'Mật khẩu tối thiểu 6 ký tự' });
+  const pwError = passwordError(password);
+  if (pwError) return res.status(400).json({ message: pwError });
 
   try {
     const hash = await bcrypt.hash(password, 10);

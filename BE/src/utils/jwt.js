@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'hoisted-access-secret-dev-change-in-prod';
@@ -10,7 +11,9 @@ function signAccess(payload) {
 }
 
 function signRefresh(payload) {
-  return jwt.sign(payload, REFRESH_SECRET, { expiresIn: REFRESH_TTL });
+  // jti ngẫu nhiên: 2 lần đăng nhập trong cùng 1 giây (cùng iat) không sinh ra token trùng
+  // → tránh lỗi UNIQUE trên refresh_tokens.token (trước đây trả 500)
+  return jwt.sign({ ...payload, jti: crypto.randomUUID() }, REFRESH_SECRET, { expiresIn: REFRESH_TTL });
 }
 
 function verifyAccess(token) {

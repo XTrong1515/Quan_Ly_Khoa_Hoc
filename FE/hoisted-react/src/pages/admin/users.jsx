@@ -1,7 +1,7 @@
 import { useState, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Search, Download, Plus, Lock, Unlock, ShieldCheck,
+  Search, Download, Plus, Lock, Unlock,
   ChevronDown, ChevronUp, BookOpen, X, Eye, EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -386,7 +386,7 @@ function CreateUserModal({ onClose, onCreated }) {
     const e = {};
     if (!form.full_name.trim()) e.full_name = 'Bắt buộc';
     if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Email không hợp lệ';
-    if (form.password.length < 6) e.password = 'Tối thiểu 6 ký tự';
+    if (form.password.length < 8) e.password = 'Tối thiểu 8 ký tự';
     setErrors(e);
     return Object.keys(e).length === 0;
   };

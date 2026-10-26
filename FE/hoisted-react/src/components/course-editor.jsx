@@ -157,7 +157,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
 
       {/* Sections */}
       <div className="border border-line rounded-lg overflow-hidden bg-bg">
-        {grouped.map((section, si) => (
+        {grouped.map((section) => (
           <div key={section.id ?? 'root'}>
             {section.title && (
               <div className="flex items-center gap-3 px-4 py-2.5 bg-bg-2 border-b border-line">
