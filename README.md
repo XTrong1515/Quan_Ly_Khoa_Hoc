@@ -9,8 +9,8 @@ Nền tảng e-commerce tài sản số cho khóa học JavaScript: bán & phân
 | Tác nhân | Chức năng chính |
 |---|---|
 | **Học viên** | Tìm / xem / mua khóa học (VNPay), học video bảo mật (link có hạn + watermark), tài liệu PDF, quiz, **bài tập code chấm tự động**, thảo luận, wishlist, **trợ lý AI** gợi ý khóa học & lộ trình |
-| **Giảng viên** | Tạo khóa học → gửi duyệt, soạn bài học / quiz / bài tập, upload video & PDF lên storage private, **AI soạn câu hỏi quiz**, xem **doanh thu** & lịch sử chi trả, khai báo tài khoản nhận tiền |
-| **Quản trị viên** | Duyệt / từ chối khóa học, quản lý người dùng & vai trò, đơn hàng, đánh giá, danh mục, dashboard doanh thu, **đối soát & chi trả** cho giảng viên, tỷ lệ hoa hồng |
+| **Giảng viên** | Đăng ký làm giảng viên (admin duyệt), tạo khóa học → gửi duyệt, soạn bài học (Markdown) / quiz / bài tập, upload video & PDF lên storage private, **AI soạn nội dung bài học & câu hỏi quiz**, xem **doanh thu** & lịch sử chi trả, khai báo tài khoản nhận tiền |
+| **Quản trị viên** | Duyệt đơn giảng viên, duyệt / từ chối khóa học, quản lý người dùng & vai trò, đơn hàng, đánh giá, danh mục, dashboard doanh thu, **đối soát & chi trả** cho giảng viên, tỷ lệ hoa hồng |
 
 ## Công nghệ
 
@@ -32,7 +32,7 @@ npm install
 cp .env.example .env          # điền DB_*, JWT_*, (VNPay, Gemini, S3) — xem chú thích trong file
 
 # 2. CSDL — chọn 1 trong 2:
-npm run db:setup              # DB mới, trống, từ database/full_schema.sql (28 bảng)
+npm run db:setup              # DB mới, trống, từ database/full_schema.sql (29 bảng)
 npm run db:restore -- backups/<file>.sql   # hoặc khôi phục bản sao lưu có sẵn dữ liệu demo
 
 # 3. (DB đang chạy bản cũ) nâng cấp cấu trúc — các script đều chạy lại an toàn
@@ -41,6 +41,8 @@ node database/media_migration.js
 node database/exercise_migration.js
 node database/ai_migration.js
 node database/revenue_migration.js
+node database/application_migration.js
+node database/hls_migration.js
 
 # 4. Dữ liệu demo (dev)
 node database/seed_instructors.js
@@ -70,8 +72,8 @@ Kiểm tra kết nối dịch vụ: `npm run check:services` (storage, sandbox, 
 
 | Lệnh | Nội dung | Kết quả mới nhất |
 |---|---|---|
-| `npm test` | 194 test API (Jest + Supertest) trên DB riêng `<DB_NAME>_test` | 194/194 đạt |
-| `npm run test:report` | Sinh bảng test case → `BE/tests/report/TEST-CASES.md` | 8 phân hệ |
+| `npm test` | 208 test API (Jest + Supertest) trên DB riêng `<DB_NAME>_test` | 208/208 đạt |
+| `npm run test:report` | Sinh bảng test case → `BE/tests/report/TEST-CASES.md` | 9 phân hệ |
 | `npm run load-test` | Kiểm thử tải (autocannon) → `BE/tests/load/` | ~760–1.400 req/s, 0 lỗi; xem `SUMMARY.md` |
 | `npm run ai:eval` | 30 câu đánh giá trợ lý với Gemini thật → `BE/tests/ai-eval/LATEST.md` | 29/30, 0 khóa học bịa |
 | `npm run lint` (FE) | ESLint, 0 cảnh báo | đạt |
@@ -82,8 +84,10 @@ Kiểm tra kết nối dịch vụ: `npm run check:services` (storage, sandbox, 
 - JWT access 15 phút + refresh 30 ngày (secret riêng, lưu & thu hồi trong DB)
 - Phân quyền ở BE: `requireRole`, `requireOwnership` (chống IDOR — trả 404), `requireEnrollment`
 - Video / PDF trong bucket private, chỉ cấp presigned URL ngắn hạn cho người có quyền
+- Video tự mã hóa **HLS AES-128** sau khi upload (ffmpeg chạy nền): mỗi video 1 khóa riêng, khóa lưu trong DB đã bọc bằng `HLS_MASTER_KEY`, chỉ cấp qua `/api/lessons/:id/hls/key` cho người có quyền; các đoạn `.ts` là presigned URL ngắn hạn
 - Sandbox chấm code: isolate riêng, giới hạn RAM / thời gian, không có `require` / `process` / mạng
 - Callback thanh toán kiểm tra chữ ký VNPay, xử lý idempotent (1 đơn chỉ chuyển PAID 1 lần)
+- Nội dung do giảng viên soạn hiển thị qua Markdown / DOMPurify (chống XSS lưu trữ)
 - `helmet`, CORS theo origin FE, prepared statement 100%, rate limit cho chạy code & AI
 
 ## Sao lưu dữ liệu
@@ -96,7 +100,8 @@ npm run db:export-schema      # cập nhật database/full_schema.sql sau khi đ
 
 ## Hạn chế & hướng phát triển
 
-- Không chống được quay màn hình (DRM Widevine/FairPlay cần dịch vụ trả phí) — hiện dùng link có hạn + watermark; có thể bổ sung HLS + AES-128
+- HLS AES-128 chống tải / chia sẻ link, nhưng khóa vẫn phải giao cho trình duyệt người xem → không chống được người cố tình trích khóa hay quay màn hình (cần DRM Widevine/FairPlay — dịch vụ trả phí); watermark email giúp truy vết
+- Mã hóa video chạy tuần tự trong cùng tiến trình API → khi nhiều giảng viên upload cùng lúc nên tách worker riêng (BullMQ + Redis)
 - Chấm code chỉ hỗ trợ JavaScript thuần; mở rộng đa ngôn ngữ bằng Judge0 tự host
 - Chi trả giảng viên thủ công (chuyển khoản + ghi nhận); split payment tự động cần tài khoản merchant riêng
 - Gemini free tier hay quá tải — hệ thống tự chuyển model, nên dùng gói trả phí khi chạy thật

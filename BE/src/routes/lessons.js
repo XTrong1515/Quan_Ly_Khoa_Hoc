@@ -1,13 +1,16 @@
 const router = require('express').Router();
 const { authMiddleware }    = require('../middleware/auth');
 const { requireEnrollment } = require('../middleware/enrollment');
-const { preview, detail, attachment } = require('../controllers/lessonController');
+const { preview, detail, attachment, hlsPlaylist, hlsKey } = require('../controllers/lessonController');
 const { getQuizForUser }    = require('../controllers/quizController');
 const { listDiscussions, createDiscussion } = require('../controllers/discussionController');
 
 router.get('/:id/preview',      preview);
 router.get('/:id/quiz',         authMiddleware, requireEnrollment(), getQuizForUser);
 router.get('/:id/attachment',   authMiddleware, requireEnrollment(), attachment);
+// Video HLS mã hóa: playlist (đoạn = presigned URL) + khóa giải mã — cùng quyền như xem bài học
+router.get('/:id/hls/index.m3u8', authMiddleware, requireEnrollment({ allowPreview: true }), hlsPlaylist);
+router.get('/:id/hls/key',        authMiddleware, requireEnrollment({ allowPreview: true }), hlsKey);
 router.get('/:id/discussions',  authMiddleware, requireEnrollment({ allowPreview: true }), listDiscussions);
 router.post('/:id/discussions', authMiddleware, requireEnrollment(), createDiscussion);
 // Bài tập lập trình

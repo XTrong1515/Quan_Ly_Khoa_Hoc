@@ -262,6 +262,30 @@ describe('AI sinh câu hỏi quiz cho giảng viên', () => {
     expect([...out].sort()).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
+  it('AI soạn nội dung bài học: trả bản nháp Markdown (bỏ khối bọc ngoài), không lưu DB', async () => {
+    const body = '## Mục tiêu bài học\n\n- Hiểu hoisting\n\n## Ví dụ\n\n```js\nconsole.log(a); var a = 1;\n```\n\n## Tóm tắt\n\nvar được hoisting.';
+    mockStream.mockResolvedValue(fakeStream(['```markdown\n', body, '\n```']));
+    const res = await request(app).post(`/api/instructor/lessons/${lesson.id}/ai/content`).set(authHeader(teacher))
+      .send({ outline: 'var vs let', length: 'short' });
+    expect(res.status).toBe(200);
+    expect(res.body.markdown).toBe(body);
+    const [[row]] = await pool.query('SELECT content FROM lessons WHERE id = ?', [lesson.id]);
+    expect(row.content).toBeNull();
+
+    const prompt = mockStream.mock.calls[0][0].contents.at(-1).parts[0].text;
+    expect(prompt).toContain('var vs let');
+    expect(prompt).toContain('300–450 từ');
+  });
+
+  it('AI soạn nội dung: giảng viên khác → 404; độ dài lạ / dàn ý quá dài → 400; AI trả quá ngắn → 502', async () => {
+    const url = `/api/instructor/lessons/${lesson.id}/ai/content`;
+    expect((await request(app).post(url).set(authHeader(otherTeacher)).send({})).status).toBe(404);
+    expect((await request(app).post(url).set(authHeader(teacher)).send({ length: 'huge' })).status).toBe(400);
+    expect((await request(app).post(url).set(authHeader(teacher)).send({ outline: 'x'.repeat(2001) })).status).toBe(400);
+    mockStream.mockResolvedValue(fakeStream(['ngắn']));
+    expect((await request(app).post(url).set(authHeader(teacher)).send({})).status).toBe(502);
+  });
+
   it('validator giữ đúng số câu yêu cầu', () => {
     const r = validator(2)({ questions: [q('Câu một?', [0]), q('Câu hai?', [1]), q('Câu ba?', [2])] });
     expect(r.ok).toBe(true);

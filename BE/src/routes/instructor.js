@@ -49,11 +49,13 @@ router.post('/lessons/:id/exercise/validate', ownLesson, codeRunLimiter, exercis
 
 // AI sinh bản nháp câu hỏi quiz (giảng viên duyệt trước khi lưu)
 router.post('/lessons/:id/ai/quiz', ownLesson, aiGenerateLimiter, ai.generateQuizDraft);
+router.post('/lessons/:id/ai/content', ownLesson, aiGenerateLimiter, ai.generateLessonContent);
 
 // Video / tài liệu trên object storage
 router.post('/lessons/:id/uploads',       ownLesson, media.createUpload);
 router.put('/lessons/:id/media',          ownLesson, media.attachMedia);
 router.delete('/lessons/:id/media/:kind', ownLesson, media.removeMedia);
+router.post('/lessons/:id/hls',           ownLesson, media.reencodeHls);
 
 // Quiz
 router.get('/lessons/:lessonId/quiz',  requireOwnership('lesson', 'lessonId'), quiz.getQuizAdmin);

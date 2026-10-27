@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { Button } from '@/components/ui/button.jsx';
+import { RichContent } from '@/components/rich-content.jsx';
 import { Chip } from '@/components/ui/chip.jsx';
 import { CourseThumb } from '@/components/course-thumb.jsx';
 import { Seo } from '@/components/seo.jsx';
@@ -242,10 +243,7 @@ export default function CourseDetailPage() {
 
             {/* Tab panels */}
             {tab === 'overview' && (
-              <div
-                className="prose prose-sm max-w-none text-ink-2 leading-[1.75] [&_h3]:text-ink [&_h3]:font-display [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-1"
-                dangerouslySetInnerHTML={{ __html: course.description || course.short_description }}
-              />
+              <RichContent content={course.description || course.short_description} />
             )}
 
             {tab === 'curriculum' && (

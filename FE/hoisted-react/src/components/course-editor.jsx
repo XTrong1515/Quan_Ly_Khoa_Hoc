@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Plus, Edit2, Trash2, X, ChevronDown, ChevronUp,
-  GripVertical, ImageIcon, Link2, Upload, ListChecks, Code2,
+  GripVertical, ImageIcon, Link2, Upload, ListChecks, Code2, Loader2,
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ExerciseEditorModal } from '@/components/exercise/exercise-editor-modal.jsx';
 import { AiQuizGenerator } from '@/components/ai/ai-quiz-generator.jsx';
+import { LessonContentEditor } from '@/components/ai/lesson-content-editor.jsx';
 
 /*
  * Bộ soạn khóa học dùng chung cho Admin (/api/admin) và Giảng viên (/api/instructor).
@@ -263,13 +264,14 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
   const [duration,  setDuration]  = useState(initial?.duration_minutes ?? 0);
   const [sectionId, setSectionId] = useState(initial?.section_id     ?? '');
   const [isPreview, setIsPreview] = useState(!!initial?.is_preview);
+  const [content,   setContent]   = useState(initial?.content        ?? '');
   const [saving,    setSaving]    = useState(false);
 
   const save = async () => {
     if (!title.trim()) { toast.error('Tên bài học là bắt buộc'); return; }
     setSaving(true);
     try {
-      const payload = { title, videoUrl, durationMinutes: +duration, sectionId: sectionId || null, isPreview };
+      const payload = { title, videoUrl, durationMinutes: +duration, sectionId: sectionId || null, isPreview, content };
       if (initial) {
         await api.put(`${apiBase}/lessons/${initial.id}`, payload);
         toast.success('Đã cập nhật bài học');
@@ -320,6 +322,8 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
       </div>
     </div>
 
+    <LessonContentEditor apiBase={apiBase} lesson={initial} value={content} onChange={setContent} />
+
     {initial ? (
       <div className="grid sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-line">
         <MediaField apiBase={apiBase} courseId={courseId} lesson={initial} kind="video" />
@@ -336,7 +340,7 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
 const MEDIA_CFG = {
   video: {
     label: 'Video bài giảng', accept: 'video/mp4,video/webm', maxMB: 1024,
-    hint: 'MP4 / WebM — lưu private, học viên xem qua link có hạn. Ưu tiên hơn Video URL.',
+    hint: 'MP4 / WebM — lưu private, tự mã hóa HLS AES-128 sau khi tải lên. Ưu tiên hơn Video URL.',
   },
   attachment: {
     label: 'Tài liệu PDF', accept: 'application/pdf', maxMB: 50,
@@ -425,7 +429,48 @@ function MediaField({ apiBase, courseId, lesson, kind }) {
           )}
         </div>
       )}
+      {kind === 'video' && current && !busy && (
+        <HlsStatus apiBase={apiBase} courseId={courseId} lessonId={lesson.id} />
+      )}
       <p className="font-mono text-[9.5px] text-ink-3 mt-2 leading-snug">{cfg.hint}</p>
+    </div>
+  );
+}
+
+const HLS_LABEL = {
+  PROCESSING: { text: 'Đang mã hóa HLS… (học viên tạm xem bản MP4)', cls: 'text-ink-3' },
+  READY:      { text: '🔒 Đã mã hóa HLS AES-128', cls: 'text-success' },
+  FAILED:     { text: 'Mã hóa HLS lỗi — học viên xem bản MP4', cls: 'text-danger' },
+  NONE:       { text: 'Chưa mã hóa HLS', cls: 'text-ink-3' },
+};
+
+/** Trạng thái mã hóa video — dùng chung cache danh sách bài học, tự hỏi lại mỗi 4 s khi đang xử lý. */
+function HlsStatus({ apiBase, courseId, lessonId }) {
+  const qc = useQueryClient();
+  const queryKey = ['course-lessons', apiBase, courseId];
+  const { data } = useQuery({
+    queryKey,
+    queryFn: () => api.get(`${apiBase}/courses/${courseId}/lessons`).then(r => r.data),
+    refetchInterval: (q) => (q.state.data?.lessons?.find(l => l.id === lessonId)?.hls_status === 'PROCESSING' ? 4000 : false),
+  });
+  const row = data?.lessons?.find(l => l.id === lessonId);
+  const status = row?.hls_status ?? 'NONE';
+  const label = HLS_LABEL[status] ?? HLS_LABEL.NONE;
+
+  const retry = async () => {
+    try {
+      await api.post(`${apiBase}/lessons/${lessonId}/hls`);
+      qc.invalidateQueries({ queryKey });
+    } catch (err) { toast.error(apiMessage(err)); }
+  };
+
+  return (
+    <div className="mt-2 flex items-center gap-2 font-mono text-[10.5px]">
+      {status === 'PROCESSING' && <Loader2 className="w-3 h-3 animate-spin text-ink-3" />}
+      <span className={label.cls} title={status === 'FAILED' ? row?.hls_error ?? '' : undefined}>{label.text}</span>
+      {(status === 'FAILED' || status === 'NONE') && (
+        <button type="button" onClick={retry} className="text-accent hover:underline">Mã hóa lại</button>
+      )}
     </div>
   );
 }

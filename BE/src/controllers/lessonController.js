@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const storage = require('../utils/storage');
+const hls = require('../services/video/hls');
 
 /** URL phát video: file trên storage → presigned GET ngắn hạn; nếu không thì link ngoài (YouTube...). */
 async function resolveVideo(lesson) {
@@ -49,7 +50,7 @@ async function detail(req, res) {
 
   try {
     const [lessonRows] = await pool.query(
-      `SELECT l.id, l.title, l.video_url, l.video_key, l.content, l.duration_minutes,
+      `SELECT l.id, l.title, l.video_url, l.video_key, l.hls_status, l.content, l.duration_minutes,
               l.attachment_url, l.attachment_key, l.attachment_name, l.is_preview,
               c.title AS courseTitle, c.slug AS courseSlug
        FROM lessons l
@@ -118,6 +119,9 @@ async function detail(req, res) {
         id: lesson.id,
         title: lesson.title,
         ...(await resolveVideo(lesson)),
+        // HLS đã mã hóa xong → FE phát qua hls.js; videoUrl (MP4 có hạn) là bản dự phòng cho trình duyệt không hỗ trợ
+        hlsUrl: lesson.hls_status === 'READY' ? `/api/lessons/${lesson.id}/hls/index.m3u8` : null,
+        hlsStatus: lesson.hls_status,
         content: lesson.content,
         durationMinutes: lesson.duration_minutes,
         hasAttachment: !!(lesson.attachment_key || lesson.attachment_url),
@@ -165,4 +169,33 @@ async function attachment(req, res) {
   }
 }
 
-module.exports = { preview, detail, attachment };
+/* ── GET /api/lessons/:id/hls/index.m3u8 ── (requireEnrollment) */
+// Viết lại playlist mỗi lần xin: đoạn .ts → presigned URL ngắn hạn, khóa → endpoint có kiểm tra quyền
+async function hlsPlaylist(req, res) {
+  try {
+    const [[lesson]] = await pool.query('SELECT hls_status, hls_prefix FROM lessons WHERE id = ?', [parseInt(req.params.id, 10)]);
+    if (lesson?.hls_status !== 'READY') return res.status(404).json({ message: 'Video chưa sẵn sàng dạng HLS' });
+    const raw = await storage.getObjectText(`${lesson.hls_prefix}index.m3u8`);
+    const body = await hls.rewritePlaylist(raw, lesson.hls_prefix, (key) => storage.presignDownload(key));
+    res.set({ 'Content-Type': 'application/vnd.apple.mpegurl', 'Cache-Control': 'no-store' });
+    return res.send(body);
+  } catch (err) {
+    console.error('[lessons/hls/playlist]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+/* ── GET /api/lessons/:id/hls/key ── (requireEnrollment) — 16 byte khóa AES-128 */
+async function hlsKey(req, res) {
+  try {
+    const [[lesson]] = await pool.query('SELECT hls_status, hls_key FROM lessons WHERE id = ?', [parseInt(req.params.id, 10)]);
+    if (lesson?.hls_status !== 'READY' || !lesson.hls_key) return res.status(404).json({ message: 'Không có khóa' });
+    res.set({ 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-store, private' });
+    return res.send(hls.openKey(lesson.hls_key));
+  } catch (err) {
+    console.error('[lessons/hls/key]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+module.exports = { preview, detail, attachment, hlsPlaylist, hlsKey };

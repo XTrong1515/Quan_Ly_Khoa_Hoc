@@ -17,6 +17,8 @@ const MODULES = {
   'media.test.js':         { code: 'MED',  name: 'Video & tài liệu (object storage)' },
   'exercise.test.js':      { code: 'EXE',  name: 'Bài tập lập trình & sandbox' },
   'ai.test.js':            { code: 'AI',   name: 'Trợ lý AI' },
+  'application.test.js':   { code: 'APP',  name: 'Đơn đăng ký giảng viên' },
+  'hls.test.js':           { code: 'HLS',  name: 'Video HLS mã hóa AES-128' },
   'revenue.test.js':       { code: 'PAY',  name: 'Thanh toán & doanh thu giảng viên' },
   'security.test.js':      { code: 'SEC',  name: 'Bảo mật' },
 };

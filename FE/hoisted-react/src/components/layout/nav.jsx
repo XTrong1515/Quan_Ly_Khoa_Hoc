@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, Bell, ShoppingCart, Moon, Sun, LogOut, BookOpen, Settings, ChevronDown, X, Heart, Check, Sparkles } from 'lucide-react';
+import { Search, Bell, ShoppingCart, Moon, Sun, LogOut, BookOpen, Settings, ChevronDown, X, Heart, Check, Sparkles, GraduationCap } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Logo } from '../logo.jsx';
@@ -147,6 +147,11 @@ export function Nav() {
                   <MenuItem to="/me/profile" icon={Settings} onClick={() => setMenuOpen(false)}>
                     Cài đặt tài khoản
                   </MenuItem>
+                  {role === 'user' && (
+                    <MenuItem to="/become-instructor" icon={GraduationCap} onClick={() => setMenuOpen(false)}>
+                      Trở thành giảng viên
+                    </MenuItem>
+                  )}
                   {role === 'instructor' && (
                     <MenuItem to="/instructor" onClick={() => setMenuOpen(false)} accent>
                       ✎ Khu vực giảng viên

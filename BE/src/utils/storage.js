@@ -5,6 +5,7 @@
 const crypto = require('crypto');
 const {
   S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand,
+  ListObjectsV2Command, DeleteObjectsCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
@@ -90,7 +91,43 @@ async function deleteObject(key) {
   }
 }
 
+/* ── Dùng cho pipeline HLS (server tự đọc / ghi object) ─────────── */
+
+/** Tải object về file trên đĩa (stream, không đọc hết vào RAM). */
+async function downloadToFile(key, filePath) {
+  const { pipeline } = require('stream/promises');
+  const fs = require('fs');
+  const res = await getClient().send(new GetObjectCommand({ Bucket: bucket(), Key: key }));
+  await pipeline(res.Body, fs.createWriteStream(filePath));
+}
+
+async function putObject(key, body, contentType) {
+  await getClient().send(new PutObjectCommand({ Bucket: bucket(), Key: key, Body: body, ContentType: contentType }));
+}
+
+async function getObjectText(key) {
+  const res = await getClient().send(new GetObjectCommand({ Bucket: bucket(), Key: key }));
+  return res.Body.transformToString();
+}
+
+/** Xóa mọi object dưới 1 thư mục (best-effort) — vd thư mục HLS cũ khi thay video. */
+async function deletePrefix(prefix) {
+  if (!prefix || !prefix.endsWith('/')) return;
+  try {
+    let token;
+    do {
+      const list = await getClient().send(new ListObjectsV2Command({ Bucket: bucket(), Prefix: prefix, ContinuationToken: token }));
+      const objects = (list.Contents ?? []).map((o) => ({ Key: o.Key }));
+      if (objects.length) await getClient().send(new DeleteObjectsCommand({ Bucket: bucket(), Delete: { Objects: objects } }));
+      token = list.IsTruncated ? list.NextContinuationToken : undefined;
+    } while (token);
+  } catch (err) {
+    console.error('[storage/deletePrefix]', prefix, err.message);
+  }
+}
+
 module.exports = {
   MEDIA_RULES, UPLOAD_URL_TTL, VIDEO_URL_TTL, FILE_URL_TTL,
   isConfigured, lessonPrefix, buildKey, presignUpload, presignDownload, headObject, deleteObject,
+  downloadToFile, putObject, getObjectText, deletePrefix,
 };

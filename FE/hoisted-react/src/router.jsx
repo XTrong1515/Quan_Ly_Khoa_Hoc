@@ -15,6 +15,7 @@ import ResetPasswordPage   from './pages/public/reset-password.jsx';
 import CartPage               from './pages/public/cart.jsx';
 import PaymentPendingPage     from './pages/public/payment-pending.jsx';
 import PaymentResultPage      from './pages/public/payment-result.jsx';
+import BecomeInstructorPage   from './pages/public/become-instructor.jsx';
 
 // User
 import LessonPlayerPage      from './pages/user/lesson-player.jsx';
@@ -34,6 +35,7 @@ import AdminOrdersPage       from './pages/admin/orders.jsx';
 import AdminReviewsPage      from './pages/admin/reviews.jsx';
 import AdminCategoriesPage   from './pages/admin/categories.jsx';
 import AdminPayoutsPage      from './pages/admin/payouts.jsx';
+import AdminInstructorApplicationsPage from './pages/admin/instructor-applications.jsx';
 
 // Instructor
 import InstructorDashboardPage from './pages/instructor/dashboard.jsx';
@@ -87,6 +89,7 @@ export function Router() {
         <Route path="/cart"               element={<CartPage />} />
         <Route path="/payment/pending/:orderId" element={<RequireAuth><PaymentPendingPage /></RequireAuth>} />
         <Route path="/payment/result"     element={<PaymentResultPage />} />
+        <Route path="/become-instructor"  element={<BecomeInstructorPage />} />
 
         {/* user */}
         <Route path="/me"                 element={<RequireAuth><MyLearningPage /></RequireAuth>} />
@@ -116,6 +119,7 @@ export function Router() {
         <Route path="/admin/reviews"      element={<AdminReviewsPage />} />
         <Route path="/admin/categories"   element={<AdminCategoriesPage />} />
         <Route path="/admin/payouts"      element={<AdminPayoutsPage />} />
+        <Route path="/admin/instructor-applications" element={<AdminInstructorApplicationsPage />} />
       </Route>
 
       {/* Instructor — cùng layout console, menu riêng */}

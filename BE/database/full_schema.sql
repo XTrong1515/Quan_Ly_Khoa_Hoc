@@ -1,4 +1,4 @@
--- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-10-26T09:40:47.292Z
+-- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-10-27T03:43:13.592Z
 -- Sinh lại: npm run db:export-schema · Dựng DB mới: npm run db:setup
 
 
@@ -196,6 +196,28 @@ CREATE TABLE `exercise_test_cases` (
   CONSTRAINT `exercise_test_cases_ibfk_1` FOREIGN KEY (`exercise_id`) REFERENCES `coding_exercises` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `instructor_applications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `instructor_applications` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `headline` varchar(255) NOT NULL,
+  `expertise` varchar(255) NOT NULL,
+  `bio` text NOT NULL,
+  `portfolio_url` varchar(500) DEFAULT NULL,
+  `course_idea` text,
+  `status` enum('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
+  `admin_note` varchar(500) DEFAULT NULL,
+  `reviewed_by` int DEFAULT NULL,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_status` (`status`,`created_at`),
+  KEY `idx_user` (`user_id`,`created_at`),
+  CONSTRAINT `instructor_applications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `instructor_payouts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -284,7 +306,11 @@ CREATE TABLE `lessons` (
   `title` varchar(255) NOT NULL,
   `video_url` varchar(500) DEFAULT NULL,
   `video_key` varchar(500) DEFAULT NULL,
-  `content` text,
+  `hls_status` enum('NONE','PROCESSING','READY','FAILED') NOT NULL DEFAULT 'NONE',
+  `hls_prefix` varchar(500) DEFAULT NULL,
+  `hls_key` varchar(255) DEFAULT NULL,
+  `hls_error` varchar(500) DEFAULT NULL,
+  `content` mediumtext,
   `duration_minutes` int DEFAULT '0',
   `order_index` int NOT NULL,
   `is_preview` tinyint(1) DEFAULT '0',

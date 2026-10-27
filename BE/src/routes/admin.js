@@ -35,11 +35,19 @@ const { requireOwnership } = require('../middleware/ownership');
 router.post('/lessons/:id/uploads',        requireOwnership('lesson'), media.createUpload);
 router.put('/lessons/:id/media',           requireOwnership('lesson'), media.attachMedia);
 router.delete('/lessons/:id/media/:kind',  requireOwnership('lesson'), media.removeMedia);
+router.post('/lessons/:id/hls',            requireOwnership('lesson'), media.reencodeHls);
 
 // AI sinh bản nháp câu hỏi quiz
 const ai = require('../controllers/aiController');
 const { codeRunLimiter, aiGenerateLimiter } = require('../middleware/rateLimit');
 router.post('/lessons/:id/ai/quiz', requireOwnership('lesson'), aiGenerateLimiter, ai.generateQuizDraft);
+router.post('/lessons/:id/ai/content', requireOwnership('lesson'), aiGenerateLimiter, ai.generateLessonContent);
+
+// Đơn đăng ký làm giảng viên
+const applications = require('../controllers/applicationController');
+router.get('/instructor-applications',             applications.listApplications);
+router.put('/instructor-applications/:id/approve', applications.approveApplication);
+router.put('/instructor-applications/:id/reject',  applications.rejectApplication);
 
 // Bài tập lập trình
 const exercise = require('../controllers/exerciseController');

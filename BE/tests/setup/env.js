@@ -9,6 +9,7 @@ process.env.NODE_ENV = 'test';
 process.env.DB_NAME  = TEST_DB;
 process.env.CODE_RUN_RATE_LIMIT = '1000'; // test giới hạn tần suất riêng trong exercise.test.js
 process.env.CODE_RUNNER = 'isolated-vm';
+process.env.HLS_AUTO = 'false'; // không chạy ffmpeg nền trong test (hls.test.js gọi processLesson trực tiếp)
 process.env.AI_CHAT_RATE_LIMIT = '1000';
 process.env.AI_GENERATE_RATE_LIMIT = '1000';
 process.env.AUTH_LOGIN_RATE_LIMIT = '1000';

@@ -1,6 +1,6 @@
 /**
  * Spike — kiểm tra hạ tầng: object storage (MinIO/R2), sandbox chấm bài (isolated-vm),
- * Judge0 (tùy chọn), Gemini.
+ * ffmpeg (mã hóa HLS), Judge0 (tùy chọn), Gemini.
  * Run: npm run check:services
  *
  * Dịch vụ nào chưa có biến môi trường sẽ được bỏ qua kèm hướng dẫn cấu hình.
@@ -85,6 +85,20 @@ async function checkSandbox() {
   }
   if (failed.length) return report('Sandbox', 'FAIL', `Ca không đạt: ${failed.join(', ')}`);
   report('Sandbox', 'OK', `isolated-vm ${require('isolated-vm/package.json').version}: ${cases.length}/${cases.length} ca đạt (timeout, giới hạn RAM, không có require/process)`);
+}
+
+/* ── ffmpeg (mã hóa video HLS) ─────────────────────────────────── */
+async function checkFfmpeg() {
+  const { spawnSync } = require('child_process');
+  let bin;
+  try { bin = process.env.FFMPEG_PATH || require('ffmpeg-static'); } catch (err) {
+    return report('ffmpeg', 'FAIL', `Không tìm thấy ffmpeg-static: ${err.message}`);
+  }
+  const r = spawnSync(bin, ['-hide_banner', '-version']);
+  if (r.status !== 0) return report('ffmpeg', 'FAIL', String(r.error?.message ?? r.stderr).slice(0, 200));
+  const version = String(r.stdout).split(/\r?\n/)[0];
+  const masterKey = /^[0-9a-f]{64}$/i.test(process.env.HLS_MASTER_KEY ?? '') ? 'HLS_MASTER_KEY OK' : 'HLS_MASTER_KEY chưa đặt (dev dùng khóa suy ra từ JWT secret)';
+  report('ffmpeg', 'OK', `${version} — ${masterKey}`);
 }
 
 /* ── Judge0 (tùy chọn — runner từ xa nếu có cấu hình) ──────────── */
@@ -179,6 +193,7 @@ async function checkGemini() {
   console.log('=== Hoisted — kiểm tra dịch vụ ngoài ===\n');
   await checkStorage();
   await checkSandbox();
+  await checkFfmpeg();
   await checkJudge0();
   await checkGemini();
   const failed = results.filter((r) => r.status === 'FAIL').length;

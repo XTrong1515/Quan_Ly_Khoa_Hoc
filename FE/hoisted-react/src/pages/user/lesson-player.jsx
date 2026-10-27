@@ -11,7 +11,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
-import { api, apiMessage } from '@/lib/api';
+import { RichContent } from '@/components/rich-content.jsx';
+import { HlsPlayer } from '@/components/video/hls-player.jsx';
+import { api, apiMessage, BASE_URL } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
 import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
@@ -85,6 +87,7 @@ export default function LessonPlayerPage() {
   const resumeAtRef   = useRef(null); // vị trí phát tiếp sau khi xin lại link video hết hạn
   const lastRefreshRef = useRef(0);
   const didSeekRef    = useRef(false);
+  const [hlsUnsupported, setHlsUnsupported] = useState(false); // không có MSE → phát MP4 dự phòng
   const [tab, setTab]                   = useState('Tổng quan');
   const [sheetSnap, setSheetSnap]       = useState(0); // 0=collapsed 1=peek 2=expanded
   const [sidebarOpen, setSidebarOpen]   = useState(true);
@@ -350,17 +353,29 @@ export default function LessonPlayerPage() {
               <>
                 {lesson.videoUrl ? (
                   <div className="w-full h-full relative" onContextMenu={(e) => e.preventDefault()}>
-                    <ReactPlayer
-                      ref={playerRef}
-                      url={lesson.videoUrl}
-                      width="100%" height="100%"
-                      controls
-                      config={{ file: { attributes: { controlsList: 'nodownload noremoteplayback', disablePictureInPicture: true } } }}
-                      onReady={handleReady}
-                      onError={handleVideoError}
-                      onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
-                      onEnded={handleEnded}
-                    />
+                    {lesson.hlsUrl && !hlsUnsupported ? (
+                      <HlsPlayer
+                        ref={playerRef}
+                        src={`${BASE_URL}${lesson.hlsUrl}`}
+                        onReady={handleReady}
+                        onError={() => toast.error('Không phát được video. Vui lòng tải lại trang.')}
+                        onUnsupported={() => setHlsUnsupported(true)}
+                        onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
+                        onEnded={handleEnded}
+                      />
+                    ) : (
+                      <ReactPlayer
+                        ref={playerRef}
+                        url={lesson.videoUrl}
+                        width="100%" height="100%"
+                        controls
+                        config={{ file: { attributes: { controlsList: 'nodownload noremoteplayback', disablePictureInPicture: true } } }}
+                        onReady={handleReady}
+                        onError={handleVideoError}
+                        onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
+                        onEnded={handleEnded}
+                      />
+                    )}
                     <VideoWatermark text={user?.email ? `${user.email} · #${user.id}` : null} />
                   </div>
                 ) : (
@@ -413,10 +428,7 @@ export default function LessonPlayerPage() {
             <div className="flex-1 overflow-y-auto p-6">
               {tab === 'Tổng quan' && (
                 lesson.content
-                  ? <div
-                      className="prose prose-sm max-w-none text-ink-2 [&_h3]:text-ink [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-1"
-                      dangerouslySetInnerHTML={{ __html: lesson.content }}
-                    />
+                  ? <RichContent content={lesson.content} className="max-w-3xl" />
                   : <p className="font-mono text-[13px] text-ink-3">// Bài học này chưa có mô tả</p>
               )}
 

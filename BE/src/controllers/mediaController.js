@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const storage = require('../utils/storage');
+const hls = require('../services/video/hls');
 
 /*
  * Upload video / tài liệu của bài học lên object storage (dùng cho cả admin và giảng viên).
@@ -76,7 +77,12 @@ async function attachMedia(req, res) {
     }
     if (current?.oldKey && current.oldKey !== key) await storage.deleteObject(current.oldKey);
 
-    return res.json({ ok: true, key, size: head.size });
+    // Video mới → mã hóa HLS ở nền (trong lúc chờ, học viên xem bản MP4 qua link có hạn)
+    if (kind === 'video') {
+      await pool.query("UPDATE lessons SET hls_status = 'PROCESSING', hls_error = NULL WHERE id = ?", [lessonId]);
+      hls.enqueue(lessonId);
+    }
+    return res.json({ ok: true, key, size: head.size, hlsStatus: kind === 'video' ? 'PROCESSING' : undefined });
   } catch (err) {
     console.error('[media/attach]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
@@ -90,11 +96,13 @@ async function removeMedia(req, res) {
   if (!cols) return res.status(400).json({ message: 'kind không hợp lệ' });
 
   try {
-    const [[current]] = await pool.query(`SELECT ${cols.key} AS oldKey FROM lessons WHERE id = ?`, [lessonId]);
+    const [[current]] = await pool.query(`SELECT ${cols.key} AS oldKey, hls_prefix AS hlsPrefix FROM lessons WHERE id = ?`, [lessonId]);
     const sets = [`${cols.key} = NULL`];
     if (cols.name) sets.push(`${cols.name} = NULL`);
+    if (req.params.kind === 'video') sets.push("hls_status = 'NONE'", 'hls_prefix = NULL', 'hls_key = NULL', 'hls_error = NULL');
     await pool.query(`UPDATE lessons SET ${sets.join(', ')} WHERE id = ?`, [lessonId]);
     await storage.deleteObject(current?.oldKey);
+    if (req.params.kind === 'video') await storage.deletePrefix(current?.hlsPrefix);
     return res.json({ ok: true });
   } catch (err) {
     console.error('[media/remove]', err);
@@ -102,4 +110,20 @@ async function removeMedia(req, res) {
   }
 }
 
-module.exports = { createUpload, attachMedia, removeMedia };
+/* ── POST /lessons/:id/hls — mã hóa lại video (vd lần trước lỗi) ── */
+async function reencodeHls(req, res) {
+  const lessonId = parseInt(req.params.id, 10);
+  try {
+    const [[lesson]] = await pool.query('SELECT video_key, hls_status FROM lessons WHERE id = ?', [lessonId]);
+    if (!lesson?.video_key) return res.status(400).json({ message: 'Bài học chưa có video trên storage' });
+    if (lesson.hls_status === 'PROCESSING') return res.status(409).json({ message: 'Video đang được mã hóa' });
+    await pool.query("UPDATE lessons SET hls_status = 'PROCESSING', hls_error = NULL WHERE id = ?", [lessonId]);
+    hls.enqueue(lessonId);
+    return res.status(202).json({ ok: true, hlsStatus: 'PROCESSING' });
+  } catch (err) {
+    console.error('[media/hls]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+module.exports = { createUpload, attachMedia, removeMedia, reencodeHls };

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Logo } from '../logo.jsx';
 
 export function Footer() {
@@ -6,6 +7,7 @@ export function Footer() {
       <Logo />
       <div className="flex gap-5 font-mono text-[11.5px] tracking-[0.04em]">
         <span>© 2026 Hoisted</span>
+        <Link to="/become-instructor" className="hover:text-accent">Trở thành giảng viên</Link>
         <a href="#">Privacy</a>
         <a href="#">Terms</a>
         <a href="#">Github</a>

@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const llm = require('../services/llm');
 const assistant = require('../services/ai/assistant-prompt');
 const { generateQuiz, DIFFICULTY } = require('../services/ai/quiz-generator');
+const { writeLesson, LENGTHS } = require('../services/ai/lesson-writer');
 
 const MAX_MESSAGE = 1000;  // ký tự / tin nhắn
 const HISTORY_LIMIT = 10;  // số tin nhắn gần nhất gửi kèm cho AI
@@ -170,4 +171,32 @@ async function generateQuizDraft(req, res) {
   }
 }
 
-module.exports = { chat, listConversations, getConversation, deleteConversation, generateQuizDraft };
+/* POST {apiBase}/lessons/:id/ai/content  { outline?, length?, rewrite? } — bản nháp Markdown, không lưu */
+async function generateLessonContent(req, res) {
+  const outline = typeof req.body?.outline === 'string' ? req.body.outline.trim() : '';
+  const length = req.body?.length ?? 'medium';
+  if (!LENGTHS[length]) return res.status(400).json({ message: 'Độ dài không hợp lệ' });
+  if (outline.length > 2000) return res.status(400).json({ message: 'Dàn ý tối đa 2000 ký tự' });
+  if (!llm.isConfigured()) return res.status(503).json({ message: 'Trợ lý AI chưa được cấu hình' });
+
+  try {
+    const [[lesson]] = await pool.query(
+      `SELECT l.title, l.content, c.title AS courseTitle, cs.title AS sectionTitle
+       FROM lessons l JOIN courses c ON c.id = l.course_id
+       LEFT JOIN course_sections cs ON cs.id = l.section_id
+       WHERE l.id = ?`,
+      [parseInt(req.params.id, 10)],
+    );
+    const draft = await writeLesson({
+      courseTitle: lesson.courseTitle, sectionTitle: lesson.sectionTitle, lessonTitle: lesson.title,
+      outline, length, existing: req.body?.rewrite ? lesson.content : '',
+    });
+    return res.json(draft);
+  } catch (err) {
+    if (err instanceof llm.LlmError) return res.status(llm.httpStatusOf(err)).json({ message: err.message });
+    console.error('[ai/lesson-content]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+module.exports = { chat, listConversations, getConversation, deleteConversation, generateQuizDraft, generateLessonContent };
