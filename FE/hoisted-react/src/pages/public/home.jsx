@@ -11,7 +11,6 @@ import { Reveal } from '@/components/reveal.jsx';
 import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { api } from '@/lib/api';
-import { COURSES, CATEGORIES } from '@/data/courses';
 import { cn } from '@/lib/utils';
 
 function useHomeData() {
@@ -29,6 +28,8 @@ function usePlatformStats() {
     staleTime: 10 * 60 * 1000,
   });
 }
+
+const EMPTY = []; // tham chiếu cố định cho useMemo khi chưa có dữ liệu
 
 /* ── Static content ─────────────────────────────────────────────── */
 
@@ -208,8 +209,9 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(0);
 
-  const categories = data?.categories ?? CATEGORIES;
-  const allCourses = data?.featured ?? COURSES;
+  // Không dùng dữ liệu mẫu: API lỗi thì hiện trạng thái rỗng, không hiện khóa học / số liệu giả
+  const categories = data?.categories ?? EMPTY;
+  const allCourses = data?.featured ?? EMPTY;
   const newestCourses = data?.newest ?? [...allCourses].sort((a, b) => b.id - a.id).slice(0, 4);
 
   const visibleCourses = (() => {
@@ -232,10 +234,10 @@ export default function HomePage() {
   }, [allCourses]);
 
   const heroStats = [
-    { n: stats ? `${formatCount(stats.totalUsers)}+` : '12.000+', l: 'Học viên đang học' },
-    { n: stats?.avgRating ? `${stats.avgRating}/5` : '4.86/5', l: 'Đánh giá trung bình' },
-    { n: stats ? formatCount(stats.totalPublishedCourses) : '24', l: 'Khóa học đã xuất bản' },
-    { n: stats ? formatCount(stats.freeCourses) : '6', l: 'Khóa học miễn phí' },
+    { n: stats ? `${formatCount(stats.totalUsers)}+` : '—', l: 'Học viên đang học' },
+    { n: stats?.avgRating ? `${stats.avgRating}/5` : '—', l: 'Đánh giá trung bình' },
+    { n: stats ? formatCount(stats.totalPublishedCourses) : '—', l: 'Khóa học đã xuất bản' },
+    { n: stats ? formatCount(stats.freeCourses) : '—', l: 'Khóa học miễn phí' },
   ];
 
   const handleSearch = (e) => {

@@ -79,32 +79,33 @@ async function detail(req, res) {
       }
     }
 
-    // Curriculum: all sections + lessons with completion flags
+    // Curriculum: all lessons (kể cả bài chưa gán section → nhóm "Bài học khác" ở cuối) + completion flags
     const [sectionRows] = await pool.query(
       `SELECT cs.id AS sectionId, cs.title AS sectionTitle, cs.order_index AS sectionOrder,
               l.id AS lessonId, l.title AS lessonTitle, l.duration_minutes,
               l.order_index, l.is_preview,
               COALESCE(lp.is_completed, 0) AS isCompleted
-       FROM course_sections cs
-       JOIN lessons l ON l.section_id = cs.id
+       FROM lessons l
+       LEFT JOIN course_sections cs ON cs.id = l.section_id AND cs.course_id = l.course_id
        LEFT JOIN lesson_progress lp
          ON lp.lesson_id = l.id AND lp.enrollment_id = ?
-       WHERE cs.course_id = ?
-       ORDER BY cs.order_index ASC, l.order_index ASC`,
+       WHERE l.course_id = ?
+       ORDER BY cs.id IS NULL, cs.order_index ASC, l.order_index ASC, l.id ASC`,
       [enrollmentId ?? 0, courseId],
     );
 
-    const sectionsMap = {};
+    const sectionsMap = new Map(); // Map giữ thứ tự chèn (đã ORDER BY) — section null nằm cuối
     for (const row of sectionRows) {
-      if (!sectionsMap[row.sectionId]) {
-        sectionsMap[row.sectionId] = {
+      const key = row.sectionId ?? 'none';
+      if (!sectionsMap.has(key)) {
+        sectionsMap.set(key, {
           id: row.sectionId,
-          title: row.sectionTitle,
+          title: row.sectionTitle ?? 'Bài học khác',
           order: row.sectionOrder,
           lessons: [],
-        };
+        });
       }
-      sectionsMap[row.sectionId].lessons.push({
+      sectionsMap.get(key).lessons.push({
         id: row.lessonId,
         title: row.lessonTitle,
         durationMinutes: row.duration_minutes,
@@ -130,7 +131,7 @@ async function detail(req, res) {
         courseTitle: lesson.courseTitle,
         courseSlug: lesson.courseSlug,
       },
-      sections: Object.values(sectionsMap).sort((a, b) => a.order - b.order),
+      sections: [...sectionsMap.values()],
       progress,
       enrollmentId,
       staffView: !!req.staffView, // admin / giảng viên sở hữu đang xem — FE không ghi tiến độ

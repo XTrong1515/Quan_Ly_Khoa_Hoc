@@ -1,54 +1,58 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Nav } from './components/layout/nav.jsx';
 import { Footer } from './components/layout/footer.jsx';
 import { AdminLayout, InstructorLayout } from './components/layout/admin-layout.jsx';
 import { useAuth } from './store/auth';
+import { PageFallback } from './components/page-fallback.jsx';
+
+// Trang chủ / danh sách / chi tiết khóa học tải ngay; các trang khác (học, admin, giảng viên…) tách chunk riêng
 
 // Public
 import HomePage           from './pages/public/home.jsx';
 import CourseListingPage  from './pages/public/course-listing.jsx';
 import CourseDetailPage   from './pages/public/course-detail.jsx';
-import LoginPage           from './pages/public/login.jsx';
-import RegisterPage        from './pages/public/register.jsx';
-import ForgotPasswordPage  from './pages/public/forgot-password.jsx';
-import ResetPasswordPage   from './pages/public/reset-password.jsx';
-import CartPage               from './pages/public/cart.jsx';
-import PaymentPendingPage     from './pages/public/payment-pending.jsx';
-import PaymentResultPage      from './pages/public/payment-result.jsx';
-import BecomeInstructorPage   from './pages/public/become-instructor.jsx';
+const LoginPage = lazy(() => import('./pages/public/login.jsx'));
+const RegisterPage = lazy(() => import('./pages/public/register.jsx'));
+const ForgotPasswordPage = lazy(() => import('./pages/public/forgot-password.jsx'));
+const ResetPasswordPage = lazy(() => import('./pages/public/reset-password.jsx'));
+const CartPage = lazy(() => import('./pages/public/cart.jsx'));
+const PaymentPendingPage = lazy(() => import('./pages/public/payment-pending.jsx'));
+const PaymentResultPage = lazy(() => import('./pages/public/payment-result.jsx'));
+const BecomeInstructorPage = lazy(() => import('./pages/public/become-instructor.jsx'));
 
 // User
-import LessonPlayerPage      from './pages/user/lesson-player.jsx';
-import MyLearningPage        from './pages/user/my-learning.jsx';
-import ProfileSettingsPage   from './pages/user/profile.jsx';
-import MyOrdersPage          from './pages/user/my-orders.jsx';
-import TransactionsPage      from './pages/user/transactions.jsx';
-import WishlistPage          from './pages/user/wishlist.jsx';
-import AssistantPage         from './pages/user/assistant.jsx';
+const LessonPlayerPage = lazy(() => import('./pages/user/lesson-player.jsx'));
+const MyLearningPage = lazy(() => import('./pages/user/my-learning.jsx'));
+const ProfileSettingsPage = lazy(() => import('./pages/user/profile.jsx'));
+const MyOrdersPage = lazy(() => import('./pages/user/my-orders.jsx'));
+const TransactionsPage = lazy(() => import('./pages/user/transactions.jsx'));
+const WishlistPage = lazy(() => import('./pages/user/wishlist.jsx'));
+const AssistantPage = lazy(() => import('./pages/user/assistant.jsx'));
 import { ChatWidget }        from './components/ai/chat-widget.jsx';
 
 // Admin
-import AdminDashboardPage    from './pages/admin/dashboard.jsx';
-import AdminCoursesPage      from './pages/admin/courses.jsx';
-import AdminUsersPage        from './pages/admin/users.jsx';
-import AdminOrdersPage       from './pages/admin/orders.jsx';
-import AdminReviewsPage      from './pages/admin/reviews.jsx';
-import AdminCategoriesPage   from './pages/admin/categories.jsx';
-import AdminPayoutsPage      from './pages/admin/payouts.jsx';
-import AdminInstructorApplicationsPage from './pages/admin/instructor-applications.jsx';
+const AdminDashboardPage = lazy(() => import('./pages/admin/dashboard.jsx'));
+const AdminCoursesPage = lazy(() => import('./pages/admin/courses.jsx'));
+const AdminUsersPage = lazy(() => import('./pages/admin/users.jsx'));
+const AdminOrdersPage = lazy(() => import('./pages/admin/orders.jsx'));
+const AdminReviewsPage = lazy(() => import('./pages/admin/reviews.jsx'));
+const AdminCategoriesPage = lazy(() => import('./pages/admin/categories.jsx'));
+const AdminPayoutsPage = lazy(() => import('./pages/admin/payouts.jsx'));
+const AdminInstructorApplicationsPage = lazy(() => import('./pages/admin/instructor-applications.jsx'));
 
 // Instructor
-import InstructorDashboardPage from './pages/instructor/dashboard.jsx';
-import InstructorCoursesPage   from './pages/instructor/courses.jsx';
-import InstructorRevenuePage   from './pages/instructor/revenue.jsx';
-import InstructorProfilePage   from './pages/instructor/profile.jsx';
+const InstructorDashboardPage = lazy(() => import('./pages/instructor/dashboard.jsx'));
+const InstructorCoursesPage = lazy(() => import('./pages/instructor/courses.jsx'));
+const InstructorRevenuePage = lazy(() => import('./pages/instructor/revenue.jsx'));
+const InstructorProfilePage = lazy(() => import('./pages/instructor/profile.jsx'));
 
 /* ── Layout shells ────────────────────────────────────────────── */
 function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Nav />
-      <div className="flex-1"><Outlet /></div>
+      <div className="flex-1"><Suspense fallback={<PageFallback />}><Outlet /></Suspense></div>
       <Footer />
       <ChatWidget />
     </div>
@@ -57,7 +61,7 @@ function PublicLayout() {
 
 /* Lesson player is full-bleed — no main nav/footer */
 function BareLayout() {
-  return <Outlet />;
+  return <Suspense fallback={<PageFallback />}><Outlet /></Suspense>;
 }
 
 /* ── Route guards ─────────────────────────────────────────────── */

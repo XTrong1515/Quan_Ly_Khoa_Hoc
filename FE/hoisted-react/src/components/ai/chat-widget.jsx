@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sparkles, X, Maximize2, Plus } from 'lucide-react';
 import { useAuth } from '@/store/auth';
-import { ChatPanel } from './chat-panel.jsx';
+// Widget nằm trên mọi trang công khai → chỉ tải khung chat khi người dùng mở
+const ChatPanel = lazy(() => import('./chat-panel.jsx').then((m) => ({ default: m.ChatPanel })));
 
 /** Nút trợ lý AI nổi góc phải — có trên các trang công khai (trừ trang /assistant). */
 export function ChatWidget() {
@@ -41,7 +42,9 @@ export function ChatWidget() {
               </div>
             </div>
           ) : (
-            <ChatPanel key={panelKey} conversationId={conversationId} onConversationChange={setConversationId} className="flex-1" />
+            <Suspense fallback={<div className="flex-1" />}>
+              <ChatPanel key={panelKey} conversationId={conversationId} onConversationChange={setConversationId} className="flex-1" />
+            </Suspense>
           )}
         </div>
       )}

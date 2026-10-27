@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Tag, Users,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
+import { PageFallback } from '@/components/page-fallback.jsx';
 
 const ADMIN_NAV = [
   {
@@ -191,7 +192,7 @@ function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel }) {
         </div>
 
         <main className="flex-1 min-w-0 overflow-auto">
-          <Outlet />
+          <Suspense fallback={<PageFallback />}><Outlet /></Suspense>
         </main>
       </div>
     </div>

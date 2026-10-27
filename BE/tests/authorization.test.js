@@ -31,6 +31,10 @@ describe('Phân quyền khu vực admin', () => {
     const admin = await createUser({ role: 'ADMIN' });
     const res = await request(app).get('/api/admin/dashboard').set(authHeader(admin));
     expect(res.status).toBe(200);
+    // Số liệu thật cho sparkline + trạng thái đơn (không còn dữ liệu giả ở FE)
+    expect(Object.keys(res.body.trend)).toEqual(['days', 'revenue', 'users', 'enrollments', 'orders']);
+    expect(res.body.trend.users.reduce((s, d) => s + d.value, 0)).toBeGreaterThanOrEqual(1); // chính admin vừa tạo
+    expect(Array.isArray(res.body.orderStatus)).toBe(true);
   });
 });
 

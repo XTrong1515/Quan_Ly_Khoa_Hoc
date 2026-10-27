@@ -11,29 +11,23 @@ import { formatVND } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { RevenueAreaChart, useChartColors } from '@/components/charts/revenue-area-chart.jsx';
 
-/* ── Mock data ──────────────────────────────────────────────────── */
-const SPARK = {
-  rev:    [80, 120, 100, 160, 200, 180, 240, 210, 290, 380, 350, 430],
-  users:  [30, 45,  38,  52,  61,  58,  70,  65,  80,  90,  95, 112],
-  active: [20, 22,  25,  23,  27,  30,  28,  32,  35,  33,  38,  42],
-  orders: [8,   5,   9,   6,  12,  10,  14,  11,   8,  15,  13,  18],
-};
+/* ── Bảng màu (mọi số liệu lấy từ API, không dùng dữ liệu mẫu) ─── */
+const TOP_COLORS = ['#8B5CF6', '#F7DF1E', '#06B6D4', '#10B981', '#F59E0B'];
 
-const MOCK_TOP = [
-  { title: 'JS: The Hard Parts',     revenue: 142_000_000, color: '#8B5CF6' },
-  { title: 'React Performance',       revenue:  98_000_000, color: '#F7DF1E' },
-  { title: 'TypeScript for JS Devs',  revenue:  76_000_000, color: '#06B6D4' },
-  { title: 'Async Patterns',          revenue:  64_000_000, color: '#10B981' },
-  { title: 'Node.js Internals',       revenue:  43_000_000, color: '#F59E0B' },
+const ORDER_STATUS = [
+  { status: 'PAID',      label: 'Đã thanh toán',  cls: 'bg-success' },
+  { status: 'PENDING',   label: 'Chờ thanh toán', cls: 'bg-accent' },
+  { status: 'FAILED',    label: 'Thất bại',       cls: 'bg-danger' },
+  { status: 'CANCELLED', label: 'Đã hủy',         cls: 'bg-ink-3' },
 ];
 
-const MOCK_FUNNEL = [
-  { label: 'Page view',    value: 34_848 },
-  { label: 'Click Vào',   value:  3_129 },
-  { label: 'Add to cart', value:  2_479 },
-  { label: 'Checkout',    value:  1_848 },
-  { label: 'Paid',        value:  1_284 },
-];
+/** 1.250.000 → "1,3M"; 450.000 → "450K" — hiển thị gọn trên thanh xếp hạng */
+function compactVND(n) {
+  const v = Number(n) || 0;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}M`;
+  if (v >= 1_000) return `${Math.round(v / 1_000)}K`;
+  return String(v);
+}
 
 /* ── Revenue range selector ─────────────────────────────────────── */
 const RANGE_TABS = [
@@ -42,6 +36,11 @@ const RANGE_TABS = [
   { value: 60,  label: '60 ngày' },
   { value: 365, label: '1 năm'   },
 ];
+
+/** Chuỗi theo ngày từ API ({date, value}) → mảng số liên tục, ngày trống = 0 */
+function fillSeries(rows, days) {
+  return fillDays((rows ?? []).map((r) => ({ date: r.date, revenue: r.value })), days).map((r) => r.revenue);
+}
 
 /* Fill days without orders with 0 so the line is continuous */
 function fillDays(rows, days) {
@@ -86,8 +85,18 @@ export default function AdminDashboardPage() {
 
   if (isLoading) return <Skeleton />;
 
-  const { stats, revenueChart, topCourses, recentOrders } = data ?? {};
-  const topList = (topCourses ?? MOCK_TOP).map((c, i) => ({ ...c, color: MOCK_TOP[i % MOCK_TOP.length].color }));
+  const { stats, revenueChart, topCourses, recentOrders, trend, orderStatus } = data ?? {};
+  const topList = (topCourses ?? []).map((c, i) => ({ ...c, revenue: Number(c.revenue), color: TOP_COLORS[i % TOP_COLORS.length] }));
+  const topMax = Math.max(1, ...topList.map((c) => c.revenue));
+  const trendDays = trend?.days ?? 14;
+  const spark = {
+    rev: fillSeries(trend?.revenue, trendDays),
+    users: fillSeries(trend?.users, trendDays),
+    active: fillSeries(trend?.enrollments, trendDays),
+    orders: fillSeries(trend?.orders, trendDays),
+  };
+  const statusRows = ORDER_STATUS.map((st) => ({ ...st, ...(orderStatus ?? []).find((r) => r.status === st.status) }));
+  const statusTotal = statusRows.reduce((sum, r) => sum + (r.count ?? 0), 0);
 
   const filledRevenue = fillDays(revenueChart ?? [], range);
   const rangeTotal = filledRevenue.reduce((s, r) => s + r.revenue, 0);
@@ -140,7 +149,7 @@ export default function AdminDashboardPage() {
             ? `${(((stats.revenueThisMonth - stats.revenuePrevMonth) / stats.revenuePrevMonth) * 100).toFixed(1)}% vs tháng trước`
             : 'tháng này'}
           positive={(stats?.revenueThisMonth ?? 0) >= (stats?.revenuePrevMonth ?? 0)}
-          sparkData={SPARK.rev} color={chart.accent}
+          sparkData={spark.rev} color={chart.accent}
         />
         <StatCard
           icon={UsersIcon}
@@ -148,7 +157,7 @@ export default function AdminDashboardPage() {
           value={(stats?.totalUsers ?? 0).toLocaleString()}
           delta={`+${(stats?.newUsersThisWeek ?? 0)} tuần này`}
           positive
-          sparkData={SPARK.users} color="#34D399"
+          sparkData={spark.users} color="#34D399"
         />
         <StatCard
           icon={GraduationCap}
@@ -156,7 +165,7 @@ export default function AdminDashboardPage() {
           value={(stats?.activeStudents ?? 0).toLocaleString()}
           delta={`/ ${(stats?.totalUsers ?? 0).toLocaleString()} tài khoản`}
           positive
-          sparkData={SPARK.active} color="#8B5CF6"
+          sparkData={spark.active} color="#8B5CF6"
         />
         <StatCard
           icon={Hourglass}
@@ -164,7 +173,7 @@ export default function AdminDashboardPage() {
           value={(stats?.pendingOrders ?? 0).toLocaleString()}
           delta={`/ ${(stats?.totalOrders ?? 0).toLocaleString()} tổng đơn`}
           positive={false}
-          sparkData={SPARK.orders} color="#F43F5E"
+          sparkData={spark.orders} color="#F43F5E"
         />
       </div>
 
@@ -210,8 +219,9 @@ export default function AdminDashboardPage() {
           </p>
           <div className="space-y-5">
             {topList.map(c => (
-              <TopCourseRow key={c.title} course={c} max={topList[0].revenue} />
+              <TopCourseRow key={c.title} course={c} max={topMax} />
             ))}
+            {!topList.length && <p className="font-mono text-[12px] text-ink-3">// Chưa có khóa học xuất bản</p>}
           </div>
         </div>
       </div>
@@ -262,12 +272,13 @@ export default function AdminDashboardPage() {
         {/* Funnel */}
         <div className="card p-5">
           <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-5">
-            // Funnel · Last 30d
+            // Đơn hàng · 30 ngày
           </p>
           <div className="space-y-4">
-            {MOCK_FUNNEL.map(step => (
-              <FunnelRow key={step.label} step={step} max={MOCK_FUNNEL[0].value} />
+            {statusRows.map(row => (
+              <OrderStatusRow key={row.status} row={row} total={statusTotal} />
             ))}
+            {!statusTotal && <p className="font-mono text-[12px] text-ink-3">// Chưa có đơn trong 30 ngày</p>}
           </div>
         </div>
       </div>
@@ -310,8 +321,8 @@ function TopCourseRow({ course, max }) {
     <div>
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-[12.5px] text-ink truncate flex-1 mr-2">{course.title}</span>
-        <span className="font-mono text-[11px] text-ink-3 shrink-0">
-          {(course.revenue / 1_000_000).toFixed(0)}M
+        <span className="font-mono text-[11px] text-ink-3 shrink-0" title={formatVND(course.revenue)}>
+          {compactVND(course.revenue)}
         </span>
       </div>
       <div className="h-1.5 bg-bg-3 rounded-full overflow-hidden">
@@ -321,21 +332,22 @@ function TopCourseRow({ course, max }) {
   );
 }
 
-function FunnelRow({ step, max }) {
-  const pct = Math.round((step.value / max) * 100);
+function OrderStatusRow({ row, total }) {
+  const count = row.count ?? 0;
+  const pct = total ? Math.round((count / total) * 100) : 0;
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[12.5px] text-ink">{step.label}</span>
+        <span className="text-[12.5px] text-ink">{row.label}</span>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[12px] font-semibold text-ink">
-            {step.value.toLocaleString()}
+          <span className="font-mono text-[12px] font-semibold text-ink" title={row.amount ? formatVND(row.amount) : undefined}>
+            {count.toLocaleString()}
           </span>
           <span className="font-mono text-[10px] text-ink-3">{pct}%</span>
         </div>
       </div>
       <div className="h-1.5 bg-bg-3 rounded-full overflow-hidden">
-        <div className="h-full bg-accent rounded-full" style={{ width: `${pct}%` }} />
+        <div className={cn('h-full rounded-full', row.cls)} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

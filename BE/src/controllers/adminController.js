@@ -45,8 +45,31 @@ async function dashboard(req, res) {
       LEFT JOIN orders o ON o.id = oi.order_id
       WHERE c.status = 'PUBLISHED'
       GROUP BY c.id
-      ORDER BY c.student_count DESC
+      ORDER BY revenue DESC, c.student_count DESC
       LIMIT 5
+    `);
+
+    // Số liệu thật theo ngày (14 ngày) cho sparkline của 4 thẻ thống kê
+    const TREND_DAYS = 14;
+    const daily = async (sql) => (await pool.query(sql, [TREND_DAYS - 1]))[0]
+      .map((r) => ({ date: r.date, value: Number(r.value) }));
+    const [trendRevenue, trendUsers, trendEnrollments, trendOrders] = await Promise.all([
+      daily(`SELECT DATE_FORMAT(paid_at, '%Y-%m-%d') AS date, SUM(total_amount) AS value FROM orders
+             WHERE status = 'PAID' AND paid_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) GROUP BY date`),
+      daily(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COUNT(*) AS value FROM users
+             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) GROUP BY date`),
+      daily(`SELECT DATE_FORMAT(enrolled_at, '%Y-%m-%d') AS date, COUNT(*) AS value FROM enrollments
+             WHERE enrolled_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) GROUP BY date`),
+      daily(`SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, COUNT(*) AS value FROM orders
+             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) GROUP BY date`),
+    ]);
+
+    // Đơn hàng 30 ngày theo trạng thái (thay cho funnel giả — giỏ hàng nằm ở localStorage nên không đo được)
+    const [orderStatus] = await pool.query(`
+      SELECT status, COUNT(*) AS count, CAST(COALESCE(SUM(total_amount), 0) AS DECIMAL(14,2)) AS amount
+      FROM orders
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY status
     `);
 
     const [recentOrders] = await pool.query(`
@@ -58,7 +81,11 @@ async function dashboard(req, res) {
       LIMIT 10
     `);
 
-    return res.json({ stats: statsRows[0], revenueChart: revenueRows, topCourses, recentOrders });
+    return res.json({
+      stats: statsRows[0], revenueChart: revenueRows, topCourses, recentOrders,
+      trend: { days: TREND_DAYS, revenue: trendRevenue, users: trendUsers, enrollments: trendEnrollments, orders: trendOrders },
+      orderStatus: orderStatus.map((r) => ({ status: r.status, count: Number(r.count), amount: Number(r.amount) })),
+    });
   } catch (err) {
     console.error('[admin/dashboard]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });

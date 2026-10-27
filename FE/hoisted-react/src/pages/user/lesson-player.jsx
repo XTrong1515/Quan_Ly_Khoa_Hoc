@@ -120,6 +120,9 @@ export default function LessonPlayerPage() {
     queryKey: ['lesson', lessonId],
     queryFn: () => api.get(`/api/lessons/${lessonId}`).then(r => r.data),
     staleTime: 0,
+    // Mỗi lần tải lại là 1 presigned URL mới → trình phát nạp lại video. Không refetch khi quay lại tab;
+    // link hết hạn đã có handleVideoError (MP4) / HlsPlayer tự xử lý
+    refetchOnWindowFocus: false,
     retry: (failCount, err) => err?.response?.status !== 403 && failCount < 2,
   });
 
@@ -506,7 +509,7 @@ export default function LessonPlayerPage() {
           <div className="flex-1 overflow-y-auto">
             {sections.map(section => (
               <SidebarSection
-                key={section.id}
+                key={section.id ?? 'none'}
                 section={section}
                 currentLessonId={parseInt(lessonId, 10)}
                 courseId={courseId}

@@ -194,3 +194,19 @@ describe('Dọn file trên storage', () => {
     expect(storage.deleteObject).toHaveBeenCalledWith(expect.stringContaining('doc.pdf'));
   });
 });
+
+describe('Mục lục trong trình phát', () => {
+  it('bài học chưa gán section vẫn hiện (nhóm "Bài học khác" ở cuối), không mất khỏi điều hướng', async () => {
+    const [sec] = await pool.query('INSERT INTO course_sections (course_id, title, order_index) VALUES (?, ?, 1)', [course.id, 'Phần 1']);
+    const inSection = await createLesson(course.id, { sectionId: sec.insertId });
+    const res = await request(app).get(`/api/lessons/${inSection.id}`).set(authHeader(student));
+    expect(res.status).toBe(200);
+    const { sections } = res.body;
+    expect(sections[0]).toMatchObject({ id: sec.insertId, title: 'Phần 1' });
+    expect(sections.at(-1)).toMatchObject({ id: null, title: 'Bài học khác' });
+    const ids = sections.flatMap((s) => s.lessons.map((l) => l.id));
+    const [[{ n }]] = await pool.query('SELECT COUNT(*) AS n FROM lessons WHERE course_id = ?', [course.id]);
+    expect(ids).toHaveLength(n); // đủ mọi bài của khóa
+    expect(ids).toEqual(expect.arrayContaining([inSection.id, previewLesson.id]));
+  });
+});

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Fragment } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -196,9 +196,8 @@ export default function AdminCoursesPage() {
               <tr><td colSpan={9} className="px-4 py-8 text-center font-mono text-[12px] text-ink-3">// Không có kết quả</td></tr>
             )}
             {courses.map((c, cIdx) => (
-              <>
+              <Fragment key={c.id}>
                 <tr
-                  key={c.id}
                   onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverId(c.id); }}
                   onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverId(null); }}
                   onDrop={(e) => { e.preventDefault(); handleCourseDrop(cIdx); }}
@@ -313,7 +312,7 @@ export default function AdminCoursesPage() {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

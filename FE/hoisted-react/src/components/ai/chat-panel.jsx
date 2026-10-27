@@ -18,11 +18,21 @@ export const SUGGESTIONS = [
 
 const TOKEN_RE = /\[\[course:([a-z0-9-]+)\]\]/g;
 
-/** Mã [[course:slug]]: khóa có thật → link; đang stream / slug bịa → bỏ. */
+/**
+ * Mã [[course:slug]]: khóa có thật → link; đang stream / slug bịa → bỏ.
+ * Model thường viết "Tên khóa [[course:slug]]" → chỉ thêm ↗; nếu quên tên ("khóa [[course:x]]") thì chèn tên khóa.
+ */
 function renderTokens(text, courses, streaming) {
-  const valid = new Set((courses ?? []).map((c) => c.slug));
+  const bySlug = new Map((courses ?? []).map((c) => [c.slug, c]));
   return text
-    .replace(TOKEN_RE, (_m, slug) => (!streaming && valid.has(slug) ? ` [↗](/courses/${slug})` : ''))
+    .replace(TOKEN_RE, (_m, slug, offset) => {
+      const course = bySlug.get(slug);
+      if (streaming || !course) return '';
+      const before = text.slice(Math.max(0, offset - course.title.length - 8), offset).toLowerCase();
+      return before.includes(course.title.toLowerCase())
+        ? ` [↗](/courses/${slug})`
+        : ` [${course.title.replace(/[[\]]/g, '')} ↗](/courses/${slug})`;
+    })
     .replace(/\[\[course:[a-z0-9-]*$/, ''); // mã đang stream dở
 }
 

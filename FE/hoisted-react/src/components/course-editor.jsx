@@ -186,7 +186,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                 <span className={cn('flex-1 text-[13px] truncate', l.is_preview ? 'text-accent' : 'text-ink')}>
                   {l.title}
                 </span>
-                {l.is_preview && (
+                {!!l.is_preview && (
                   <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-accent/10 text-accent uppercase shrink-0">
                     Preview
                   </span>
@@ -203,15 +203,15 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                 )}
                 <span className="font-mono text-[10px] text-ink-3 shrink-0">{l.duration_minutes}m</span>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => moveLesson(l, -1)} disabled={idx === 0}
+                  <button onClick={() => moveLesson(l, -1)} disabled={idx === 0} title="Lên trên" aria-label="Chuyển bài học lên trên"
                     className="p-1 rounded hover:bg-bg-3 text-ink-3 disabled:opacity-30 transition-colors">
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => moveLesson(l, 1)} disabled={idx === section.items.length - 1}
+                  <button onClick={() => moveLesson(l, 1)} disabled={idx === section.items.length - 1} title="Xuống dưới" aria-label="Chuyển bài học xuống dưới"
                     className="p-1 rounded hover:bg-bg-3 text-ink-3 disabled:opacity-30 transition-colors">
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setEditLesson(l)}
+                  <button onClick={() => setEditLesson(l)} title="Sửa bài học" aria-label="Sửa bài học"
                     className="p-1 rounded hover:bg-bg-3 text-ink-3 transition-colors">
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
