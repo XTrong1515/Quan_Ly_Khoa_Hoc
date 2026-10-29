@@ -35,7 +35,7 @@ VALUES (
     'Đã học qua React cơ bản: JSX, props, component, state cơ bản',
     'Không cần biết Redux, TypeScript hay class components'
   ),
-  480, 10, 4.8, 312, 5640, 'Hot', 'PUBLISHED'
+  480, 10, 4.8, 312, 5640, NULL, 'PUBLISHED'
 );
 
 -- Sections
@@ -339,7 +339,7 @@ VALUES (
     'Đã viết React cơ bản (có hoặc không có hooks đều được)',
     'Không cần biết testing hay TDD từ trước'
   ),
-  420, 10, 4.9, 198, 3820, 'New', 'PUBLISHED'
+  420, 10, 4.9, 198, 3820, NULL, 'PUBLISHED'
 );
 
 -- Sections

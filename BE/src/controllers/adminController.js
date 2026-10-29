@@ -450,6 +450,13 @@ async function adminDeleteLesson(req, res) {
   try {
     const [rows] = await pool.query('SELECT course_id, video_key, attachment_key, hls_prefix FROM lessons WHERE id = ?', [lessonId]);
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy' });
+    // Xóa bài học cascade sang quizzes, nhưng quiz_attempts thì không → kiểm tra trước để trả 409 rõ ràng
+    const [attempts] = await pool.query(
+      'SELECT qa.id FROM quiz_attempts qa JOIN quizzes q ON q.id = qa.quiz_id WHERE q.lesson_id = ? LIMIT 1', [lessonId],
+    );
+    if (attempts.length) {
+      return res.status(409).json({ message: 'Không thể xóa: quiz của bài học này đã có học viên làm. Sửa nội dung bài học thay vì xóa.' });
+    }
     await pool.query('DELETE FROM lessons WHERE id = ?', [lessonId]);
     await _updateCourseTotals(rows[0].course_id);
     // Không để file mồ côi trên storage
@@ -458,6 +465,9 @@ async function adminDeleteLesson(req, res) {
     ]);
     return res.json({ ok: true });
   } catch (err) {
+    if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(409).json({ message: 'Không thể xóa: quiz của bài học này đã có học viên làm. Sửa nội dung bài học thay vì xóa.' });
+    }
     console.error('[admin/lessons/delete]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }

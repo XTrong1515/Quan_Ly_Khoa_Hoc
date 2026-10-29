@@ -81,9 +81,18 @@ async function updateQuiz(req, res) {
 async function deleteQuiz(req, res) {
   const quizId = parseInt(req.params.id, 10);
   try {
+    // quiz_attempts không cascade (giữ lịch sử làm bài) → chặn với 409 thay vì để FK nổ thành 500
+    const [attempts] = await pool.query('SELECT id FROM quiz_attempts WHERE quiz_id = ? LIMIT 1', [quizId]);
+    if (attempts.length) {
+      return res.status(409).json({ message: 'Không thể xóa: đã có học viên làm quiz này, cần giữ lại lịch sử làm bài của họ.' });
+    }
     await pool.query('DELETE FROM quizzes WHERE id = ?', [quizId]);
     return res.json({ ok: true });
   } catch (err) {
+    // Có lượt làm bài chen vào giữa SELECT và DELETE → vẫn trả 409, không để thành 500
+    if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(409).json({ message: 'Không thể xóa: đã có học viên làm quiz này, cần giữ lại lịch sử làm bài của họ.' });
+    }
     console.error('[quiz/delete]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }

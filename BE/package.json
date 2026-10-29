@@ -17,7 +17,8 @@
     "db:export-schema": "node scripts/db-tools.js export-schema",
     "db:setup": "node scripts/db-tools.js setup",
     "db:backup": "node scripts/db-tools.js backup",
-    "db:restore": "node scripts/db-tools.js restore"
+    "db:restore": "node scripts/db-tools.js restore",
+    "db:recompute-stats": "node database/recompute_course_stats.js"
   },
   "keywords": [],
   "author": "",

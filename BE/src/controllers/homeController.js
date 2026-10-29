@@ -19,7 +19,7 @@ async function home(req, res) {
                co.level,
                ROUND(co.total_duration_minutes / 60.0, 1) AS hours,
                co.total_lessons AS lessons,
-               co.rating, co.student_count AS students, co.tag,
+               co.rating, co.review_count, co.student_count AS students, co.tag,
                co.instructor_name AS instructor,
                cat.name AS category
         FROM courses co
@@ -35,7 +35,7 @@ async function home(req, res) {
                co.level,
                ROUND(co.total_duration_minutes / 60.0, 1) AS hours,
                co.total_lessons AS lessons,
-               co.rating, co.student_count AS students, co.tag,
+               co.rating, co.review_count, co.student_count AS students, co.tag,
                co.instructor_name AS instructor,
                cat.name AS category
         FROM courses co

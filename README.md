@@ -96,6 +96,7 @@ Kiểm tra kết nối dịch vụ: `npm run check:services` (storage, sandbox, 
 cd BE
 npm run db:backup             # → BE/backups/<db>-<thời điểm>.sql (không đưa lên git)
 npm run db:export-schema      # cập nhật database/full_schema.sql sau khi đổi cấu trúc
+npm run db:recompute-stats    # đồng bộ đánh giá / học viên / số bài của khóa học với dữ liệu thật (thêm `-- --dedupe-sections` để dọn section rỗng bị trùng)
 ```
 
 ## Hạn chế & hướng phát triển

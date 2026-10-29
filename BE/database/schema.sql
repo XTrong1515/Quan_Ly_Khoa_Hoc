@@ -255,7 +255,7 @@ VALUES
     '<p>Khóa học đi sâu vào bản chất của JavaScript: cách V8 thực thi code, closure, prototype chain, class, async/await mechanics, event loop.</p><h3>Bạn sẽ học được gì</h3><ul><li>Execution context và call stack</li><li>Closure và lexical scope</li><li>Prototype chain và class</li><li>Event loop và async model</li></ul>',
     'JS', 'yellow', 599000, 899000, 'ADVANCED',
     (SELECT id FROM categories WHERE slug='js-core'),
-    'Will Sentance', 1110, 64, 4.9, 847, 12438, 'Bestseller', 'PUBLISHED'
+    'Will Sentance', 1110, 64, 4.9, 847, 12438, NULL, 'PUBLISHED'
   ),
   (
     'React Performance Deep-dive', 'react-performance-deep-dive',
@@ -263,7 +263,7 @@ VALUES
     '<p>Hiểu sâu về reconciliation, fiber, memo hóa đúng chỗ, code splitting và Concurrent Mode trong React 18+.</p>',
     'Rx', 'indigo', 749000, 1199000, 'ADVANCED',
     (SELECT id FROM categories WHERE slug='react'),
-    'Khang Phạm', 720, 48, 4.8, 523, 8142, 'Hot', 'PUBLISHED'
+    'Khang Phạm', 720, 48, 4.8, 523, 8142, NULL, 'PUBLISHED'
   ),
   (
     'Async Patterns & Event Loop', 'async-patterns-event-loop',
@@ -271,7 +271,7 @@ VALUES
     '<p>Xây dựng nền tảng async vững chắc: callback hell → Promises → async/await → generators. Hiểu event loop, microtask queue, macrotask.</p>',
     '⟳', 'green', 449000, 699000, 'INTERMEDIATE',
     (SELECT id FROM categories WHERE slug='async'),
-    'Lina Trần', 570, 32, 4.9, 312, 5728, 'New', 'PUBLISHED'
+    'Lina Trần', 570, 32, 4.9, 312, 5728, NULL, 'PUBLISHED'
   ),
   (
     'TypeScript for JS Devs', 'typescript-for-js-devs',
@@ -295,7 +295,7 @@ VALUES
     '<p>Học các design patterns qua lens của Vanilla JS: module, observer, factory, strategy, dependency injection — không framework.</p>',
     '{}', 'violet', 0, 0, 'BEGINNER',
     (SELECT id FROM categories WHERE slug='js-core'),
-    'Hà Trang', 450, 26, 4.6, 1024, 22108, 'Free', 'PUBLISHED'
+    'Hà Trang', 450, 26, 4.6, 1024, 22108, NULL, 'PUBLISHED'
   );
 
 -- Seed sections — JavaScript: The Hard Parts
