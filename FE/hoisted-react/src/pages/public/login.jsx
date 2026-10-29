@@ -119,7 +119,9 @@ export default function LoginPage() {
           <div className="flex flex-col gap-3">
             {/* Chỉ hiện số thật từ /api/stats — chưa tải được thì không hiện */}
             {(platformStats ? [
-              `${Number(platformStats.freeCourses).toLocaleString('vi-VN')} khóa học miễn phí · đăng ký không cần thẻ`,
+              Number(platformStats.freeCourses) > 0
+                ? `${Number(platformStats.freeCourses).toLocaleString('vi-VN')} khóa học miễn phí · đăng ký không cần thẻ`
+                : 'Đăng ký miễn phí, không cần thẻ thanh toán',
               `${Number(platformStats.totalUsers).toLocaleString('vi-VN')} tài khoản đã đăng ký trên Hoisted`,
             ] : []).map((t) => (
               <div key={t} className="flex items-center gap-3 text-sm text-[#B6BCD0]">

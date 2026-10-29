@@ -26,6 +26,8 @@ async function myEnrollments(req, res) {
        FROM enrollments e
        JOIN courses c ON c.id = e.course_id
        WHERE e.user_id = ? ${condition}
+         -- Khóa đã lưu trữ mà không còn bài học nào thì không còn gì để học → ẩn (khóa lưu trữ còn nội dung vẫn hiện cho người đã mua)
+         AND NOT (c.status = 'ARCHIVED' AND NOT EXISTS (SELECT 1 FROM lessons l2 WHERE l2.course_id = c.id))
        ORDER BY e.enrolled_at DESC`,
       [userId],
     );

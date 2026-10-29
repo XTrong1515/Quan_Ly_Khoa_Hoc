@@ -243,7 +243,10 @@ export default function HomePage() {
       l: stats?.totalReviews ? `Điểm đánh giá từ ${formatCount(stats.totalReviews)} lượt` : 'Chưa có đánh giá',
     },
     { n: stats ? formatCount(stats.totalPublishedCourses) : '—', l: 'Khóa học đã xuất bản' },
-    { n: stats ? formatCount(stats.freeCourses) : '—', l: 'Khóa học miễn phí' },
+    // "0 khóa miễn phí" không nói lên gì → khi không có khóa miễn phí thì hiện số tài khoản mới trong tuần
+    stats?.freeCourses === 0
+      ? { n: formatCount(stats.newUsersThisWeek), l: 'Tài khoản mới trong 7 ngày qua' }
+      : { n: stats ? formatCount(stats.freeCourses) : '—', l: 'Khóa học miễn phí' },
   ];
 
   const handleSearch = (e) => {
@@ -599,7 +602,8 @@ export default function HomePage() {
           action={
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex gap-1 bg-bg-2 rounded-xl p-1" role="tablist" aria-label="Bộ lọc khóa học">
-                {COURSE_TABS.map((tab, i) => (
+                {/* Không còn khóa miễn phí nào → ẩn tab "Miễn phí" thay vì cho bấm ra danh sách rỗng */}
+                {COURSE_TABS.map((tab, i) => (i === 2 && stats?.freeCourses === 0 ? null : (
                   <button
                     key={tab}
                     role="tab"
@@ -612,7 +616,7 @@ export default function HomePage() {
                   >
                     {tab}
                   </button>
-                ))}
+                )))}
               </div>
               <Link to="/courses" className="flex items-center gap-1 text-[13px] font-medium text-ink-2 hover:text-accent transition-colors">
                 Xem tất cả <ArrowUpRight className="w-4 h-4" aria-hidden="true" />

@@ -25,7 +25,6 @@ const schema = z
       .regex(/[0-9]/, 'Mật khẩu cần ít nhất 1 chữ số')
       .regex(/[^A-Za-z0-9]/, 'Mật khẩu cần ít nhất 1 ký tự đặc biệt (vd: ! @ #)'),
     confirm: z.string(),
-    terms: z.literal(true, { errorMap: () => ({ message: 'Đánh dấu ô đồng ý điều khoản để tạo tài khoản' }) }),
   })
   .refine((d) => d.password === d.confirm, {
     path: ['confirm'],
@@ -70,14 +69,12 @@ export default function RegisterPage() {
     register, handleSubmit, watch, formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { terms: false },
     mode: 'onChange',
   });
 
   const pw = watch('password') || '';
   const email = watch('email') || '';
   const confirm = watch('confirm') || '';
-  const terms = watch('terms');
   const score = strengthOf(pw);
   const emailValid = !errors.email && email.length > 0;
   const matchValid = confirm.length > 0 && pw === confirm;
@@ -294,28 +291,11 @@ export default function RegisterPage() {
             </FormField>
           </div>
 
-          {/* Terms */}
-          <label className="flex items-start gap-2.5 my-5 text-[12.5px] text-ink-2 leading-[1.5] cursor-pointer w-fit">
-            <input {...register('terms')} type="checkbox" className="sr-only peer" />
-            <span className={cn(
-              'w-[18px] h-[18px] rounded-md shrink-0 mt-px grid place-items-center transition-colors',
-              'peer-focus-visible:ring-2 peer-focus-visible:ring-accent/60',
-              terms ? 'bg-accent text-accent-ink' : 'border-2 border-ink-3 bg-bg-2',
-            )}>
-              {terms && <Check className="w-3 h-3" strokeWidth={3.5} aria-hidden="true" />}
-            </span>
-            <span>
-              Tôi đồng ý với <a href="#" className="text-accent hover:underline underline-offset-2">Điều khoản dịch vụ</a> và{' '}
-              <a href="#" className="text-accent hover:underline underline-offset-2">Chính sách bảo mật</a> của Hoisted.
-            </span>
-          </label>
-          {errors.terms && <p className="-mt-2 mb-3 text-xs text-danger font-mono" role="alert">{errors.terms.message}</p>}
-
           <Button
             type="submit"
             size="lg"
             disabled={isSubmitting}
-            className="justify-center shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+            className="mt-6 justify-center shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
           >
             {isSubmitting ? 'Đang tạo tài khoản…' : 'Tạo tài khoản →'}
           </Button>
