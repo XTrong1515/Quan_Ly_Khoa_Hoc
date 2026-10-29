@@ -52,8 +52,8 @@ export function ExerciseEditorModal({ apiBase, lesson, onClose }) {
     try {
       const { data: res } = await api.post(`${apiBase}/lessons/${lesson.id}/exercise/validate`, payload());
       setCheck(res);
-      if (res.status === 'ACCEPTED') toast.success('Lời giải đúng với mọi test — đề hợp lệ');
-    } catch (err) { toast.error(apiMessage(err)); }
+      if (res.status === 'ACCEPTED') toast.success('Lời giải qua mọi test — đề hợp lệ');
+    } catch (err) { toast.error(apiMessage(err, 'Chưa kiểm tra được lời giải. Thử lại sau giây lát.')); }
     finally { setBusy(false); }
   };
 
@@ -64,7 +64,7 @@ export function ExerciseEditorModal({ apiBase, lesson, onClose }) {
       toast.success('Đã lưu bài tập');
       qc.invalidateQueries({ queryKey });
       onClose();
-    } catch (err) { toast.error(apiMessage(err)); }
+    } catch (err) { toast.error(apiMessage(err, 'Chưa lưu được bài tập. Nội dung vẫn còn trong form — thử lại.')); }
     finally { setBusy(false); }
   };
 
@@ -75,7 +75,7 @@ export function ExerciseEditorModal({ apiBase, lesson, onClose }) {
       toast.success('Đã xóa bài tập');
       qc.invalidateQueries({ queryKey });
       onClose();
-    } catch (err) { toast.error(apiMessage(err)); }
+    } catch (err) { toast.error(apiMessage(err, 'Chưa xóa được bài tập. Thử lại sau giây lát.')); }
   };
 
   return (

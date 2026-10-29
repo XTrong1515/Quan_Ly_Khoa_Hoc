@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Star, Clock, BookOpen, Users, ChevronDown, ChevronRight, Play,
-  ShoppingCart, Zap, Check, X, Lock, Trash2, Gift, Heart, Award, MonitorPlay,
+  ShoppingCart, Zap, Check, X, Lock, Trash2, Gift, Heart, MonitorPlay,
 } from 'lucide-react';
 const ReactPlayer = lazy(() => import('react-player')); // chỉ cần khi mở xem thử
 import { Button } from '@/components/ui/button.jsx';
@@ -14,7 +14,7 @@ import { Seo } from '@/components/seo.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { useCart } from '@/store/cart';
 import { useAuth } from '@/store/auth';
-import { formatVND, formatHours } from '@/lib/format';
+import { formatVND, formatPrice, formatHours, hasRating, levelLabel } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
@@ -25,6 +25,8 @@ function useCourseDetail(slug) {
     queryFn: () => api.get(`/api/courses/${slug}`).then((r) => r.data),
     staleTime: 5 * 60 * 1000,
     enabled: !!slug,
+    // 404 là câu trả lời dứt khoát — không thử lại 3 lần rồi mới báo "không tìm thấy"
+    retry: (count, err) => err?.response?.status !== 404 && count < 2,
   });
 }
 
@@ -39,16 +41,16 @@ export default function CourseDetailPage() {
   const [tab, setTab]  = useState('overview');
   const [previewLesson, setPreviewLesson] = useState(null);
 
-  const { data, isLoading, isError } = useCourseDetail(slug);
+  const { data, isLoading, isError, error, refetch } = useCourseDetail(slug);
 
   const enrollFreeMutation = useMutation({
     mutationFn: (courseId) => api.post('/api/enrollments', { courseId }),
     onSuccess: () => {
-      toast.success('Đăng ký thành công! Bắt đầu học ngay.');
+      toast.success('Đã đăng ký khóa học. Bấm "Vào học" để bắt đầu.');
       queryClient.invalidateQueries({ queryKey: ['course', slug] });
       queryClient.invalidateQueries({ queryKey: ['enrolled-course-ids'] });
     },
-    onError: (err) => toast.error(apiMessage(err, 'Đăng ký thất bại')),
+    onError: (err) => toast.error(apiMessage(err, 'Không đăng ký được khóa học. Thử lại sau giây lát.')),
   });
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -79,14 +81,27 @@ export default function CourseDetailPage() {
   }, [data?.course, origin]);
 
   if (isLoading) return <CourseDetailSkeleton />;
+  // Chỉ báo 404 khi máy chủ thật sự trả 404 — lỗi mạng / 5xx thì cho thử lại
+  const notFound = !isError || error?.response?.status === 404;
   if (isError || !data?.course) {
     return (
       <div className="py-24 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
-        <div className="relative">
-          <p className="font-mono text-[42px] font-bold text-ink/15 mb-2">404</p>
-          <p className="text-ink-2 mb-5">Không tìm thấy khóa học.</p>
-          <Link to="/courses"><Button variant="ghost">← Quay lại danh sách</Button></Link>
+        <div className="relative px-5">
+          {notFound ? (
+            <>
+              <p className="font-mono text-[42px] font-bold text-ink/15 mb-2">404</p>
+              <p className="font-display font-semibold text-[17px] text-ink mb-1.5">Không tìm thấy khóa học</p>
+              <p className="text-sm text-ink-2 mb-5">Đường dẫn có thể sai, hoặc khóa học đã ngừng bán.</p>
+              <Link to="/courses"><Button variant="ghost">← Xem các khóa học khác</Button></Link>
+            </>
+          ) : (
+            <>
+              <p className="font-display font-semibold text-[17px] text-ink mb-1.5">Không tải được khóa học</p>
+              <p className="text-sm text-ink-2 mb-5">Có thể do mất kết nối hoặc máy chủ đang bận.</p>
+              <Button variant="ghost" onClick={() => refetch()}>Thử lại</Button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -103,7 +118,7 @@ export default function CourseDetailPage() {
     : 0;
 
   const handleWishlist = () => {
-    if (role === 'guest') { toast.error('Vui lòng đăng nhập để lưu yêu thích'); navigate('/login'); return; }
+    if (role === 'guest') { toast.error('Đăng nhập để lưu khóa học vào danh sách yêu thích'); navigate('/login'); return; }
     wishlistToggle.mutate({ courseId: course.id, isWishlisted });
   };
 
@@ -117,7 +132,7 @@ export default function CourseDetailPage() {
   };
   const handleEnrollFree = () => {
     if (role === 'guest') {
-      toast.error('Vui lòng đăng nhập để đăng ký');
+      toast.error('Đăng nhập để đăng ký khóa học miễn phí này');
       navigate('/login');
       return;
     }
@@ -180,7 +195,7 @@ export default function CourseDetailPage() {
 
             <div className="flex flex-wrap gap-2 mb-4">
               <Chip variant="line">{course.category}</Chip>
-              <Chip variant="line">{course.level}</Chip>
+              <Chip variant="line">{levelLabel(course.level)}</Chip>
               {course.tag && <Chip>{course.tag}</Chip>}
             </div>
 
@@ -190,18 +205,26 @@ export default function CourseDetailPage() {
             {/* Meta strip */}
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-6">
               <span className="flex items-center gap-1.5 text-[13.5px]">
-                <Star className="w-4 h-4 fill-accent text-accent" aria-hidden="true" />
-                <b className="text-ink font-mono">{course.rating}</b>
-                <span className="text-ink-3">({course.review_count?.toLocaleString('vi-VN')} đánh giá)</span>
+                <Star className={cn('w-4 h-4', hasRating(course) ? 'fill-accent text-accent' : 'text-ink-3')} aria-hidden="true" />
+                {hasRating(course) ? (
+                  <>
+                    <b className="text-ink font-mono">{Number(course.rating).toFixed(1)}</b>
+                    <span className="text-ink-3">({Number(course.review_count).toLocaleString('vi-VN')} đánh giá)</span>
+                  </>
+                ) : (
+                  <span className="text-ink-3">Chưa có đánh giá</span>
+                )}
               </span>
               <span className="flex items-center gap-1.5 text-[13.5px] text-ink-2">
                 <Users className="w-4 h-4 text-ink-3" aria-hidden="true" />
                 {course.students?.toLocaleString('vi-VN')} học viên
               </span>
-              <span className="flex items-center gap-1.5 text-[13.5px] text-ink-2">
-                <Clock className="w-4 h-4 text-ink-3" aria-hidden="true" />
-                {formatHours(course.hours ?? 0)}
-              </span>
+              {Number(course.hours) > 0 && (
+                <span className="flex items-center gap-1.5 text-[13.5px] text-ink-2">
+                  <Clock className="w-4 h-4 text-ink-3" aria-hidden="true" />
+                  {formatHours(course.hours)}
+                </span>
+              )}
               <span className="flex items-center gap-1.5 text-[13.5px] text-ink-2">
                 <BookOpen className="w-4 h-4 text-ink-3" aria-hidden="true" />
                 {course.lessons} bài học
@@ -251,12 +274,12 @@ export default function CourseDetailPage() {
                 {previewCount > 0 && (
                   <p className="flex items-center gap-2 text-[12.5px] text-ink-3 font-mono mb-4">
                     <MonitorPlay className="w-4 h-4 text-accent" aria-hidden="true" />
-                    {previewCount} bài học xem thử miễn phí — bấm "Preview" để xem ngay
+                    {previewCount} bài học xem thử miễn phí — bấm "Xem thử" để mở
                   </p>
                 )}
                 {Object.entries(sections).length === 0 ? (
                   <div className="card p-8 text-center">
-                    <p className="text-sm text-ink-2">Nội dung khóa học đang được cập nhật.</p>
+                    <p className="text-sm text-ink-2">Giảng viên chưa đăng bài học nào cho khóa này.</p>
                   </div>
                 ) : (
                   Object.entries(sections).map(([sectionTitle, sectionLessons], si) => (
@@ -296,10 +319,12 @@ export default function CourseDetailPage() {
                   <p className="font-display font-bold text-[18px] mb-1">{instructorName}</p>
                   {instructor?.headline && <p className="text-ink-3 text-[13px] mb-3">{instructor.headline}</p>}
                   <div className="flex flex-wrap gap-4 text-[12.5px] text-ink-2">
-                    <span className="flex items-center gap-1.5">
-                      <Star className="w-3.5 h-3.5 fill-accent text-accent" aria-hidden="true" />
-                      {course.rating} điểm đánh giá
-                    </span>
+                    {hasRating(course) && (
+                      <span className="flex items-center gap-1.5">
+                        <Star className="w-3.5 h-3.5 fill-accent text-accent" aria-hidden="true" />
+                        {Number(course.rating).toFixed(1)} điểm đánh giá
+                      </span>
+                    )}
                     <span className="flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 text-ink-3" aria-hidden="true" />
                       {(instructor?.studentCount ?? course.students)?.toLocaleString('vi-VN')} học viên
@@ -333,7 +358,7 @@ export default function CourseDetailPage() {
               <div className="p-5">
                 <div className="flex items-end gap-2.5 mb-5">
                   <span className={cn('font-mono font-bold text-[28px] leading-none', isFree ? 'text-accent' : 'text-ink')}>
-                    {formatVND(course.price)}
+                    {formatPrice(course.price)}
                   </span>
                   {discount > 0 && (
                     <span className="font-mono text-[14px] text-ink-3 line-through">
@@ -344,7 +369,7 @@ export default function CourseDetailPage() {
 
                 {isEnrolled ? (
                   <Button size="lg" className="w-full justify-center mb-2" onClick={handleGoLearn}>
-                    <Play className="w-4 h-4" aria-hidden="true" /> Tiếp tục học
+                    <Play className="w-4 h-4" aria-hidden="true" /> Vào học
                   </Button>
                 ) : isFree ? (
                   <Button
@@ -400,19 +425,17 @@ export default function CourseDetailPage() {
                 <ul className="mt-5 pt-5 border-t border-line space-y-2.5 text-[12.5px] text-ink-2">
                   <li className="flex items-center gap-2.5">
                     <BookOpen className="w-4 h-4 text-accent flex-shrink-0" aria-hidden="true" />
-                    {course.lessons} bài học video
+                    {course.lessons} bài học
                   </li>
-                  <li className="flex items-center gap-2.5">
-                    <Clock className="w-4 h-4 text-accent flex-shrink-0" aria-hidden="true" />
-                    {formatHours(course.hours ?? 0)} tổng thời lượng
-                  </li>
+                  {Number(course.hours) > 0 && (
+                    <li className="flex items-center gap-2.5">
+                      <Clock className="w-4 h-4 text-accent flex-shrink-0" aria-hidden="true" />
+                      {formatHours(course.hours)} tổng thời lượng
+                    </li>
+                  )}
                   <li className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-accent flex-shrink-0" aria-hidden="true" />
                     Truy cập trọn đời
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Award className="w-4 h-4 text-accent flex-shrink-0" aria-hidden="true" />
-                    Certificate khi hoàn thành
                   </li>
                 </ul>
               </div>
@@ -463,7 +486,7 @@ function SectionAccordion({ index, title, lessons, isEnrolled, onPreview }) {
                   onClick={() => onPreview(l)}
                   className="flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-accent/30 bg-accent/10 text-accent font-mono text-[11px] font-semibold hover:bg-accent/20 transition-colors flex-shrink-0 cursor-pointer"
                 >
-                  <Play className="w-3 h-3" aria-hidden="true" /> Preview
+                  <Play className="w-3 h-3" aria-hidden="true" /> Xem thử
                 </button>
               ) : isEnrolled ? (
                 <Play className="w-3.5 h-3.5 text-ink-3 flex-shrink-0" aria-label="Đã mở khóa" />
@@ -484,7 +507,7 @@ function ReviewsList({ reviews, course }) {
     return (
       <div className="card p-10 text-center">
         <Star className="w-8 h-8 text-ink-3/40 mx-auto mb-3" aria-hidden="true" />
-        <p className="text-sm text-ink-2">Chưa có đánh giá nào — hãy là người đầu tiên.</p>
+        <p className="text-sm text-ink-2">Khóa học này chưa có đánh giá nào.</p>
       </div>
     );
   }
@@ -499,8 +522,8 @@ function ReviewsList({ reviews, course }) {
       {/* Summary panel */}
       <div className="card p-6 mb-6 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-7 items-center">
         <div className="text-center sm:pr-7 sm:border-r sm:border-line">
-          <div className="font-mono font-bold text-[48px] text-ink leading-none tabular-nums">{course.rating}</div>
-          <div className="flex gap-0.5 mt-2 justify-center" aria-label={`${course.rating} trên 5 sao`}>
+          <div className="font-mono font-bold text-[48px] text-ink leading-none tabular-nums">{Number(course.rating).toFixed(1)}</div>
+          <div className="flex gap-0.5 mt-2 justify-center" aria-label={`${Number(course.rating).toFixed(1)} trên 5 sao`}>
             {[1, 2, 3, 4, 5].map((s) => (
               <Star key={s} className={cn('w-4 h-4', s <= Math.round(course.rating) ? 'fill-accent text-accent' : 'text-line')} aria-hidden="true" />
             ))}
@@ -584,8 +607,8 @@ function WriteReviewSection({ courseId }) {
 
   const submitMutation = useMutation({
     mutationFn: () => api.post(`/api/courses/${courseId}/reviews`, { rating, comment }),
-    onSuccess: () => { toast.success('Đánh giá đã được lưu!'); invalidate(); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onSuccess: () => { toast.success(existing ? 'Đã cập nhật đánh giá' : 'Đã đăng đánh giá của bạn'); invalidate(); },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa đăng được đánh giá. Nội dung vẫn còn — thử lại.')),
   });
 
   const deleteMutation = useMutation({
@@ -595,7 +618,7 @@ function WriteReviewSection({ courseId }) {
       setRating(0); setComment('');
       invalidate();
     },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa xóa được đánh giá. Thử lại sau giây lát.')),
   });
 
   return (
@@ -651,14 +674,14 @@ function WriteReviewSection({ courseId }) {
             {existing && (
               <Button size="sm" variant="ghost"
                 disabled={deleteMutation.isPending}
-                onClick={() => deleteMutation.mutate()}>
-                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Xóa
+                onClick={() => window.confirm('Xóa đánh giá của bạn cho khóa học này?') && deleteMutation.mutate()}>
+                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Xóa đánh giá
               </Button>
             )}
             <Button size="sm"
               disabled={rating === 0 || submitMutation.isPending}
               onClick={() => submitMutation.mutate()}>
-              {existing ? 'Cập nhật' : 'Gửi đánh giá'}
+              {existing ? 'Cập nhật đánh giá' : 'Đăng đánh giá'}
             </Button>
           </div>
         </div>
@@ -670,7 +693,7 @@ function WriteReviewSection({ courseId }) {
 /* ── Preview modal (UC04) ────────────────────────────────────────── */
 function PreviewModal({ lesson, onClose }) {
   // Link video chỉ cấp qua endpoint preview (danh sách bài học công khai không chứa link)
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['lesson-preview', lesson.id],
     queryFn: () => api.get(`/api/lessons/${lesson.id}/preview`).then(r => r.data),
     staleTime: 60_000,
@@ -694,7 +717,7 @@ function PreviewModal({ lesson, onClose }) {
       <div className="w-full max-w-[760px] bg-bg rounded-2xl border border-line overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
           <div>
-            <p className="font-mono text-[11px] text-accent uppercase tracking-wide mb-0.5">● Preview miễn phí</p>
+            <p className="font-mono text-[11px] text-accent uppercase tracking-wide mb-0.5">● Xem thử miễn phí</p>
             <p className="font-display font-semibold text-[14px] text-ink">{lesson.title}</p>
           </div>
           <button
@@ -707,7 +730,7 @@ function PreviewModal({ lesson, onClose }) {
         </div>
         <div className="aspect-video bg-black">
           {isLoading ? (
-            <div className="w-full h-full grid place-items-center font-mono text-[13px] text-ink-3">Đang tải…</div>
+            <div className="w-full h-full grid place-items-center font-mono text-[13px] text-ink-3">Đang tải video…</div>
           ) : videoUrl ? (
             <Suspense fallback={null}>
               <ReactPlayer
@@ -722,7 +745,9 @@ function PreviewModal({ lesson, onClose }) {
               <div className="w-14 h-14 rounded-full border-2 border-line grid place-items-center">
                 <Play className="w-7 h-7 text-ink-3" aria-hidden="true" />
               </div>
-              <p className="font-mono text-[13px] text-ink-3">Video chưa sẵn sàng</p>
+              <p className="font-mono text-[13px] text-ink-3">
+                {isError ? 'Không tải được video xem thử. Đóng và thử lại.' : 'Bài học này chưa có video.'}
+              </p>
             </div>
           )}
         </div>

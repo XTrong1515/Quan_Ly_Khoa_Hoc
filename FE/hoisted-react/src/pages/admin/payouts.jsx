@@ -36,7 +36,7 @@ export default function AdminPayoutsPage() {
   const cancel = useMutation({
     mutationFn: (id) => api.delete(`/api/admin/payouts/${id}`),
     onSuccess: () => { toast.success('Đã hủy khoản chi trả'); invalidate(qc); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa hủy được khoản chi trả. Thử lại sau giây lát.')),
   });
 
   const t = summary?.totals;
@@ -142,7 +142,7 @@ export default function AdminPayoutsPage() {
                   {p.status === 'PENDING' && (
                     <div className="flex items-center gap-1 justify-end">
                       <Button size="sm" onClick={() => setPaying(p)}><Check className="w-3.5 h-3.5" /> Đã chuyển</Button>
-                      <button onClick={() => { if (window.confirm('Hủy khoản chi trả này?')) cancel.mutate(p.id); }}
+                      <button onClick={() => { if (window.confirm('Hủy khoản chi trả này? Số tiền quay lại số dư chờ chi trả của giảng viên.')) cancel.mutate(p.id); }}
                         className="p-1.5 rounded text-ink-3 hover:text-danger hover:bg-danger/10" title="Hủy"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   )}
@@ -180,7 +180,7 @@ function CreatePayoutModal({ instructor, onClose, onDone }) {
   const m = useMutation({
     mutationFn: () => api.post('/api/admin/payouts', { instructorId: instructor.id, amount: Number(amount), note }),
     onSuccess: () => { toast.success('Đã tạo khoản chi trả — chuyển khoản xong thì bấm "Đã chuyển"'); onDone(); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa tạo được khoản chi trả. Thử lại sau giây lát.')),
   });
   return (
     <Modal title="// Tạo khoản chi trả" onClose={onClose}>
@@ -201,7 +201,7 @@ function MarkPaidModal({ payout, onClose, onDone }) {
   const m = useMutation({
     mutationFn: () => api.put(`/api/admin/payouts/${payout.id}/paid`, { bankRef }),
     onSuccess: () => { toast.success('Đã ghi nhận chi trả và thông báo cho giảng viên'); onDone(); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa ghi nhận được chi trả. Thử lại sau giây lát.')),
   });
   return (
     <Modal title="// Xác nhận đã chuyển khoản" onClose={onClose}>
@@ -221,7 +221,7 @@ function CommissionModal({ instructor, defaultRate, onClose, onDone }) {
   const m = useMutation({
     mutationFn: () => api.put(`/api/admin/users/${instructor.id}/commission`, { rate: rate === '' ? null : Number(rate) }),
     onSuccess: () => { toast.success('Đã cập nhật — chỉ áp dụng cho đơn bán từ bây giờ'); onDone(); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu được tỷ lệ hoa hồng. Thử lại sau giây lát.')),
   });
   return (
     <Modal title="// Tỷ lệ hoa hồng riêng" onClose={onClose}>

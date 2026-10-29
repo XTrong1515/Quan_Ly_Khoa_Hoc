@@ -31,7 +31,7 @@ export function useWishlistToggle() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(['wishlist-ids'], ctx.prev);
-      toast.error(apiMessage(_err, 'Không thể cập nhật wishlist'));
+      toast.error(apiMessage(_err, 'Chưa cập nhật được danh sách yêu thích. Thử lại sau giây lát.'));
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['wishlist-ids'] }),
     onSuccess: (_data, { isWishlisted }) => {

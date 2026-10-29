@@ -29,7 +29,7 @@ const TABS = [
 export default function MyLearningPage() {
   const [tab, setTab] = useState('all');
   const apiStatus = tab === 'all' ? undefined : tab;
-  const { data, isLoading, isError } = useEnrollments(apiStatus);
+  const { data, isLoading, isError, refetch } = useEnrollments(apiStatus);
   const enrollments = data?.enrollments ?? [];
 
   const inProgress = tab === 'all'
@@ -99,11 +99,12 @@ export default function MyLearningPage() {
 
       {isError && (
         <div className="card p-10 text-center">
-          <p className="text-sm text-ink-2">Không thể tải danh sách khóa học. Vui lòng thử lại sau.</p>
+          <p className="text-sm text-ink-2 mb-4">Không tải được danh sách khóa học. Kiểm tra kết nối rồi thử lại.</p>
+          <Button variant="ghost" onClick={() => refetch()}>Thử lại</Button>
         </div>
       )}
 
-      {!isLoading && !isError && enrollments.length === 0 && <EmptyState />}
+      {!isLoading && !isError && enrollments.length === 0 && <EmptyState tab={tab} onShowAll={() => setTab('all')} />}
 
       {!isLoading && !isError && (inProgress.length > 0 || completed.length > 0) && (
         <>
@@ -213,7 +214,23 @@ function EnrollmentCard({ enrollment: e, isCompleted }) {
 }
 
 /* ── Empty state ──────────────────────────────────────────────── */
-function EmptyState() {
+// Lọc theo trạng thái mà rỗng ≠ chưa đăng ký khóa nào
+const FILTERED_EMPTY = {
+  in_progress: { title: 'Không có khóa nào đang học dở', desc: 'Các khóa bạn đã bắt đầu mà chưa xong sẽ hiện ở đây.' },
+  completed:   { title: 'Chưa hoàn thành khóa học nào', desc: 'Học hết mọi bài trong một khóa để khóa đó chuyển sang mục này.' },
+};
+
+function EmptyState({ tab, onShowAll }) {
+  const filtered = FILTERED_EMPTY[tab];
+  if (filtered) {
+    return (
+      <div className="card py-16 px-6 text-center">
+        <h3 className="font-display font-bold text-[17px] mb-1.5">{filtered.title}</h3>
+        <p className="text-ink-2 text-[13.5px] mb-6">{filtered.desc}</p>
+        <Button variant="ghost" onClick={onShowAll}>Xem tất cả khóa học của tôi</Button>
+      </div>
+    );
+  }
   return (
     <div className="card relative overflow-hidden py-20 px-6 flex flex-col items-center text-center">
       <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
@@ -222,8 +239,8 @@ function EmptyState() {
           <BookOpen className="w-7 h-7" aria-hidden="true" />
         </div>
         <h3 className="font-display font-bold text-[17px] mb-1.5">Bạn chưa đăng ký khóa học nào</h3>
-        <p className="text-ink-2 text-[13.5px] mb-6">Khám phá các khóa học và bắt đầu hành trình học tập!</p>
-        <Link to="/courses"><Button>Khám phá khóa học</Button></Link>
+        <p className="text-ink-2 text-[13.5px] mb-6">Khóa học bạn mua hoặc đăng ký miễn phí sẽ hiện ở đây.</p>
+        <Link to="/courses"><Button>Xem khóa học</Button></Link>
       </div>
     </div>
   );

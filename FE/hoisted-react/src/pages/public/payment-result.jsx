@@ -66,7 +66,7 @@ export default function PaymentResultPage() {
 
     if (!params.vnp_TxnRef) {
       setState('error');
-      setErrorMsg('Không tìm thấy thông tin giao dịch.');
+      setErrorMsg('Đường dẫn này không chứa thông tin giao dịch từ VNPay.');
       return;
     }
 
@@ -83,7 +83,7 @@ export default function PaymentResultPage() {
       })
       .catch((err) => {
         setState('error');
-        setErrorMsg(apiMessage(err, 'Không thể xác thực thanh toán'));
+        setErrorMsg(apiMessage(err, 'Máy chủ chưa xác nhận được kết quả từ VNPay.'));
       });
   }, []); // eslint-disable-line
 
@@ -119,8 +119,8 @@ export default function PaymentResultPage() {
           title="Chúc mừng, khóa học đã mở!"
           actions={
             <>
-              <Link to="/me"><Button size="lg" className="shadow-[0_8px_24px_rgb(var(--accent)/0.3)]">Đi học ngay →</Button></Link>
-              <Link to="/courses"><Button size="lg" variant="ghost">Khám phá thêm</Button></Link>
+              <Link to="/me"><Button size="lg" className="shadow-[0_8px_24px_rgb(var(--accent)/0.3)]">Vào học →</Button></Link>
+              <Link to="/courses"><Button size="lg" variant="ghost">Xem thêm khóa học</Button></Link>
             </>
           }
         >
@@ -165,14 +165,14 @@ export default function PaymentResultPage() {
           title="Thanh toán không thành công"
           actions={
             <>
-              <Link to="/cart"><Button size="lg">Quay lại giỏ hàng</Button></Link>
-              <Link to="/me/orders"><Button size="lg" variant="ghost">Xem đơn hàng</Button></Link>
+              <Link to="/courses"><Button size="lg">Chọn lại khóa học</Button></Link>
+              <Link to="/me/orders"><Button size="lg" variant="ghost">Đơn hàng của tôi</Button></Link>
             </>
           }
         >
           <p className="text-ink-2 leading-relaxed">
-            Giao dịch{orderCode ? <> <span className="font-mono text-ink">{orderCode}</span></> : ''} bị từ chối hoặc hết hạn.
-            Chưa có khoản tiền nào bị trừ — bạn có thể thử thanh toán lại.
+            VNPay báo giao dịch{orderCode ? <> <span className="font-mono text-ink">{orderCode}</span></> : ''} bị hủy
+            hoặc bị từ chối, nên khóa học chưa được mở. Thêm khóa học vào giỏ để đặt đơn mới.
           </p>
         </ResultScreen>
       </>
@@ -186,17 +186,17 @@ export default function PaymentResultPage() {
         tone="neutral"
         icon={XCircle}
         eyebrow="// lỗi xác thực"
-        title="Có lỗi xảy ra"
+        title="Chưa xác nhận được thanh toán"
         actions={
           <>
-            <Link to="/cart"><Button size="lg">Quay lại giỏ hàng</Button></Link>
-            <Link to="/me/orders"><Button size="lg" variant="ghost">Xem đơn hàng</Button></Link>
+            <Button size="lg" onClick={() => window.location.reload()}>Xác nhận lại</Button>
+            <Link to="/me/orders"><Button size="lg" variant="ghost">Đơn hàng của tôi</Button></Link>
           </>
         }
       >
         <p className="text-ink-2 leading-relaxed">
-          {errorMsg} Nếu bạn đã bị trừ tiền, đơn hàng sẽ được cập nhật trong ít phút —
-          kiểm tra lại ở mục "Đơn hàng của tôi".
+          {errorMsg} Nếu tài khoản đã bị trừ tiền, bấm "Xác nhận lại" để kiểm tra lần nữa,
+          hoặc xem trạng thái ở "Đơn hàng của tôi" và giữ lại mã đơn{orderCode ? <> <span className="font-mono text-ink">{orderCode}</span></> : ''} để đối soát.
         </p>
       </ResultScreen>
     </>

@@ -12,7 +12,7 @@ const ADMIN_NAV = [
   {
     label: 'Vận hành',
     items: [
-      { to: '/admin',        label: 'Dashboard', icon: LayoutDashboard, exact: true },
+      { to: '/admin',        label: 'Tổng quan', icon: LayoutDashboard, exact: true },
       { to: '/admin/orders', label: 'Đơn hàng',  icon: ShoppingCart },
       { to: '/admin/payouts', label: 'Chi trả GV', icon: Banknote },
     ],

@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { ArrowUp, Square, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { streamSSE } from '@/lib/stream';
-import { formatVND } from '@/lib/format';
+import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { THUMB_COLORS } from '@/components/course-editor.jsx';
 
@@ -55,11 +55,22 @@ function CourseChip({ course }) {
       <span className="min-w-0">
         <span className="block text-[12.5px] font-medium text-ink truncate">{course.title}</span>
         <span className="block font-mono text-[10.5px] text-ink-3">
-          {course.price > 0 ? formatVND(course.price) : 'Miễn phí'}{course.rating ? ` · ★ ${course.rating}` : ''}
+          {formatPrice(course.price)}{course.rating ? ` · ★ ${course.rating}` : ''}
         </span>
       </span>
     </Link>
   );
+}
+
+/** Lỗi của streamSSE → câu tiếng Việt có hướng xử lý (không lộ "Failed to fetch" / "Lỗi 500"). */
+function chatErrorText(err) {
+  // fetch() thất bại ở tầng mạng ném TypeError; lỗi khác không có status (parse SSE, onEvent) là lỗi phía trợ lý
+  if (err.name === 'TypeError' && !err.status) return 'Không kết nối được trợ lý. Kiểm tra mạng rồi gửi lại câu hỏi.';
+  if (!err.status) return 'Câu trả lời bị gián đoạn. Gửi lại câu hỏi để thử lần nữa.';
+  if (err.status >= 500 && (!err.message || /^Lỗi( máy chủ| \d+)$/.test(err.message))) {
+    return 'Trợ lý chưa trả lời được lúc này. Thử gửi lại sau giây lát.';
+  }
+  return err.message;
 }
 
 function Message({ m }) {
@@ -145,7 +156,7 @@ export function ChatPanel({ conversationId, onConversationChange, className }) {
         },
       });
     } catch (err) {
-      if (err.name !== 'AbortError') patchLast((m) => ({ ...m, streaming: false, error: err.message }));
+      if (err.name !== 'AbortError') patchLast((m) => ({ ...m, streaming: false, error: chatErrorText(err) }));
     } finally {
       patchLast((m) => ({ ...m, streaming: false }));
       setStreaming(false);
@@ -186,14 +197,14 @@ export function ChatPanel({ conversationId, onConversationChange, className }) {
             className="flex-1 resize-none bg-transparent text-[13.5px] text-ink placeholder:text-ink-3 focus:outline-none max-h-32"
           />
           {streaming ? (
-            <button type="button" onClick={() => abortRef.current?.abort()} title="Dừng"
+            <button type="button" onClick={() => abortRef.current?.abort()} title="Dừng trả lời" aria-label="Dừng trả lời"
               className="w-8 h-8 rounded-lg bg-bg-3 text-ink grid place-items-center shrink-0"><Square className="w-3.5 h-3.5" /></button>
           ) : (
-            <button type="submit" disabled={!input.trim()} title="Gửi"
+            <button type="submit" disabled={!input.trim()} title="Gửi câu hỏi" aria-label="Gửi câu hỏi"
               className="w-8 h-8 rounded-lg bg-accent text-bg grid place-items-center shrink-0 disabled:opacity-40"><ArrowUp className="w-4 h-4" /></button>
           )}
         </div>
-        <p className="mt-1.5 font-mono text-[10px] text-ink-3 text-center">AI có thể sai — hãy kiểm tra lại thông tin quan trọng.</p>
+        <p className="mt-1.5 font-mono text-[10px] text-ink-3 text-center">AI có thể sai — kiểm tra lại thông tin quan trọng.</p>
       </form>
     </div>
   );

@@ -11,8 +11,9 @@ import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { levelLabel } from '@/lib/format';
 
-const LEVELS   = ['Beginner', 'Intermediate', 'Advanced'];
+const LEVELS   = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']; // nhãn hiển thị qua levelLabel
 const RATINGS  = [{ label: '≥ 4.5★', value: 4.5 }, { label: '≥ 4★', value: 4 }, { label: '≥ 3★', value: 3 }];
 const SORT_OPS = [
   { value: 'newest',      label: 'Mới nhất' },
@@ -48,7 +49,8 @@ export default function CourseListingPage() {
   const [search,      setSearch]      = useState(initialSearch);
   const [searchInput, setSearchInput] = useState(initialSearch);
   const [category,  setCategory]  = useState(() => searchParams.getAll('category'));
-  const [level,     setLevel]     = useState(() => searchParams.getAll('level'));
+  // URL cũ dùng "Beginner" → chuẩn hóa về enum để checkbox khớp
+  const [level,     setLevel]     = useState(() => searchParams.getAll('level').map((l) => l.toUpperCase()));
   const [minRating, setMinRating] = useState(searchParams.get('minRating') ?? '');
   const [sort,      setSort]      = useState(searchParams.get('sort') ?? 'newest');
   const [page,      setPage]      = useState(Number(searchParams.get('page') ?? 1));
@@ -61,7 +63,7 @@ export default function CourseListingPage() {
     ...(minRating       ? { minRating }                    : {}),
   };
 
-  const { data, isLoading, isFetching } = useCourses(queryParams);
+  const { data, isLoading, isFetching, isError, refetch } = useCourses(queryParams);
   const { data: categories = [] }       = useCategories();
 
   // Sync URL params
@@ -131,7 +133,7 @@ export default function CourseListingPage() {
         {LEVELS.map((l) => (
           <FilterCheckbox
             key={l}
-            label={l}
+            label={levelLabel(l)}
             checked={level.includes(l)}
             onChange={() => toggleFilter(setLevel)(l)}
           />
@@ -164,7 +166,7 @@ export default function CourseListingPage() {
     <>
       <Seo
         title="Tất cả khóa học JavaScript, React, Node.js — Hoisted"
-        description="Thư viện khóa học lập trình của Hoisted: JavaScript core, React, Node.js, TypeScript. Lọc theo chủ đề, cấp độ và đánh giá — học thử miễn phí trước khi mua."
+        description="Thư viện khóa học lập trình của Hoisted: JavaScript core, React, Node.js, TypeScript. Lọc theo chủ đề, cấp độ và đánh giá; xem thử các bài học mở sẵn trước khi mua."
       />
 
       {/* ── Catalog hero ─────────────────────────────────────────── */}
@@ -188,11 +190,11 @@ export default function CourseListingPage() {
               <p className="text-[15px] text-ink-2 max-w-[440px] leading-[1.65]">
                 {total > 0 ? (
                   <>
-                    <strong className="text-ink font-mono">{total}</strong> khóa học về JS core, React,
-                    Node và hơn thế — lọc theo đúng thứ bạn cần.
+                    <strong className="text-ink font-mono">{total}</strong> khóa học về JS core, async, React,
+                    TypeScript, Node — lọc theo đúng thứ bạn cần.
                   </>
                 ) : (
-                  'Khóa học về JS core, React, Node và hơn thế — lọc theo đúng thứ bạn cần.'
+                  'Khóa học về JS core, async, React, TypeScript, Node — lọc theo đúng thứ bạn cần.'
                 )}
               </p>
             </div>
@@ -325,7 +327,7 @@ export default function CourseListingPage() {
                     onRemove={() => { setCategory((p) => p.filter((v) => v !== c)); setPage(1); }} />
                 ))}
                 {level.map((l) => (
-                  <ActiveChip key={l} label={l}
+                  <ActiveChip key={l} label={levelLabel(l)}
                     onRemove={() => { setLevel((p) => p.filter((v) => v !== l)); setPage(1); }} />
                 ))}
                 {minRating && (
@@ -351,6 +353,12 @@ export default function CourseListingPage() {
                   </div>
                 ))}
               </div>
+            ) : isError ? (
+              <div className="card py-16 px-6 text-center" role="alert">
+                <p className="font-display font-semibold text-[17px] mb-1.5">Không tải được danh sách khóa học</p>
+                <p className="text-sm text-ink-2 mb-5">Có thể do mất kết nối hoặc máy chủ đang bận. Thử lại sau giây lát.</p>
+                <Button variant="ghost" onClick={() => refetch()}>Thử lại</Button>
+              </div>
             ) : courses.length === 0 ? (
               <div className="card py-20 px-6 text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
@@ -358,9 +366,18 @@ export default function CourseListingPage() {
                   <div className="w-14 h-14 rounded-2xl bg-accent/10 text-accent grid place-items-center mx-auto mb-4">
                     <LayoutGrid className="w-6 h-6" aria-hidden="true" />
                   </div>
-                  <p className="font-display font-semibold text-[17px] mb-1.5">Không tìm thấy khóa học nào</p>
-                  <p className="text-sm text-ink-2 mb-5">Thử từ khóa khác, hoặc bỏ bớt bộ lọc đang bật.</p>
-                  <Button variant="ghost" onClick={clearAll}>Xóa bộ lọc</Button>
+                  {hasFilters ? (
+                    <>
+                      <p className="font-display font-semibold text-[17px] mb-1.5">Không có khóa học khớp bộ lọc</p>
+                      <p className="text-sm text-ink-2 mb-5">Thử từ khóa khác, hoặc bỏ bớt bộ lọc đang bật.</p>
+                      <Button variant="ghost" onClick={clearAll}>Xóa bộ lọc</Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-display font-semibold text-[17px] mb-1.5">Chưa có khóa học nào được xuất bản</p>
+                      <p className="text-sm text-ink-2">Khóa học mới sẽ xuất hiện ở đây ngay khi được duyệt.</p>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (

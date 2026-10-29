@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
       // Vẫn show sent để không lộ email có tồn tại không
       if (err?.response?.status >= 500) {
         setSent(false);
-        toast.error(apiMessage(err, 'Lỗi máy chủ, vui lòng thử lại'));
+        toast.error(apiMessage(err, 'Chưa gửi được email đặt lại mật khẩu. Thử lại sau giây lát.'));
       } else {
         setSent(true);
       }
@@ -131,7 +131,7 @@ export default function ForgotPasswordPage() {
           <h1 className="display text-[24px] mb-3">Kiểm tra hộp thư</h1>
           <p className="text-ink-2 text-[13.5px] leading-relaxed mb-5">
             Nếu <span className="text-ink font-semibold">{getValues('email')}</span> tồn tại trong hệ thống,
-            bạn sẽ nhận được email hướng dẫn trong vài phút.
+            bạn sẽ nhận được email hướng dẫn trong vài phút. Link trong email có hiệu lực 1 giờ.
           </p>
           <p className="font-mono text-[11.5px] text-ink-3 bg-bg-2 border border-line rounded-xl px-4 py-2.5 mb-6">
             Không thấy email? Kiểm tra thư mục Spam hoặc gửi lại.

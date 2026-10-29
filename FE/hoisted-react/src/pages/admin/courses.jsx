@@ -13,7 +13,7 @@ import {
   LEVELS, LEVEL_LABELS, STATUSES,
 } from '@/components/course-editor.jsx';
 import { api, apiMessage, downloadCsv } from '@/lib/api';
-import { formatVND } from '@/lib/format';
+import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const API = '/api/admin';
@@ -69,25 +69,25 @@ export default function AdminCoursesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/api/admin/courses/${id}`),
     onSuccess: () => {
-      toast.success('Đã xóa khóa học');
+      toast.success('Đã chuyển khóa học sang Lưu trữ');
       qc.invalidateQueries({ queryKey: ['admin-courses'] });
       qc.invalidateQueries({ queryKey: ['home'] });
       qc.invalidateQueries({ queryKey: ['courses'] });
       qc.invalidateQueries({ queryKey: ['course'] });
     },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu trữ được khóa học. Thử lại sau giây lát.')),
   });
 
   const approveMutation = useMutation({
     mutationFn: (id) => api.put(`${API}/courses/${id}/approve`),
     onSuccess: () => { toast.success('Đã duyệt — khóa học đã xuất bản'); invalidateCourseQueries(qc); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa duyệt được khóa học. Thử lại sau giây lát.')),
   });
 
   const reorderMutation = useMutation({
     mutationFn: (items) => api.put('/api/admin/courses/reorder', items),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-courses'] }),
-    onError: (err) => toast.error(apiMessage(err, 'Không thể sắp xếp khóa học')),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu được thứ tự khóa học. Tải lại trang để xem thứ tự hiện tại.')),
   });
 
   const handleCourseDrop = (dstIdx) => {
@@ -116,7 +116,7 @@ export default function AdminCoursesPage() {
           <button
             onClick={() => downloadCsv('/api/admin/courses/export', { search, status }, `courses_${Date.now()}.csv`)
               .then(() => toast.success('Đã xuất file CSV'))
-              .catch(() => toast.error('Xuất thất bại'))}
+              .catch(() => toast.error('Chưa xuất được file CSV. Thử lại sau giây lát.'))}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
             <Download className="w-3.5 h-3.5" /> Export
           </button>
@@ -239,12 +239,12 @@ export default function AdminCoursesPage() {
                       <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-bg-3 text-ink-3">{c.category}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-mono text-[12px]">{formatVND(c.price)}</td>
+                  <td className="px-4 py-3 font-mono text-[12px]">{formatPrice(c.price)}</td>
                   <td className="px-4 py-3 font-mono text-[12px] text-ink-3">
                     {c.student_count?.toLocaleString() ?? '—'}
                   </td>
                   <td className="px-4 py-3">
-                    {c.rating ? (
+                    {Number(c.rating) > 0 ? (
                       <span className="flex items-center gap-1 font-mono text-[12px] text-ink-2">
                         <Star className="w-3.5 h-3.5 fill-js text-js" />
                         {Number(c.rating).toFixed(1)}
@@ -284,7 +284,7 @@ export default function AdminCoursesPage() {
                       <button
                         onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
                         className="p-1.5 rounded hover:bg-bg-3 text-ink-3 transition-colors"
-                        title="Curriculum">
+                        title={expandedId === c.id ? "Ẩn danh sách bài học" : "Xem danh sách bài học"} aria-expanded={expandedId === c.id} aria-label={`Danh sách bài học của "${c.title}"`}>
                         {expandedId === c.id
                           ? <ChevronUp className="w-4 h-4" />
                           : <ChevronDown className="w-4 h-4" />}
@@ -296,9 +296,11 @@ export default function AdminCoursesPage() {
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => { if (window.confirm(`Xóa "${c.title}"?`)) deleteMutation.mutate(c.id); }}
+                        onClick={() => { if (window.confirm(`Lưu trữ "${c.title}"?
+
+Khóa học bị gỡ khỏi trang công khai và chuyển sang trạng thái Lưu trữ. Không áp dụng được với khóa đã có học viên.`)) deleteMutation.mutate(c.id); }}
                         className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors"
-                        title="Xóa">
+                        title="Lưu trữ khóa học" aria-label={`Lưu trữ khóa học "${c.title}"`}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -373,7 +375,7 @@ function StatusDropdown({ course }) {
       qc.invalidateQueries({ queryKey: ['course'] });
       setOpen(false);
     },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa đổi được trạng thái khóa học. Thử lại sau giây lát.')),
   });
 
   return (
@@ -418,7 +420,7 @@ function RejectModal({ course, onClose, onDone }) {
   const mutation = useMutation({
     mutationFn: () => api.put(`${API}/courses/${course.id}/reject`, { reason }),
     onSuccess: () => { toast.success('Đã từ chối và gửi lý do cho giảng viên'); onDone(); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa gửi được quyết định từ chối. Thử lại sau giây lát.')),
   });
 
   return (

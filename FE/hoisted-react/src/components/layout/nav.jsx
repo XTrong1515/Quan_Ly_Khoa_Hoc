@@ -7,15 +7,15 @@ import { useCart } from '@/store/cart';
 import { useAuth } from '@/store/auth';
 import { useTheme } from '@/store/theme';
 import { api, apiMessage } from '@/lib/api';
-import { formatVND } from '@/lib/format';
+import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+// Chỉ trỏ tới route có thật (/paths, /blog, /business chưa tồn tại → từng bị đẩy về trang chủ)
 const LINKS = [
-  { to: '/courses',  label: 'Khóa học'    },
-  { to: '/paths',    label: 'Lộ trình'    },
-  { to: '/blog',     label: 'Blog'        },
-  { to: '/business', label: 'Doanh nghiệp' },
+  { to: '/courses',           label: 'Khóa học'   },
+  { to: '/assistant',         label: 'Trợ lý AI'  },
+  { to: '/become-instructor', label: 'Giảng dạy'  },
 ];
 
 const THUMB_COLORS = {
@@ -54,7 +54,7 @@ export function Nav() {
         {LINKS.map((l) => (
           <NavLink key={l.to} to={l.to}
             className={({ isActive }) =>
-              `text-[13.5px] font-medium ${isActive ? 'text-ink' : 'text-ink-2 hover:text-ink'}`}>
+              `text-[13.5px] font-medium whitespace-nowrap ${isActive ? 'text-ink' : 'text-ink-2 hover:text-ink'}`}>
             {l.label}
           </NavLink>
         ))}
@@ -63,15 +63,16 @@ export function Nav() {
       <SearchBox />
 
       <div className="flex items-center gap-1.5">
-        <IconBtn onClick={toggle} title="Toggle theme">
+        <IconBtn onClick={toggle} title={mode === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+          aria-label={mode === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}>
           {mode === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </IconBtn>
 
         {/* Notifications Bell */}
         <NotificationsBell />
 
-        <Link to="/cart" className="relative">
-          <IconBtn title="Cart"><ShoppingCart className="w-4 h-4" /></IconBtn>
+        <Link to="/cart" className="relative" aria-label={items.length ? `Giỏ hàng (${items.length} khóa học)` : 'Giỏ hàng'}>
+          <IconBtn title="Giỏ hàng" tabIndex={-1} aria-hidden="true"><ShoppingCart className="w-4 h-4" /></IconBtn>
           {items.length > 0 && (
             <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-accent text-accent-ink font-mono font-bold text-[9.5px] grid place-items-center border-2 border-bg">
               {items.length}
@@ -94,6 +95,8 @@ export function Nav() {
               onClick={() => setMenuOpen((v) => !v)}
               className="flex items-center gap-1 focus:outline-none"
               title={user?.name}
+              aria-label={`Menu tài khoản ${user?.name ?? ''}`.trim()}
+              aria-expanded={menuOpen}
             >
               {user?.avatar ? (
                 <img src={user.avatar} alt={user.name}
@@ -136,7 +139,7 @@ export function Nav() {
 
                 <div className="py-1">
                   <MenuItem to="/me" icon={BookOpen} onClick={() => setMenuOpen(false)}>
-                    Học của tôi
+                    Học tập của tôi
                   </MenuItem>
                   <MenuItem to="/me/wishlist" icon={Heart} onClick={() => setMenuOpen(false)}>
                     Khóa học yêu thích
@@ -159,7 +162,7 @@ export function Nav() {
                   )}
                   {role === 'admin' && (
                     <MenuItem to="/admin" onClick={() => setMenuOpen(false)} accent>
-                      ⚙ Admin
+                      ⚙ Khu vực quản trị
                     </MenuItem>
                   )}
                 </div>
@@ -214,7 +217,7 @@ function NotificationsBell() {
       if (link) navigate(link);
       setOpen(false);
     } catch (err) {
-      toast.error(apiMessage(err));
+      toast.error(apiMessage(err, 'Không mở được thông báo. Thử lại sau giây lát.'));
     }
   };
 
@@ -223,14 +226,18 @@ function NotificationsBell() {
       await api.put('/api/notifications/read-all');
       refetch();
     } catch (err) {
-      toast.error(apiMessage(err));
+      toast.error(apiMessage(err, 'Không đánh dấu được thông báo. Thử lại sau giây lát.'));
     }
   };
 
   return (
     <div ref={ref} className="relative">
       <div className="relative">
-        <IconBtn title="Notifications" onClick={() => role !== 'guest' && setOpen(v => !v)}>
+        <IconBtn
+          title={role === 'guest' ? 'Đăng nhập để xem thông báo' : 'Thông báo'}
+          aria-label={unreadCount > 0 ? `Thông báo (${unreadCount} chưa đọc)` : 'Thông báo'}
+          aria-expanded={open}
+          onClick={() => (role === 'guest' ? navigate('/login') : setOpen(v => !v))}>
           <Bell className="w-4 h-4" />
         </IconBtn>
         {unreadCount > 0 && (
@@ -259,7 +266,7 @@ function NotificationsBell() {
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <p className="px-4 py-6 text-center font-mono text-[12px] text-ink-3">
-                // Chưa có thông báo nào
+                // Chưa có thông báo nào. Kết quả duyệt đơn, đơn hàng… sẽ hiện ở đây.
               </p>
             ) : (
               notifications.map(n => (
@@ -402,12 +409,14 @@ function SearchBox() {
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
         className="input pl-10 pr-16 w-full"
+        aria-label="Tìm khóa học"
         placeholder="Tìm khóa học, JS, React…"
         autoComplete="off"
       />
       {value ? (
         <button
           onClick={() => { setValue(''); setOpen(false); inputRef.current?.focus(); }}
+          aria-label="Xóa từ khóa tìm kiếm"
           className="absolute right-9 top-2 p-0.5 text-ink-3 hover:text-ink transition-colors">
           <X className="w-3.5 h-3.5" />
         </button>
@@ -420,11 +429,11 @@ function SearchBox() {
       {showDropdown && (
         <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-bg border border-line rounded-xl shadow-2xl overflow-hidden z-50">
           {isFetching && courses.length === 0 && (
-            <p className="px-4 py-3 font-mono text-[12px] text-ink-3">Đang tìm...</p>
+            <p className="px-4 py-3 font-mono text-[12px] text-ink-3">Đang tìm…</p>
           )}
           {!isFetching && courses.length === 0 && (
             <p className="px-4 py-3 font-mono text-[12px] text-ink-3">
-              // Không tìm thấy "{debounced}"
+              // Không có khóa học nào khớp "{debounced}"
             </p>
           )}
           {courses.map((c, i) => (
@@ -442,9 +451,9 @@ function SearchBox() {
               </div>
               <span className={cn(
                 'font-mono text-[11px] shrink-0',
-                c.price === 0 ? 'text-success' : 'text-ink-3',
+                Number(c.price) === 0 ? 'text-success' : 'text-ink-3',
               )}>
-                {formatVND(c.price)}
+                {formatPrice(c.price)}
               </span>
             </button>
           ))}

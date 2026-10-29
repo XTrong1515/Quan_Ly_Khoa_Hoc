@@ -65,8 +65,16 @@ api.interceptors.response.use(
 );
 
 // ── Helper: pull readable message out of any axios error ──────
-export function apiMessage(err, fallback = 'Đã có lỗi xảy ra') {
-  return err?.response?.data?.message ?? err?.message ?? fallback;
+// Thông báo cụ thể của server thắng; "Lỗi máy chủ" chung chung nhường cho fallback theo ngữ cảnh
+// của nơi gọi; không có response (mất mạng / server tắt) thì không lộ "Network Error" tiếng Anh.
+export function apiMessage(err, fallback = 'Đã có lỗi xảy ra. Thử lại sau giây lát.') {
+  const serverMsg = err?.response?.data?.message;
+  if (serverMsg && serverMsg !== 'Lỗi máy chủ') return serverMsg;
+  if (err?.response) return fallback;
+  if (err?.code === 'ECONNABORTED') return 'Máy chủ phản hồi quá lâu. Thử lại sau giây lát.';
+  if (err?.code === 'ERR_CANCELED') return fallback; // request bị hủy chủ động — không phải lỗi mạng
+  if (err?.isAxiosError) return 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.';
+  return err?.message ?? fallback;
 }
 
 // ── Helper: download a CSV from an API endpoint ───────────────

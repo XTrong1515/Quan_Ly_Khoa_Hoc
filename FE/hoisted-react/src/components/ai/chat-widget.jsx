@@ -24,13 +24,13 @@ export function ChatWidget() {
             <p className="font-display font-semibold text-[14px] text-ink flex-1">Trợ lý AI</p>
             {role !== 'guest' && (
               <>
-                <button onClick={() => { setConversationId(null); setPanelKey((k) => k + 1); }} title="Cuộc trò chuyện mới"
+                <button onClick={() => { setConversationId(null); setPanelKey((k) => k + 1); }} title="Cuộc trò chuyện mới" aria-label="Bắt đầu cuộc trò chuyện mới"
                   className="p-1.5 rounded text-ink-3 hover:text-ink hover:bg-bg-2"><Plus className="w-4 h-4" /></button>
-                <Link to={conversationId ? `/assistant?c=${conversationId}` : '/assistant'} onClick={() => setOpen(false)} title="Mở toàn màn hình"
+                <Link to={conversationId ? `/assistant?c=${conversationId}` : '/assistant'} onClick={() => setOpen(false)} title="Mở toàn màn hình" aria-label="Mở trợ lý toàn màn hình"
                   className="p-1.5 rounded text-ink-3 hover:text-ink hover:bg-bg-2"><Maximize2 className="w-4 h-4" /></Link>
               </>
             )}
-            <button onClick={() => setOpen(false)} title="Đóng" className="p-1.5 rounded text-ink-3 hover:text-ink hover:bg-bg-2"><X className="w-4 h-4" /></button>
+            <button onClick={() => setOpen(false)} title="Đóng" aria-label="Đóng trợ lý AI" className="p-1.5 rounded text-ink-3 hover:text-ink hover:bg-bg-2"><X className="w-4 h-4" /></button>
           </div>
 
           {role === 'guest' ? (

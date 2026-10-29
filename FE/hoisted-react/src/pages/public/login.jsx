@@ -54,7 +54,7 @@ export default function LoginPage() {
       toast.success('Chào mừng trở lại!');
       navigate(from, { replace: true });
     } catch (err) {
-      toast.error(apiMessage(err, 'Email hoặc mật khẩu không đúng'));
+      toast.error(apiMessage(err, 'Không đăng nhập được. Thử lại sau giây lát.'));
     }
   };
 
@@ -93,7 +93,7 @@ export default function LoginPage() {
             <span className="text-js">nơi bạn dừng lại.</span>
           </h1>
           <p className="text-[#B6BCD0] text-[14.5px] leading-[1.6] mb-8">
-            Toàn bộ tiến độ, ghi chú và khóa học đang chờ bạn quay lại.
+            Tiến độ, bài tập đã nộp và khóa học của bạn vẫn ở nguyên chỗ cũ.
           </p>
 
           {/* Terminal: session restore */}
@@ -108,7 +108,7 @@ export default function LoginPage() {
               <p><span className="text-js">$</span> hoisted resume</p>
               <p className="text-slate-400">→ Khôi phục phiên học của bạn…</p>
               <p><span className="text-emerald-400">✓</span> Tiến độ các khóa học: đã đồng bộ</p>
-              <p><span className="text-emerald-400">✓</span> Ghi chú &amp; bookmark: đã đồng bộ</p>
+              <p><span className="text-emerald-400">✓</span> Bài tập đã nộp: đã đồng bộ</p>
               <p>
                 <span className="text-emerald-400">✓</span> Sẵn sàng. Học tiếp thôi
                 <span className="inline-block w-[7px] h-[13px] align-middle ml-1 bg-slate-300 animate-caret" />
@@ -117,10 +117,11 @@ export default function LoginPage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {[
-              `${(platformStats?.freeCourses ?? 6)}+ khóa miễn phí · không cần thẻ tín dụng`,
-              `Cộng đồng ${(platformStats?.totalUsers ?? 0).toLocaleString('vi-VN')}+ dev đang học cùng bạn`,
-            ].map((t) => (
+            {/* Chỉ hiện số thật từ /api/stats — chưa tải được thì không hiện */}
+            {(platformStats ? [
+              `${Number(platformStats.freeCourses).toLocaleString('vi-VN')} khóa học miễn phí · đăng ký không cần thẻ`,
+              `${Number(platformStats.totalUsers).toLocaleString('vi-VN')} tài khoản đã đăng ký trên Hoisted`,
+            ] : []).map((t) => (
               <div key={t} className="flex items-center gap-3 text-sm text-[#B6BCD0]">
                 <span className="w-[22px] h-[22px] rounded-full shrink-0 grid place-items-center bg-js/15 text-js">
                   <Check className="w-3 h-3" strokeWidth={3} aria-hidden="true" />
@@ -133,7 +134,7 @@ export default function LoginPage() {
 
         <p className="relative flex items-center gap-2 font-mono text-[11.5px] text-slate-500">
           <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-          Dữ liệu mã hóa · không spam · hủy bất cứ lúc nào
+          Mật khẩu được lưu dạng băm (bcrypt) · không gửi email quảng cáo
         </p>
       </div>
 

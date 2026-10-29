@@ -89,13 +89,13 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`${apiBase}/lessons/${id}`),
     onSuccess: () => { toast.success('Đã xóa bài học'); qc.invalidateQueries({ queryKey: ['course-lessons', apiBase, courseId] }); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa xóa được bài học. Thử lại sau giây lát.')),
   });
 
   const reorderMutation = useMutation({
     mutationFn: (items) => api.put(`${apiBase}/lessons/reorder`, items),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['course-lessons', apiBase, courseId] }),
-    onError: (err) => toast.error(apiMessage(err, 'Không thể sắp xếp bài học')),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu được thứ tự bài học. Tải lại trang để xem thứ tự hiện tại.')),
   });
 
   const moveLesson = (lesson, dir) => {
@@ -215,16 +215,19 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                     className="p-1 rounded hover:bg-bg-3 text-ink-3 transition-colors">
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setQuizLesson(l)} title="Quản lý Quiz"
+                  <button onClick={() => setQuizLesson(l)} title="Quiz của bài học" aria-label={`Quiz của bài "${l.title}"`}
                     className="p-1 rounded hover:bg-bg-3 text-ink-3 hover:text-accent transition-colors">
                     <ListChecks className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setExerciseLesson(l)} title="Bài tập lập trình"
+                  <button onClick={() => setExerciseLesson(l)} title="Bài tập lập trình" aria-label={`Bài tập lập trình của bài "${l.title}"`}
                     className="p-1 rounded hover:bg-bg-3 text-ink-3 hover:text-accent transition-colors">
                     <Code2 className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => { if (window.confirm(`Xóa "${l.title}"?`)) deleteMutation.mutate(l.id); }}
+                    onClick={() => { if (window.confirm(`Xóa bài học "${l.title}"?
+
+Video, tài liệu, quiz, bài tập, thảo luận và tiến độ của học viên trong bài này sẽ bị xóa vĩnh viễn. Không xóa được nếu quiz của bài đã có học viên làm.`)) deleteMutation.mutate(l.id); }}
+                    title="Xóa bài học" aria-label={`Xóa bài học "${l.title}"`}
                     className="p-1 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -268,7 +271,7 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
   const [saving,    setSaving]    = useState(false);
 
   const save = async () => {
-    if (!title.trim()) { toast.error('Tên bài học là bắt buộc'); return; }
+    if (!title.trim()) { toast.error('Nhập tên bài học trước khi lưu'); return; }
     setSaving(true);
     try {
       const payload = { title, videoUrl, durationMinutes: +duration, sectionId: sectionId || null, isPreview, content };
@@ -281,7 +284,7 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
       }
       onSaved();
     } catch (err) {
-      toast.error(apiMessage(err));
+      toast.error(apiMessage(err, 'Chưa lưu được bài học. Nội dung vẫn còn trong form — thử lại.'));
     } finally { setSaving(false); }
   };
 
@@ -314,7 +317,7 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
       )}
       <label className="flex items-center gap-1.5 text-[12px] text-ink-2 cursor-pointer mb-0.5">
         <input type="checkbox" checked={isPreview} onChange={e => setIsPreview(e.target.checked)}
-          className="accent-accent" /> Preview
+          className="accent-accent" /> Cho xem thử miễn phí
       </label>
       <div className="flex gap-2">
         <Button size="sm" onClick={save} disabled={saving}>{saving ? '...' : 'Lưu'}</Button>
@@ -361,7 +364,7 @@ function MediaField({ apiBase, courseId, lesson, kind }) {
 
   const upload = async (file) => {
     if (!file) return;
-    if (file.size > cfg.maxMB * 1024 * 1024) { toast.error(`Tối đa ${cfg.maxMB} MB`); return; }
+    if (file.size > cfg.maxMB * 1024 * 1024) { toast.error(`File quá lớn — ${cfg.label.toLowerCase()} tối đa ${cfg.maxMB} MB`); return; }
     setProgress(0);
     try {
       const { data: slot } = await api.post(`${apiBase}/lessons/${lesson.id}/uploads`, {
@@ -378,7 +381,7 @@ function MediaField({ apiBase, courseId, lesson, kind }) {
       toast.success(`Đã tải lên ${cfg.label.toLowerCase()}`);
       refresh();
     } catch (err) {
-      toast.error(apiMessage(err, 'Tải lên thất bại'));
+      toast.error(apiMessage(err, `Chưa tải lên được ${cfg.label.toLowerCase()}. Kiểm tra kết nối rồi chọn lại file.`));
     } finally {
       setProgress(null);
       if (inputRef.current) inputRef.current.value = '';
@@ -390,9 +393,9 @@ function MediaField({ apiBase, courseId, lesson, kind }) {
     try {
       await api.delete(`${apiBase}/lessons/${lesson.id}/media/${kind}`);
       setCurrent(null); setName(null);
-      toast.success('Đã gỡ file');
+      toast.success(`Đã gỡ ${cfg.label.toLowerCase()}`);
       refresh();
-    } catch (err) { toast.error(apiMessage(err)); }
+    } catch (err) { toast.error(apiMessage(err, `Chưa gỡ được ${cfg.label.toLowerCase()}. Thử lại sau giây lát.`)); }
   };
 
   return (
@@ -461,7 +464,7 @@ function HlsStatus({ apiBase, courseId, lessonId }) {
     try {
       await api.post(`${apiBase}/lessons/${lessonId}/hls`);
       qc.invalidateQueries({ queryKey });
-    } catch (err) { toast.error(apiMessage(err)); }
+    } catch (err) { toast.error(apiMessage(err, 'Chưa khởi động lại được việc mã hóa video. Thử lại sau giây lát.')); }
   };
 
   return (
@@ -546,7 +549,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
       setUploadPreview(data.url);
       URL.revokeObjectURL(localUrl);
     } catch (err) {
-      toast.error(apiMessage(err, 'Upload thất bại'));
+      toast.error(apiMessage(err, 'Chưa tải ảnh bìa lên được. Thử lại hoặc dán link ảnh.'));
       setUploadPreview(null);
     } finally {
       setUploading(false);
@@ -555,7 +558,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
 
   const onSubmit = async (values) => {
     if (thumbMode === 'upload' && uploading) {
-      toast.error('Vui lòng chờ ảnh upload xong');
+      toast.error('Ảnh bìa đang tải lên — đợi xong rồi lưu lại.');
       return;
     }
     // Clear thumbnailUrl when using default glyph/color mode
@@ -573,7 +576,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
       }
       onSaved();
     } catch (err) {
-      toast.error(apiMessage(err));
+      toast.error(apiMessage(err, 'Chưa lưu được khóa học. Thử lại sau giây lát.'));
     }
   };
 
@@ -707,7 +710,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
 
             {isAdmin && (
               <Field label="Tag">
-                <input {...register('tag')} className={inputCls()} placeholder="Bestseller, Hot, Free..." />
+                <input {...register('tag')} className={inputCls()} placeholder="vd: Mới cập nhật" />
               </Field>
             )}
 
@@ -750,7 +753,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
 
             <Field label="Mô tả ngắn" className="col-span-2">
               <textarea {...register('shortDescription')} rows={2} className={cn(inputCls(), 'resize-none')}
-                placeholder="Mô tả ngắn về khóa học..." />
+                placeholder="Một câu nói rõ học xong khóa này làm được gì…" />
             </Field>
           </div>
 
@@ -822,7 +825,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
       await api.post(`${apiBase}/lessons/${lesson.id}/quiz`, { title, passScore });
       toast.success('Đã tạo quiz');
       refresh();
-    } catch (err) { toast.error(apiMessage(err)); }
+    } catch (err) { toast.error(apiMessage(err, 'Chưa tạo được quiz. Thử lại sau giây lát.')); }
     finally { setSavingSettings(false); }
   };
 
@@ -831,29 +834,29 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
     setSavingSettings(true);
     try {
       await api.put(`${apiBase}/quizzes/${quiz.id}`, { title, passScore });
-      toast.success('Đã lưu cài đặt');
+      toast.success('Đã lưu cài đặt quiz');
       refresh();
-    } catch (err) { toast.error(apiMessage(err)); }
+    } catch (err) { toast.error(apiMessage(err, 'Chưa lưu được cài đặt quiz. Thử lại sau giây lát.')); }
     finally { setSavingSettings(false); }
   };
 
   /* Delete quiz */
   const handleDeleteQuiz = async () => {
-    if (!window.confirm('Xóa toàn bộ quiz này?')) return;
+    if (!window.confirm('Xóa quiz này cùng toàn bộ câu hỏi? Không thể hoàn tác. Quiz đã có học viên làm thì không xóa được.')) return;
     try {
       await api.delete(`${apiBase}/quizzes/${quiz.id}`);
       toast.success('Đã xóa quiz');
       refresh();
-    } catch (err) { toast.error(apiMessage(err)); }
+    } catch (err) { toast.error(apiMessage(err, 'Chưa xóa được quiz. Thử lại sau giây lát.')); }
   };
 
   /* Save question (add or update) */
   const handleSaveQuestion = async () => {
     const { id, question, type, options } = qForm;
-    if (!question.trim()) { toast.error('Nhập câu hỏi'); return; }
-    if (options.length < 2) { toast.error('Ít nhất 2 đáp án'); return; }
-    if (!options.some(o => o.isCorrect)) { toast.error('Chọn ít nhất 1 đáp án đúng'); return; }
-    if (options.some(o => !o.text.trim())) { toast.error('Đáp án không được để trống'); return; }
+    if (!question.trim()) { toast.error('Nhập nội dung câu hỏi'); return; }
+    if (options.length < 2) { toast.error('Câu hỏi cần ít nhất 2 đáp án'); return; }
+    if (!options.some(o => o.isCorrect)) { toast.error('Đánh dấu ít nhất 1 đáp án đúng'); return; }
+    if (options.some(o => !o.text.trim())) { toast.error('Điền nội dung cho mọi đáp án, hoặc xóa đáp án trống'); return; }
     try {
       if (id) {
         await api.put(`${apiBase}/quiz-questions/${id}`, { question, type, options });
@@ -864,7 +867,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
       }
       setQForm(null);
       refresh();
-    } catch (err) { toast.error(apiMessage(err)); }
+    } catch (err) { toast.error(apiMessage(err, 'Chưa lưu được câu hỏi. Nội dung vẫn còn trong form — thử lại.')); }
   };
 
   /* Delete question */
@@ -874,7 +877,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
       await api.delete(`${apiBase}/quiz-questions/${qId}`);
       toast.success('Đã xóa câu hỏi');
       refresh();
-    } catch (err) { toast.error(apiMessage(err)); }
+    } catch (err) { toast.error(apiMessage(err, 'Chưa xóa được câu hỏi. Thử lại sau giây lát.')); }
   };
 
   /* Option helpers */
@@ -1014,7 +1017,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
                   </p>
 
                   <textarea value={qForm.question} onChange={e => setQForm(f => ({ ...f, question: e.target.value }))}
-                    rows={2} placeholder="Nhập câu hỏi..."
+                    rows={2} placeholder="Nhập câu hỏi…"
                     className={cn(inputCls(), 'resize-none w-full')} />
 
                   <div className="flex items-center gap-3">

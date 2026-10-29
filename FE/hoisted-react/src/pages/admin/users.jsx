@@ -69,20 +69,20 @@ export default function AdminUsersPage() {
   /* ── Mutations ── */
   const statusMutation = useMutation({
     mutationFn: ({ id, status: s }) => api.put(`/api/admin/users/${id}/status`, { status: s }),
-    onSuccess: () => { toast.success('Đã cập nhật trạng thái'); invalidate(); },
-    onError:   (err) => toast.error(apiMessage(err)),
+    onSuccess: () => { toast.success('Đã đổi trạng thái tài khoản'); invalidate(); },
+    onError:   (err) => toast.error(apiMessage(err, 'Chưa đổi được trạng thái tài khoản. Thử lại sau giây lát.')),
   });
 
   const roleMutation = useMutation({
     mutationFn: ({ id, role: r }) => api.put(`/api/admin/users/${id}/role`, { role: r }),
     onSuccess: () => { toast.success('Đã cập nhật vai trò'); invalidate(); },
-    onError:   (err) => toast.error(apiMessage(err)),
+    onError:   (err) => toast.error(apiMessage(err, 'Chưa đổi được vai trò. Thử lại sau giây lát.')),
   });
 
   const bulkMutation = useMutation({
     mutationFn: ({ ids, action }) => api.post('/api/admin/users/bulk', { ids: [...ids], action }),
     onSuccess: (d) => { toast.success(`Đã cập nhật ${d.data.affected} người dùng`); invalidate(); },
-    onError:   (err) => toast.error(apiMessage(err)),
+    onError:   (err) => toast.error(apiMessage(err, 'Chưa cập nhật được các tài khoản đã chọn. Thử lại sau giây lát.')),
   });
 
   /* ── Selection ── */
@@ -102,7 +102,7 @@ export default function AdminUsersPage() {
       URL.revokeObjectURL(url);
       toast.success('Đã xuất file CSV');
     } catch {
-      toast.error('Xuất thất bại');
+      toast.error('Chưa xuất được file CSV. Thử lại sau giây lát.');
     }
   };
 
@@ -379,7 +379,7 @@ function CreateUserModal({ onClose, onCreated }) {
   const mutation = useMutation({
     mutationFn: () => api.post('/api/admin/users', form),
     onSuccess: () => { toast.success('Đã tạo người dùng mới'); onCreated(); },
-    onError:   (err) => toast.error(apiMessage(err, 'Tạo thất bại')),
+    onError:   (err) => toast.error(apiMessage(err, 'Chưa tạo được tài khoản. Thử lại sau giây lát.')),
   });
 
   const validate = () => {

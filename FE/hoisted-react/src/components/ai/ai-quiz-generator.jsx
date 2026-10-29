@@ -57,7 +57,7 @@ export function AiQuizGenerator({ apiBase, lesson, quizId, onAdded }) {
       setOpen(false);
       onAdded?.();
     } catch (err) {
-      toast.error(apiMessage(err));
+      toast.error(apiMessage(err, 'Chưa thêm được câu hỏi vào quiz. Các câu AI soạn vẫn còn — thử lại.'));
     } finally { setSaving(false); }
   };
 

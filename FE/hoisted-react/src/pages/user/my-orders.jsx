@@ -13,8 +13,8 @@ import { cn } from '@/lib/utils';
 
 const STATUSES = [
   { value: '',           label: 'Tất cả'   },
-  { value: 'PENDING',    label: 'Chờ TT'   },
-  { value: 'PAID',       label: 'Đã TT'    },
+  { value: 'PENDING',    label: 'Chờ thanh toán' },
+  { value: 'PAID',       label: 'Đã thanh toán'  },
   { value: 'FAILED',     label: 'Thất bại' },
   { value: 'CANCELLED',  label: 'Đã hủy'   },
 ];
@@ -34,7 +34,7 @@ export default function MyOrdersPage() {
   const [expanded, setExpanded] = useState(null);
   const navigate = useNavigate();
 
-  const { data, isLoading } = useOrders(status, page);
+  const { data, isLoading, isError, refetch } = useOrders(status, page);
   const orders     = data?.orders     ?? [];
   const totalPages = data?.totalPages ?? 1;
   const total      = data?.total      ?? 0;
@@ -71,6 +71,18 @@ export default function MyOrdersPage() {
             <div key={i} className="card p-4 animate-pulse motion-reduce:animate-none h-20" />
           ))}
         </div>
+      ) : isError ? (
+        <div className="card p-10 text-center">
+          <p className="text-sm text-ink-2 mb-4">Không tải được danh sách đơn hàng. Kiểm tra kết nối rồi thử lại.</p>
+          <Button variant="ghost" onClick={() => refetch()}>Thử lại</Button>
+        </div>
+      ) : orders.length === 0 && status ? (
+        <div className="card py-16 px-6 text-center">
+          <h3 className="font-display font-bold text-[17px] mb-1.5">
+            Không có đơn hàng nào ở trạng thái "{STATUSES.find((s) => s.value === status)?.label}"
+          </h3>
+          <Button variant="ghost" className="mt-4" onClick={() => handleStatusChange('')}>Xem tất cả đơn hàng</Button>
+        </div>
       ) : orders.length === 0 ? (
         <div className="card relative overflow-hidden py-20 px-6 text-center">
           <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
@@ -79,8 +91,8 @@ export default function MyOrdersPage() {
               <BookOpen className="w-7 h-7" aria-hidden="true" />
             </div>
             <h3 className="font-display font-bold text-[17px] mb-1.5">Chưa có đơn hàng nào</h3>
-            <p className="text-ink-2 text-[13.5px] mb-6">Đơn hàng sẽ xuất hiện ở đây sau khi bạn mua khóa học.</p>
-            <Link to="/courses"><Button variant="ghost">Khám phá khóa học</Button></Link>
+            <p className="text-ink-2 text-[13.5px] mb-6">Mỗi lần thanh toán giỏ hàng sẽ tạo một đơn hàng ở đây.</p>
+            <Link to="/courses"><Button variant="ghost">Xem khóa học</Button></Link>
           </div>
         </div>
       ) : (

@@ -24,7 +24,7 @@ export default function InstructorProfilePage() {
       qc.invalidateQueries({ queryKey: ['instructor-profile'] });
       qc.invalidateQueries({ queryKey: ['instructor-revenue'] });
     },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu được hồ sơ. Thử lại sau giây lát.')),
   });
 
   const field = (key) => ({ value: form?.[key] ?? '', onChange: (e) => setForm((f) => ({ ...f, [key]: e.target.value })) });

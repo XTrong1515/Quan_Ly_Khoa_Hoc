@@ -2,7 +2,7 @@ import { Star, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CourseThumb } from './course-thumb.jsx';
 import { Chip } from './ui/chip.jsx';
-import { formatVND } from '@/lib/format';
+import { formatPrice, compactCount, hasRating, levelLabel } from '@/lib/format';
 import { useAuth } from '@/store/auth';
 import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,8 @@ export function CourseCard({ course }) {
             isWishlisted && 'opacity-100',
           )}
           title={isWishlisted ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
+          aria-label={isWishlisted ? `Xóa "${course.title}" khỏi yêu thích` : `Thêm "${course.title}" vào yêu thích`}
+          aria-pressed={isWishlisted}
         >
           <Heart className={cn(
             'w-3.5 h-3.5 transition-colors',
@@ -49,7 +51,7 @@ export function CourseCard({ course }) {
       <div className="px-1 pb-2">
         <div className="flex gap-2 mb-2">
           <Chip variant="line">{course.category}</Chip>
-          <Chip variant="line">{course.level}</Chip>
+          <Chip variant="line">{levelLabel(course.level)}</Chip>
         </div>
         <h3 className="font-display font-semibold text-[15.5px] tracking-tight2 mb-1 line-clamp-2">
           {course.title}
@@ -57,12 +59,19 @@ export function CourseCard({ course }) {
         <p className="text-ink-3 text-xs mb-3">bởi {course.instructor}</p>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-ink-2">
-            <Star className="w-3.5 h-3.5 fill-accent text-accent" />
-            <b className="text-ink">{course.rating}</b>
-            <span className="text-ink-3">({(course.students / 1000).toFixed(1)}k)</span>
+            {hasRating(course) ? (
+              <>
+                <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+                <b className="text-ink">{Number(course.rating).toFixed(1)}</b>
+                <span className="text-ink-3">({compactCount(course.review_count)})</span>
+              </>
+            ) : (
+              <span className="text-ink-3">Chưa có đánh giá</span>
+            )}
+            <span className="text-ink-3">· {compactCount(course.students)} học viên</span>
           </div>
-          <div className={`font-mono font-bold text-[15px] ${course.price === 0 ? 'text-accent' : 'text-ink'}`}>
-            {formatVND(course.price)}
+          <div className={`font-mono font-bold text-[15px] ${Number(course.price) === 0 ? 'text-accent' : 'text-ink'}`}>
+            {formatPrice(course.price)}
           </div>
         </div>
       </div>

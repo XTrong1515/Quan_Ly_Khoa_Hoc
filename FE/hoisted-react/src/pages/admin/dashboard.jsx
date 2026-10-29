@@ -105,21 +105,21 @@ export default function AdminDashboardPage() {
   const exportCsv = () => {
     try {
       const rows = filledRevenue;
-      if (!rows.length) { toast.error('Chưa có dữ liệu'); return; }
+      if (!rows.length) { toast.error('Chưa có dữ liệu doanh thu trong khoảng này để xuất'); return; }
       const csv = '﻿Ngày,Doanh thu (VND)\n' + rows.map(r => `${r.date},${r.revenue}`).join('\n');
       const url  = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
       const link = Object.assign(document.createElement('a'), { href: url, download: `revenue_${Date.now()}.csv` });
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
       URL.revokeObjectURL(url);
       toast.success('Đã xuất file CSV');
-    } catch { toast.error('Xuất thất bại'); }
+    } catch { toast.error('Chưa xuất được file CSV. Thử lại sau giây lát.'); }
   };
 
   return (
     <div className="p-5 sm:p-8">
       <AdminPageHeader
         path="tổng-quan"
-        title="Dashboard"
+        title="Tổng quan"
         desc="Toàn cảnh doanh thu, học viên và đơn hàng"
         actions={
           <>

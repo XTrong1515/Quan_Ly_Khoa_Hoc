@@ -15,9 +15,9 @@ export const useCart = create(
       },
       remove: (courseId) => set({ items: get().items.filter((i) => i.courseId !== courseId) }),
       clear: () => set({ items: [] }),
-
-      get count() { return get().items.length; },
     }),
-    { name: 'hoisted.cart' },
+    // Không đặt getter (vd `get count()`) trong state: lúc rehydrate persist spread state hiện tại → getter gọi get()
+    // khi store chưa khởi tạo → ném lỗi → giỏ hàng mất sau mỗi lần tải lại trang. Số lượng dùng items.length.
+    { name: 'hoisted.cart', partialize: (s) => ({ items: s.items }) },
   ),
 );

@@ -16,20 +16,20 @@ const schema = z
   .object({
     password: z
       .string()
-      .min(8, 'Tối thiểu 8 ký tự')
-      .regex(/[A-Z]/, 'Cần ít nhất 1 chữ HOA')
-      .regex(/[0-9]/, 'Cần ít nhất 1 số')
-      .regex(/[^A-Za-z0-9]/, 'Cần ít nhất 1 ký tự đặc biệt'),
+      .min(8, 'Mật khẩu cần ít nhất 8 ký tự')
+      .regex(/[A-Z]/, 'Mật khẩu cần ít nhất 1 chữ in hoa (A–Z)')
+      .regex(/[0-9]/, 'Mật khẩu cần ít nhất 1 chữ số')
+      .regex(/[^A-Za-z0-9]/, 'Mật khẩu cần ít nhất 1 ký tự đặc biệt (vd: ! @ #)'),
     confirm: z.string(),
   })
   .refine((d) => d.password === d.confirm, {
     path: ['confirm'],
-    message: 'Mật khẩu không khớp',
+    message: 'Hai mật khẩu chưa giống nhau',
   });
 
 const REQS = [
   { label: '≥ 8 ký tự',         test: (pw) => pw.length >= 8 },
-  { label: '1 chữ HOA',         test: (pw) => /[A-Z]/.test(pw) },
+  { label: '1 chữ in hoa',      test: (pw) => /[A-Z]/.test(pw) },
   { label: '1 số',              test: (pw) => /[0-9]/.test(pw) },
   { label: '1 ký tự đặc biệt', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
 ];
@@ -54,9 +54,9 @@ export default function ResetPasswordPage() {
     try {
       await api.post('/api/auth/reset-password', { token, password: data.password });
       setDone(true);
-      toast.success('Đặt lại mật khẩu thành công!');
+      toast.success('Đã đặt mật khẩu mới');
     } catch (err) {
-      toast.error(apiMessage(err, 'Link không hợp lệ hoặc đã hết hạn'));
+      toast.error(apiMessage(err, 'Chưa đặt lại được mật khẩu. Thử lại, hoặc yêu cầu link mới nếu link đã quá 1 giờ.'));
     }
   };
 
@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
           </div>
           <h1 className="display text-[24px] mb-2">Link không hợp lệ</h1>
           <p className="text-ink-2 text-[13.5px] leading-relaxed mb-6">
-            Link đặt lại mật khẩu bị thiếu hoặc đã hết hạn. Yêu cầu một link mới để tiếp tục.
+            Đường dẫn đặt lại mật khẩu bị thiếu mã xác thực. Mở lại link trong email, hoặc yêu cầu link mới.
           </p>
           <Link to="/forgot-password">
             <Button size="lg" className="w-full justify-center">Yêu cầu link mới →</Button>
@@ -187,7 +187,7 @@ export default function ResetPasswordPage() {
               disabled={isSubmitting}
               className="justify-center mt-1 shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
             >
-              {isSubmitting ? 'Đang lưu…' : 'Đặt lại mật khẩu →'}
+              {isSubmitting ? 'Đang lưu mật khẩu…' : 'Đặt mật khẩu mới →'}
             </Button>
           </form>
         </div>

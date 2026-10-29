@@ -18,7 +18,7 @@ function useTransactions() {
 }
 
 export default function TransactionsPage() {
-  const { data: transactions = [], isLoading } = useTransactions();
+  const { data: transactions = [], isLoading, isError, refetch } = useTransactions();
 
   const total = transactions.reduce((sum, t) => (t.status === 'PAID' ? sum + Number(t.amount) : sum), 0);
 
@@ -57,6 +57,11 @@ export default function TransactionsPage() {
             <div key={i} className="card p-4 animate-pulse motion-reduce:animate-none h-16" />
           ))}
         </div>
+      ) : isError ? (
+        <div className="card p-10 text-center">
+          <p className="text-sm text-ink-2 mb-4">Không tải được lịch sử giao dịch. Kiểm tra kết nối rồi thử lại.</p>
+          <Button variant="ghost" onClick={() => refetch()}>Thử lại</Button>
+        </div>
       ) : transactions.length === 0 ? (
         <div className="card relative overflow-hidden py-20 px-6 text-center">
           <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
@@ -65,8 +70,8 @@ export default function TransactionsPage() {
               <Receipt className="w-7 h-7" aria-hidden="true" />
             </div>
             <h3 className="font-display font-bold text-[17px] mb-1.5">Chưa có giao dịch nào</h3>
-            <p className="text-ink-2 text-[13.5px] mb-6">Giao dịch thanh toán sẽ được ghi lại tại đây.</p>
-            <Link to="/courses"><Button variant="ghost">Mua khóa học ngay</Button></Link>
+            <p className="text-ink-2 text-[13.5px] mb-6">Mỗi lần thanh toán qua VNPay, thành công hay thất bại, đều được ghi lại ở đây.</p>
+            <Link to="/courses"><Button variant="ghost">Xem khóa học</Button></Link>
           </div>
         </div>
       ) : (

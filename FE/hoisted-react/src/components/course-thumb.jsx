@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { formatHours } from '@/lib/format';
 
 const GRADIENTS = {
   yellow: 'from-[#F7DF1E] to-[#F59E0B]',
@@ -43,8 +44,9 @@ export function CourseThumb({ course, className }) {
         {course.glyph}
       </div>
       <div className="absolute left-3 right-3 bottom-2.5 flex justify-between items-end font-mono font-semibold text-[11px] text-black/65">
-        <span>{course.lessons} lessons</span>
-        <span>{course.hours}h</span>
+        {/* Một số payload (giỏ hàng…) không có số bài / thời lượng → không in "undefined lessons" hay "0.0h" */}
+        <span>{course.lessons != null ? `${course.lessons} bài học` : ''}</span>
+        <span>{Number(course.hours) > 0 ? formatHours(course.hours) : ''}</span>
       </div>
       {course.tag && (
         <span className={cn(

@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
 import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
 
-const TABS = ['Tổng quan', 'Tài liệu', 'Ghi chú', 'Quiz', 'Thảo luận'];
+const TABS = ['Tổng quan', 'Tài liệu', 'Quiz', 'Thảo luận'];
 
 // Khung làm bài tập (kèm editor) chỉ tải khi bài học có bài tập
 const ExerciseWorkspace = lazy(() =>
@@ -149,7 +149,7 @@ export default function LessonPlayerPage() {
     if (!isError) return;
     if (error?.response?.status === 403) {
       const courseSlug = error.response?.data?.courseSlug;
-      toast.error('Bạn chưa đăng ký khóa học này');
+      toast.error('Bạn cần mua hoặc đăng ký khóa học này để vào học.');
       navigate(courseSlug ? `/courses/${courseSlug}` : '/courses', { replace: true });
     }
   }, [isError, error, navigate]);
@@ -176,11 +176,11 @@ export default function LessonPlayerPage() {
   const completeMutation = useMutation({
     mutationFn: () => api.post(`/api/lesson-progress/${lessonId}/complete`),
     onSuccess: () => {
-      toast.success('Đánh dấu hoàn thành!');
+      toast.success('Đã đánh dấu bài học hoàn thành');
       queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] });
       queryClient.invalidateQueries({ queryKey: ['enrollments'] });
     },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu được trạng thái hoàn thành. Thử lại sau giây lát.')),
   });
 
   /* ── Download attachment ── */
@@ -191,7 +191,7 @@ export default function LessonPlayerPage() {
       if (tabRef) tabRef.location.href = d.url; else window.location.assign(d.url);
     } catch (err) {
       tabRef?.close();
-      toast.error(apiMessage(err, 'Không thể tải tài liệu'));
+      toast.error(apiMessage(err, 'Không mở được tài liệu. Thử lại sau giây lát.'));
     }
   };
 
@@ -218,7 +218,7 @@ export default function LessonPlayerPage() {
   const handleVideoError = () => {
     if (data?.lesson?.videoSource !== 'storage') return;
     if (Date.now() - lastRefreshRef.current < 10_000) {
-      toast.error('Không phát được video. Vui lòng tải lại trang.');
+      toast.error('Video bị gián đoạn. Tải lại trang để phát tiếp gần chỗ bạn đang xem.');
       return;
     }
     lastRefreshRef.current = Date.now();
@@ -239,9 +239,17 @@ export default function LessonPlayerPage() {
   if (isError) {
     return (
       <div className="h-screen flex items-center justify-center bg-bg">
-        <div className="text-center">
-          <p className="font-mono text-ink-3 mb-3">// Không tải được bài học</p>
-          <Link to="/me"><Button variant="ghost">← Về My Learning</Button></Link>
+        <div className="text-center px-5">
+          <p className="font-display font-semibold text-[17px] text-ink mb-1.5">Không tải được bài học</p>
+          <p className="text-sm text-ink-2 mb-5">
+            {error?.response?.status === 404
+              ? 'Bài học này không còn tồn tại hoặc đã được giảng viên gỡ.'
+              : 'Có thể do mất kết nối hoặc máy chủ đang bận.'}
+          </p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {error?.response?.status !== 404 && <Button onClick={() => refetchLesson()}>Thử lại</Button>}
+            <Link to="/me"><Button variant="ghost">← Về Học tập của tôi</Button></Link>
+          </div>
         </div>
       </div>
     );
@@ -330,7 +338,7 @@ export default function LessonPlayerPage() {
                     <span className={`w-2 h-2 rounded-full ${quizLocked ? 'bg-accent animate-pulse' : 'bg-success'}`} />
                     <p className="font-mono text-[12px] text-ink-3 uppercase tracking-widest">
                       {quizLocked
-                        ? 'Quiz bắt buộc — hoàn thành để mở khoá bài tiếp theo'
+                        ? `Quiz bắt buộc — đạt ${quizData.quiz.passScore}% để mở bài tiếp theo`
                         : 'Quiz đã hoàn thành ✓'}
                     </p>
                   </div>
@@ -361,7 +369,7 @@ export default function LessonPlayerPage() {
                         ref={playerRef}
                         src={`${BASE_URL}${lesson.hlsUrl}`}
                         onReady={handleReady}
-                        onError={() => toast.error('Không phát được video. Vui lòng tải lại trang.')}
+                        onError={() => toast.error('Video bị gián đoạn. Tải lại trang để phát tiếp gần chỗ bạn đang xem.')}
                         onUnsupported={() => setHlsUnsupported(true)}
                         onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
                         onEnded={handleEnded}
@@ -386,7 +394,7 @@ export default function LessonPlayerPage() {
                     <div className="w-16 h-16 rounded-full border-2 border-white/20 grid place-items-center">
                       <Play className="w-8 h-8 text-white/30" />
                     </div>
-                    <p className="font-mono text-[13px] text-white/40">Video chưa sẵn sàng</p>
+                    <p className="font-mono text-[13px] text-white/40">Bài học này không có video — xem nội dung bên dưới</p>
                   </div>
                 )}
 
@@ -432,7 +440,7 @@ export default function LessonPlayerPage() {
               {tab === 'Tổng quan' && (
                 lesson.content
                   ? <RichContent content={lesson.content} className="max-w-3xl" />
-                  : <p className="font-mono text-[13px] text-ink-3">// Bài học này chưa có mô tả</p>
+                  : <p className="font-mono text-[13px] text-ink-3">// Bài học này chưa có nội dung văn bản</p>
               )}
 
               {tab === 'Tài liệu' && (
@@ -445,10 +453,6 @@ export default function LessonPlayerPage() {
                     </button>
                   )
                   : <p className="font-mono text-[13px] text-ink-3">// Bài học không có tài liệu đính kèm</p>
-              )}
-
-              {tab === 'Ghi chú' && (
-                <p className="font-mono text-[13px] text-ink-3">// Tính năng ghi chú sẽ ra mắt sớm</p>
               )}
 
               {tab === 'Quiz' && (
@@ -533,7 +537,7 @@ export default function LessonPlayerPage() {
           <p className="text-sm text-ink-2 leading-[1.65]">
             Bài học này có quiz bắt buộc. Bạn phải đạt{' '}
             <strong className="text-ink">{quizData?.quiz?.passScore ?? 80}%</strong>{' '}
-            trở lên để mở khoá bài tiếp theo.
+            trở lên để mở bài tiếp theo.
           </p>
         </WarningModal>
       )}
@@ -632,7 +636,7 @@ function QuizPanel({ quiz, onPassed }) {
       setAnswers({});
       if (data.passed) onPassed();
     } catch (err) {
-      toast.error(apiMessage(err));
+      toast.error(apiMessage(err, 'Chưa nộp được quiz. Câu trả lời vẫn được giữ — thử nộp lại.'));
     } finally { setSubmitting(false); }
   };
 
@@ -661,7 +665,7 @@ function QuizPanel({ quiz, onPassed }) {
         <Button size="sm" variant="ghost"
           onClick={() => { setResult(null); setRetrying(true); setAnswers({}); }}
           className="w-full justify-center">
-          Làm lại
+          {passed ? 'Làm lại quiz' : 'Làm lại để đạt'}
         </Button>
       </div>
     );
@@ -709,7 +713,7 @@ function QuizPanel({ quiz, onPassed }) {
         onClick={handleSubmit}
         disabled={submitting}
         className="w-full justify-center">
-        {submitting ? 'Đang chấm...' : 'Nộp bài'}
+        {submitting ? 'Đang chấm…' : 'Nộp quiz'}
       </Button>
 
       {/* Unanswered questions modal */}
@@ -764,19 +768,19 @@ function DiscussionPanel({ lessonId }) {
     mutationFn: ({ content, parentId }) =>
       api.post(`/api/lessons/${lessonId}/discussions`, { content, parentId }),
     onSuccess: () => qc.invalidateQueries({ queryKey }),
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa gửi được bình luận. Thử lại sau giây lát.')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/api/discussions/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey }),
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa xóa được bình luận. Thử lại sau giây lát.')),
   });
 
   const editMutation = useMutation({
     mutationFn: ({ id, content }) => api.put(`/api/discussions/${id}`, { content }),
     onSuccess: () => qc.invalidateQueries({ queryKey }),
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu được chỉnh sửa. Thử lại sau giây lát.')),
   });
 
   return (
@@ -787,7 +791,7 @@ function DiscussionPanel({ lessonId }) {
 
       {/* New comment form */}
       <CommentForm
-        placeholder="Viết bình luận..."
+        placeholder="Hỏi giảng viên hoặc chia sẻ với học viên khác…"
         onSubmit={(content) => postMutation.mutate({ content })}
         submitting={postMutation.isPending}
       />
@@ -852,7 +856,7 @@ function CommentItem({ comment, currentUserId, onReply, onDelete, onEdit, replyi
           {editing ? (
             <CommentForm
               initialValue={comment.content}
-              placeholder="Sửa bình luận..."
+              placeholder="Sửa bình luận…"
               onSubmit={(content) => { onEdit(comment.id, content); setEditing(false); }}
               onCancel={() => setEditing(false)}
               submitting={false}
@@ -874,7 +878,7 @@ function CommentItem({ comment, currentUserId, onReply, onDelete, onEdit, replyi
                     className="font-mono text-[11px] text-ink-3 hover:text-ink transition-colors flex items-center gap-1">
                     <Edit2 className="w-3 h-3" /> Sửa
                   </button>
-                  <button onClick={() => onDelete(comment.id)}
+                  <button onClick={() => window.confirm('Xóa bình luận này? Mọi câu trả lời bên dưới cũng bị xóa theo.') && onDelete(comment.id)}
                     className="font-mono text-[11px] text-ink-3 hover:text-danger transition-colors flex items-center gap-1">
                     <Trash2 className="w-3 h-3" /> Xóa
                   </button>
@@ -917,7 +921,7 @@ function CommentItem({ comment, currentUserId, onReply, onDelete, onEdit, replyi
       {showReplyForm && (
         <div className="ml-10">
           <CommentForm
-            placeholder="Viết câu trả lời..."
+            placeholder="Viết câu trả lời…"
             onSubmit={(content) => { onReply(content); setShowReplyForm(false); }}
             onCancel={() => setShowReplyForm(false)}
             submitting={replying}
@@ -957,7 +961,7 @@ function CommentForm({ placeholder, initialValue = '', onSubmit, onCancel, submi
           className="flex items-center gap-1.5"
         >
           <Send className="w-3 h-3" />
-          {submitting ? 'Đang gửi...' : 'Gửi'}
+          {submitting ? 'Đang gửi…' : 'Gửi'}
         </Button>
         {onCancel && (
           <Button size="sm" variant="ghost" onClick={onCancel}>Hủy</Button>

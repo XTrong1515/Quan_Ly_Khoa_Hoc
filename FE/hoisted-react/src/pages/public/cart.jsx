@@ -10,7 +10,7 @@ import { Chip } from '@/components/ui/chip.jsx';
 import { useCart } from '@/store/cart';
 import { useAuth } from '@/store/auth';
 import { api, apiMessage } from '@/lib/api';
-import { formatVND } from '@/lib/format';
+import { formatVND, formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 function useCartCourses(ids) {
@@ -40,13 +40,15 @@ export default function CartPage() {
   const navigate  = useNavigate();
 
   const courseIds = items.map((i) => i.courseId);
-  const { data: courses = [], isLoading } = useCartCourses(courseIds);
+  const { data: courses = [], isLoading, isError, refetch } = useCartCourses(courseIds);
   const { data: enrolledIds = [] } = useEnrolledCourseIds(role !== 'guest');
 
   const enrolledSet = new Set(enrolledIds);
   const courseMap = Object.fromEntries(courses.map((c) => [c.id, c]));
 
-  const payableIds = courseIds.filter((id) => !enrolledSet.has(id));
+  // Khóa đã ngừng bán (tải xong mà không có trong kết quả) không được gửi vào đơn — backend sẽ từ chối cả đơn
+  const isUnavailable = (id) => !isLoading && !isError && !courseMap[id];
+  const payableIds = courseIds.filter((id) => !enrolledSet.has(id) && !isUnavailable(id));
   const hasOwnedItem = courseIds.some((id) => enrolledSet.has(id));
   const total = payableIds.reduce((sum, id) => sum + (courseMap[id]?.price ?? 0), 0);
   const originalTotal = payableIds.reduce(
@@ -62,12 +64,12 @@ export default function CartPage() {
       clear();
       navigate(`/payment/pending/${orderId}`);
     },
-    onError: (err) => toast.error(apiMessage(err, 'Thanh toán thất bại')),
+    onError: (err) => toast.error(apiMessage(err, 'Không tạo được đơn hàng. Thử lại sau giây lát.')),
   });
 
   const handleCheckout = () => {
     if (role === 'guest') {
-      toast.error('Vui lòng đăng nhập để thanh toán');
+      toast.error('Đăng nhập để thanh toán — giỏ hàng của bạn vẫn được giữ nguyên.');
       navigate('/login');
       return;
     }
@@ -88,8 +90,8 @@ export default function CartPage() {
               <span className="text-accent">~/hoisted</span> <span className="text-ink-3">/ giỏ-hàng</span>
             </p>
             <h1 className="display text-[28px] mb-3">Giỏ hàng trống</h1>
-            <p className="text-ink-2 mb-7">Hãy khám phá các khóa học và thêm vào giỏ hàng.</p>
-            <Link to="/courses"><Button size="lg">Khám phá khóa học</Button></Link>
+            <p className="text-ink-2 mb-7">Khóa học bạn thêm vào giỏ sẽ nằm ở đây cho đến khi thanh toán.</p>
+            <Link to="/courses"><Button size="lg">Xem khóa học</Button></Link>
           </div>
         </div>
       </>
@@ -123,10 +125,18 @@ export default function CartPage() {
       </header>
 
       <div className="max-w-[1100px] mx-auto px-5 sm:px-8 py-8">
+        {isError && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 mb-6 bg-danger/10 border border-danger/30 rounded-xl text-[13px] text-ink-2" role="alert">
+            <AlertCircle className="w-4 h-4 text-danger shrink-0" aria-hidden="true" />
+            <span className="flex-1">Không tải được thông tin khóa học trong giỏ. Kiểm tra kết nối rồi thử lại.</span>
+            <Button size="sm" variant="ghost" onClick={() => refetch()}>Thử lại</Button>
+          </div>
+        )}
+
         {hasOwnedItem && (
           <div className="flex items-start gap-2.5 px-4 py-3 mb-6 bg-warning/10 border border-warning/30 rounded-xl text-[13px] text-ink-2" role="alert">
             <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" aria-hidden="true" />
-            <span>Giỏ hàng có khóa học bạn đã sở hữu. Vui lòng xóa chúng trước khi thanh toán.</span>
+            <span>Giỏ hàng có khóa học bạn đã sở hữu. Xóa các khóa có nhãn "Đã sở hữu" để tiếp tục thanh toán.</span>
           </div>
         )}
 
@@ -136,6 +146,18 @@ export default function CartPage() {
             {courseIds.map((id, i) => {
               const course   = courseMap[id];
               const isOwned  = enrolledSet.has(id);
+
+              // Đã tải xong mà không có → khóa học đã ngừng bán / bị gỡ
+              if (isUnavailable(id)) {
+                return (
+                  <div key={id} className="card p-4 flex items-center gap-4">
+                    <p className="flex-1 text-[13px] text-ink-2">
+                      Một khóa học trong giỏ không còn được bán nên không được đưa vào đơn hàng.
+                    </p>
+                    <Button size="sm" variant="ghost" onClick={() => remove(id)}>Xóa khỏi giỏ</Button>
+                  </div>
+                );
+              }
 
               if (isLoading || !course) {
                 return (
@@ -179,7 +201,7 @@ export default function CartPage() {
                         </p>
                       ) : (
                         <p className="font-mono font-bold text-[17px] text-ink">
-                          {formatVND(course.price)}
+                          {formatPrice(course.price)}
                           {course.originalPrice > course.price && (
                             <span className="text-[13px] text-ink-3 font-normal line-through ml-2">
                               {formatVND(course.originalPrice)}
@@ -212,7 +234,7 @@ export default function CartPage() {
                   return (
                     <div key={id} className="flex justify-between gap-3 text-[13px]">
                       <span className="text-ink-2 truncate flex-1">{c?.title ?? '…'}</span>
-                      <span className="font-mono text-ink shrink-0 tabular-nums">{formatVND(c?.price ?? 0)}</span>
+                      <span className="font-mono text-ink shrink-0 tabular-nums">{formatPrice(c?.price ?? 0)}</span>
                     </div>
                   );
                 })}
@@ -241,10 +263,10 @@ export default function CartPage() {
                 disabled={checkoutMutation.isPending || isLoading || hasOwnedItem}
                 onClick={handleCheckout}
               >
-                {checkoutMutation.isPending ? 'Đang xử lý…' : (
+                {checkoutMutation.isPending ? 'Đang tạo đơn hàng…' : (
                   <>
                     {role === 'guest' ? <Lock className="w-4 h-4" aria-hidden="true" /> : <ArrowRight className="w-4 h-4" aria-hidden="true" />}
-                    {role === 'guest' ? 'Đăng nhập để thanh toán' : 'Tiến hành thanh toán'}
+                    {role === 'guest' ? 'Đăng nhập để thanh toán' : 'Tiếp tục thanh toán'}
                   </>
                 )}
               </Button>
@@ -252,7 +274,7 @@ export default function CartPage() {
               <ul className="mt-5 pt-4 border-t border-line space-y-2 text-[12px] text-ink-3">
                 <li className="flex items-center gap-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-accent flex-shrink-0" aria-hidden="true" />
-                  Thanh toán qua VNPay · Bảo mật SSL
+                  Thanh toán trên cổng VNPay — Hoisted không lưu thông tin thẻ
                 </li>
                 <li className="flex items-center gap-2">
                   <InfinityIcon className="w-3.5 h-3.5 text-accent flex-shrink-0" aria-hidden="true" />

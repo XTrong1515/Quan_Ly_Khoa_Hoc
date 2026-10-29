@@ -24,7 +24,7 @@ export default function AdminInstructorApplicationsPage() {
   const approve = useMutation({
     mutationFn: (id) => api.put(`/api/admin/instructor-applications/${id}/approve`),
     onSuccess: () => { toast.success('Đã duyệt — tài khoản đã được cấp quyền giảng viên'); refresh(); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa duyệt được đơn. Thử lại sau giây lát.')),
   });
 
   return (
@@ -87,7 +87,7 @@ function RejectModal({ application, onClose, onDone }) {
   const m = useMutation({
     mutationFn: () => api.put(`/api/admin/instructor-applications/${application.id}/reject`, { note }),
     onSuccess: () => { toast.success('Đã từ chối và gửi lý do'); onDone(); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa gửi được quyết định từ chối. Thử lại sau giây lát.')),
   });
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>

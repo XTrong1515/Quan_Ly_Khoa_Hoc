@@ -16,20 +16,20 @@ import { cn } from '@/lib/utils';
 /* ── Validation schema (Zod) ─────────────────────────────────── */
 const schema = z
   .object({
-    name: z.string().min(2, 'Tên tối thiểu 2 ký tự'),
+    name: z.string().min(2, 'Họ tên cần ít nhất 2 ký tự'),
     email: z.string().email('Email không hợp lệ'),
     password: z
       .string()
-      .min(8, 'Tối thiểu 8 ký tự')
-      .regex(/[A-Z]/, 'Cần ít nhất 1 chữ HOA')
-      .regex(/[0-9]/, 'Cần ít nhất 1 số')
-      .regex(/[^A-Za-z0-9]/, 'Cần ít nhất 1 ký tự đặc biệt'),
+      .min(8, 'Mật khẩu cần ít nhất 8 ký tự')
+      .regex(/[A-Z]/, 'Mật khẩu cần ít nhất 1 chữ in hoa (A–Z)')
+      .regex(/[0-9]/, 'Mật khẩu cần ít nhất 1 chữ số')
+      .regex(/[^A-Za-z0-9]/, 'Mật khẩu cần ít nhất 1 ký tự đặc biệt (vd: ! @ #)'),
     confirm: z.string(),
-    terms: z.literal(true, { errorMap: () => ({ message: 'Bạn cần đồng ý điều khoản' }) }),
+    terms: z.literal(true, { errorMap: () => ({ message: 'Đánh dấu ô đồng ý điều khoản để tạo tài khoản' }) }),
   })
   .refine((d) => d.password === d.confirm, {
     path: ['confirm'],
-    message: 'Mật khẩu không khớp',
+    message: 'Hai mật khẩu chưa giống nhau',
   });
 
 /* ── Password strength helper ────────────────────────────────── */
@@ -47,7 +47,7 @@ const STRENGTH_BAR = ['bg-danger', 'bg-danger', 'bg-warn', 'bg-js', 'bg-success'
 
 const REQS = [
   { label: '≥ 8 ký tự', test: (pw) => pw.length >= 8 },
-  { label: '1 chữ HOA', test: (pw) => /[A-Z]/.test(pw) },
+  { label: '1 chữ in hoa', test: (pw) => /[A-Z]/.test(pw) },
   { label: '1 số', test: (pw) => /[0-9]/.test(pw) },
   { label: '1 ký tự đặc biệt', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
 ];
@@ -85,10 +85,10 @@ export default function RegisterPage() {
   const onSubmit = async (data) => {
     try {
       await register_action({ name: data.name, email: data.email, password: data.password });
-      toast.success('Đăng ký thành công! Chào mừng bạn đến với Hoisted.');
+      toast.success('Đã tạo tài khoản. Chào mừng bạn đến với Hoisted!');
       navigate('/me');
     } catch (err) {
-      toast.error(apiMessage(err, 'Đăng ký thất bại, vui lòng thử lại'));
+      toast.error(apiMessage(err, 'Không tạo được tài khoản. Thử lại sau giây lát.'));
     }
   };
 
@@ -127,8 +127,8 @@ export default function RegisterPage() {
             <span className="text-js">hoist</span> sự nghiệp lên.
           </h1>
           <p className="text-[#B6BCD0] text-[14.5px] leading-[1.6] mb-8">
-            Miễn phí mãi mãi cho {platformStats?.freeCourses ?? 6}+ khóa vanilla JS.
-            Nâng cấp khi bạn sẵn sàng đi sâu hơn.
+            Tạo tài khoản miễn phí để xem thử bài học và hỏi trợ lý AI.
+            Khóa trả phí mua lẻ từng khóa — không có gói thuê bao.
           </p>
 
           {/* Terminal: account scaffold */}
@@ -141,9 +141,9 @@ export default function RegisterPage() {
             </div>
             <div className="px-5 py-4 text-slate-300" aria-hidden="true">
               <p><span className="text-js">$</span> npx create-hoisted-account</p>
-              <p><span className="text-emerald-400">✓</span> {platformStats?.freeCourses ?? 6} khóa miễn phí: đã mở khóa</p>
-              <p><span className="text-emerald-400">✓</span> Coupon −30% khóa đầu tiên: đã thêm</p>
-              <p><span className="text-emerald-400">✓</span> PDF Event Loop deep-dive: đã tặng</p>
+              <p><span className="text-emerald-400">✓</span> Tài khoản học viên: đã tạo</p>
+              <p><span className="text-emerald-400">✓</span> Bài học xem thử: sẵn sàng</p>
+              <p><span className="text-emerald-400">✓</span> Trợ lý AI: chờ câu hỏi đầu tiên</p>
               <p>
                 <span className="text-sky-300">?</span> Bắt đầu từ đâu → <span className="text-js">JavaScript Core</span>
                 <span className="inline-block w-[7px] h-[13px] align-middle ml-1 bg-slate-300 animate-caret" />
@@ -151,39 +151,34 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Social proof from real stats */}
+          {/* Chỉ số thật từ /api/stats — chưa tải được thì không hiện (không avatar / số giả) */}
+          {platformStats && (
           <div className="flex items-center gap-3.5">
-            <div className="flex" aria-hidden="true">
-              {['#F7DF1E', '#6366F1', '#34D399', '#F472B6', '#FB923C'].map((c, i) => (
-                <div key={i}
-                  className="w-8 h-8 rounded-full grid place-items-center font-mono font-bold text-[11px] text-[#0B0F19] border-2 border-[#0B0F19]"
-                  style={{ background: `linear-gradient(135deg, ${c}, #1a1f3a)`, marginLeft: i ? -10 : 0 }}>
-                  {'ANKPTM'[i]}
-                </div>
-              ))}
-            </div>
             <div>
               <div className="text-[13px] font-semibold text-[#F4F5F9]">
-                +{(platformStats?.newUsersThisWeek ?? 0).toLocaleString('vi-VN')} dev tham gia tuần này
+                {Number(platformStats.newUsersThisWeek).toLocaleString('vi-VN')} tài khoản mới trong 7 ngày qua
               </div>
+              {platformStats.totalReviews > 0 && (
               <div className="flex items-center gap-1.5 font-mono text-[11.5px] text-slate-400 mt-0.5">
                 <span className="flex gap-0.5" aria-hidden="true">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star
                       key={s}
-                      className={cn('w-3 h-3', s <= Math.round(platformStats?.avgRating ?? 5) ? 'fill-js text-js' : 'text-slate-600')}
+                      className={cn('w-3 h-3', s <= Math.round(platformStats.avgRating) ? 'fill-js text-js' : 'text-slate-600')}
                     />
                   ))}
                 </span>
-                {(platformStats?.avgRating ?? 0).toFixed(1)} từ {(platformStats?.totalReviews ?? 0).toLocaleString('vi-VN')} đánh giá
+                {`${Number(platformStats.avgRating).toFixed(1)} từ ${Number(platformStats.totalReviews).toLocaleString('vi-VN')} đánh giá`}
               </div>
+              )}
             </div>
           </div>
+          )}
         </div>
 
         <p className="relative flex items-center gap-2 font-mono text-[11.5px] text-slate-500">
           <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-          Dữ liệu mã hóa · không spam · hủy bất cứ lúc nào
+          Mật khẩu được lưu dạng băm (bcrypt) · không gửi email quảng cáo
         </p>
       </div>
 
@@ -209,7 +204,7 @@ export default function RegisterPage() {
             <span className="text-accent">~/hoisted</span> <span className="text-ink-3">/ đăng-ký</span>
           </p>
           <h2 className="display text-[30px] mb-2">Tạo tài khoản</h2>
-          <p className="text-ink-3 text-[13.5px] mb-7">Chỉ mất 30 giây. Không cần thẻ tín dụng.</p>
+          <p className="text-ink-3 text-[13.5px] mb-7">Miễn phí, không cần thẻ thanh toán.</p>
 
           <div className="flex flex-col gap-4">
             {/* Name */}
@@ -322,7 +317,7 @@ export default function RegisterPage() {
             disabled={isSubmitting}
             className="justify-center shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
           >
-            {isSubmitting ? 'Đang tạo…' : 'Tạo tài khoản →'}
+            {isSubmitting ? 'Đang tạo tài khoản…' : 'Tạo tài khoản →'}
           </Button>
 
           <p className="mt-6 font-mono text-[11.5px] text-ink-3 text-center">

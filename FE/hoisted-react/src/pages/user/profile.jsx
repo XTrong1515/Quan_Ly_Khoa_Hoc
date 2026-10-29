@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 /* ── Schemas ─────────────────────────────────────────────────── */
 const profileSchema = z.object({
-  name:     z.string().min(2, 'Tên tối thiểu 2 ký tự'),
+  name:     z.string().min(2, 'Họ tên cần ít nhất 2 ký tự'),
   username: z
     .string()
     .regex(/^[a-z0-9_.]{3,30}$/, 'Username: 3–30 ký tự, chỉ dùng a-z, 0-9, . hoặc _')
@@ -21,10 +21,10 @@ const profileSchema = z.object({
     .optional(),
   phone: z
     .string()
-    .regex(/^[0-9+\-\s]{0,15}$/, 'Số điện thoại không hợp lệ')
+    .regex(/^[0-9+\-\s]{0,15}$/, 'Số điện thoại chỉ gồm chữ số, dấu + hoặc -, tối đa 15 ký tự')
     .or(z.literal(''))
     .optional(),
-  bio: z.string().max(200, 'Tối đa 200 ký tự').optional(),
+  bio: z.string().max(200, 'Giới thiệu tối đa 200 ký tự').optional(),
 });
 
 const passwordSchema = z
@@ -32,15 +32,15 @@ const passwordSchema = z
     currentPassword: z.string().min(1, 'Nhập mật khẩu hiện tại'),
     newPassword: z
       .string()
-      .min(8, 'Tối thiểu 8 ký tự')
-      .regex(/[A-Z]/, 'Cần ít nhất 1 chữ HOA')
-      .regex(/[0-9]/, 'Cần ít nhất 1 số')
-      .regex(/[^A-Za-z0-9]/, 'Cần ít nhất 1 ký tự đặc biệt'),
+      .min(8, 'Mật khẩu cần ít nhất 8 ký tự')
+      .regex(/[A-Z]/, 'Mật khẩu cần ít nhất 1 chữ in hoa (A–Z)')
+      .regex(/[0-9]/, 'Mật khẩu cần ít nhất 1 chữ số')
+      .regex(/[^A-Za-z0-9]/, 'Mật khẩu cần ít nhất 1 ký tự đặc biệt (vd: ! @ #)'),
     confirmPassword: z.string(),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
     path: ['confirmPassword'],
-    message: 'Mật khẩu không khớp',
+    message: 'Hai mật khẩu mới chưa giống nhau',
   });
 
 /* ── Page ────────────────────────────────────────────────────── */
@@ -94,9 +94,9 @@ function AvatarSection() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       updateUser({ avatar: data.avatar });
-      toast.success('Cập nhật ảnh đại diện thành công');
+      toast.success('Đã đổi ảnh đại diện');
     } catch (err) {
-      toast.error(apiMessage(err, 'Upload thất bại'));
+      toast.error(apiMessage(err, 'Chưa tải ảnh lên được. Thử lại sau giây lát.'));
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -109,7 +109,7 @@ function AvatarSection() {
       updateUser({ avatar: null });
       toast.success('Đã xóa ảnh đại diện');
     } catch (err) {
-      toast.error(apiMessage(err));
+      toast.error(apiMessage(err, 'Chưa xóa được ảnh đại diện. Thử lại sau giây lát.'));
     }
   };
 
@@ -152,7 +152,7 @@ function AvatarSection() {
               className="flex items-center gap-1.5"
             >
               <Upload className="w-3.5 h-3.5" />
-              {uploading ? 'Đang upload...' : 'Đổi ảnh'}
+              {uploading ? 'Đang tải ảnh lên…' : 'Đổi ảnh'}
             </Button>
             {user?.avatar && (
               <Button
@@ -208,9 +208,9 @@ function InfoSection() {
         phone:    res.user.phone    || '',
         bio:      res.user.bio      || '',
       });
-      toast.success('Cập nhật thông tin thành công');
+      toast.success('Đã lưu thông tin cá nhân');
     } catch (err) {
-      toast.error(apiMessage(err, 'Cập nhật thất bại'));
+      toast.error(apiMessage(err, 'Chưa lưu được thông tin. Thử lại sau giây lát.'));
     }
   };
 
@@ -270,7 +270,7 @@ function InfoSection() {
               {...register('bio')}
               className="input py-2.5 h-auto text-sm resize-none"
               rows={3}
-              placeholder="Frontend dev tại Tiki. Học JS không bao giờ là đủ."
+              placeholder="Frontend dev, đang học sâu về async và event loop."
             />
           </Field>
         </div>
@@ -316,10 +316,10 @@ function PasswordSection() {
         currentPassword: data.currentPassword,
         newPassword:     data.newPassword,
       });
-      toast.success('Đổi mật khẩu thành công. Các thiết bị khác sẽ bị đăng xuất.');
+      toast.success('Đã đổi mật khẩu. Các thiết bị khác sẽ phải đăng nhập lại.');
       reset();
     } catch (err) {
-      toast.error(apiMessage(err, 'Đổi mật khẩu thất bại'));
+      toast.error(apiMessage(err, 'Chưa đổi được mật khẩu. Thử lại sau giây lát.'));
     }
   };
 
@@ -418,7 +418,7 @@ function PwToggle({ show, onToggle }) {
 
 const PW_REQS = [
   { label: '≥ 8 ký tự',        test: (pw) => pw.length >= 8 },
-  { label: '1 chữ HOA',        test: (pw) => /[A-Z]/.test(pw) },
+  { label: '1 chữ in hoa',     test: (pw) => /[A-Z]/.test(pw) },
   { label: '1 số',             test: (pw) => /[0-9]/.test(pw) },
   { label: '1 ký tự đặc biệt', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
 ];

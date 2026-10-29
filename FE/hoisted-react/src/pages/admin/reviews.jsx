@@ -28,8 +28,8 @@ export default function AdminReviewsPage() {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status: s }) => api.put(`/api/admin/reviews/${id}/status`, { status: s, type }),
-    onSuccess: () => { toast.success('Đã cập nhật trạng thái'); qc.invalidateQueries({ queryKey: ['admin-reviews'] }); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onSuccess: () => { toast.success('Đã đổi trạng thái đánh giá'); qc.invalidateQueries({ queryKey: ['admin-reviews'] }); },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa đổi được trạng thái đánh giá. Thử lại sau giây lát.')),
   });
 
   return (

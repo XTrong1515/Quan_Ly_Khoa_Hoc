@@ -31,7 +31,7 @@ export default function AssistantPage() {
       qc.invalidateQueries({ queryKey: ['ai-conversations'] });
       if (id === conversationId) open(null);
     },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa xóa được hội thoại. Thử lại sau giây lát.')),
   });
 
   return (
@@ -45,7 +45,7 @@ export default function AssistantPage() {
               <Plus className="w-4 h-4" /> Cuộc trò chuyện mới
             </button>
             <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-0.5">
-              {conversations.length === 0 && <p className="px-2 py-3 font-mono text-[11px] text-ink-3">// Chưa có hội thoại</p>}
+              {conversations.length === 0 && <p className="px-2 py-3 font-mono text-[11px] text-ink-3">// Chưa có hội thoại nào. Câu hỏi đầu tiên sẽ tạo hội thoại mới.</p>}
               {conversations.map((c) => (
                 <div key={c.id}
                   className={cn('group flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer text-[13px]',
@@ -54,8 +54,8 @@ export default function AssistantPage() {
                   <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                   <span className="flex-1 truncate">{c.title}</span>
                   <button
-                    onClick={(e) => { e.stopPropagation(); if (window.confirm('Xóa hội thoại này?')) remove.mutate(c.id); }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded text-ink-3 hover:text-danger" title="Xóa">
+                    onClick={(e) => { e.stopPropagation(); if (window.confirm('Xóa hội thoại này? Toàn bộ tin nhắn trong đó sẽ mất.')) remove.mutate(c.id); }}
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded text-ink-3 hover:text-danger" title="Xóa hội thoại" aria-label={`Xóa hội thoại ${c.title ?? ''}`.trim()}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>

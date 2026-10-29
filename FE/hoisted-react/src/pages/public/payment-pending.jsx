@@ -97,7 +97,7 @@ export default function PaymentPendingPage() {
   const navigate    = useNavigate();
   const qc          = useQueryClient();
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['order', orderId],
     queryFn: () => api.get(`/api/orders/${orderId}`).then((r) => r.data.order),
     staleTime: 0,
@@ -111,7 +111,7 @@ export default function PaymentPendingPage() {
       else navigate(paymentUrl);
     },
     onError: (err) => {
-      toast.error(apiMessage(err, 'Không thể tiếp tục thanh toán'));
+      toast.error(apiMessage(err, 'Không mở được cổng VNPay. Thử lại sau giây lát.'));
       qc.invalidateQueries({ queryKey: ['order', orderId] });
       qc.invalidateQueries({ queryKey: ['my-orders'] });
     },
@@ -133,15 +133,19 @@ export default function PaymentPendingPage() {
   }
 
   if (isError || !data) {
+    const status = error?.response?.status;
+    const missing = !isError || status === 404 || status === 403;
     return (
       <StatusScreen
         tone="danger"
         icon={AlertTriangle}
-        eyebrow="// không tìm thấy"
-        title="Không tìm thấy đơn hàng"
+        eyebrow={missing ? '// không tìm thấy' : '// lỗi kết nối'}
+        title={missing ? 'Không tìm thấy đơn hàng' : 'Không tải được đơn hàng'}
         actions={<Link to="/me/orders"><Button variant="ghost">← Đơn hàng của tôi</Button></Link>}
       >
-        Đơn hàng không tồn tại hoặc không thuộc tài khoản của bạn.
+        {missing
+          ? 'Đơn hàng không tồn tại hoặc thuộc tài khoản khác. Kiểm tra lại trong "Đơn hàng của tôi".'
+          : 'Có thể do mất kết nối hoặc máy chủ đang bận. Tải lại trang sau giây lát — đơn hàng của bạn không bị ảnh hưởng.'}
       </StatusScreen>
     );
   }
@@ -159,10 +163,10 @@ export default function PaymentPendingPage() {
           tone="success"
           icon={CheckCircle2}
           eyebrow="// đã thanh toán"
-          title="Thanh toán thành công!"
+          title="Thanh toán thành công"
           actions={
             <>
-              <Link to="/me"><Button size="lg">Bắt đầu học ngay →</Button></Link>
+              <Link to="/me"><Button size="lg">Vào học →</Button></Link>
               <Link to="/me/orders"><Button size="lg" variant="ghost">Xem đơn hàng</Button></Link>
             </>
           }
@@ -176,23 +180,41 @@ export default function PaymentPendingPage() {
 
   /* ── Cancelled / expired state ── */
   if (isCancelled || isExpired) {
+    const failed = data.status === 'FAILED';
+    // CANCELLED đến từ job hết hạn 24h hoặc do quản trị viên hủy. Chỉ chắc chắn "admin hủy" khi hạn chưa tới;
+    // hạn đã qua thì không phân biệt được (DB không lưu ai hủy) → câu trung tính
+    const adminCancelled = data.status === 'CANCELLED' && data.expires_at && new Date(data.expires_at).getTime() > Date.now();
     return (
       <>
-        <Seo title="Đơn hàng hết hạn — Hoisted" />
+        <Seo title={failed ? 'Thanh toán không thành công — Hoisted' : 'Đơn hàng đã hủy — Hoisted'} />
         <StatusScreen
           tone="danger"
           icon={AlertTriangle}
-          eyebrow="// đơn hàng hết hạn"
-          title="Đơn hàng đã hết hạn"
+          eyebrow={failed ? '// thanh toán thất bại' : '// đơn hàng đã hủy'}
+          title={failed ? 'Thanh toán không thành công' : 'Đơn hàng đã hủy'}
           actions={
             <>
-              <Link to="/courses"><Button size="lg">Mua lại</Button></Link>
+              <Link to="/courses"><Button size="lg">Chọn lại khóa học</Button></Link>
               <Link to="/me/orders"><Button size="lg" variant="ghost">← Đơn hàng của tôi</Button></Link>
             </>
           }
         >
-          Đơn hàng <span className="font-mono font-semibold text-ink">{data.order_code}</span> đã quá 24h
-          và được hủy tự động. Bạn có thể thêm khóa học vào giỏ và đặt lại.
+          {failed ? (
+            <>
+              VNPay báo giao dịch cho đơn <span className="font-mono font-semibold text-ink">{data.order_code}</span> không
+              thành công. Thêm khóa học vào giỏ để đặt đơn mới; nếu tài khoản vẫn bị trừ tiền, giữ lại mã đơn này để đối soát.
+            </>
+          ) : adminCancelled ? (
+            <>
+              Đơn hàng <span className="font-mono font-semibold text-ink">{data.order_code}</span> đã được quản trị viên hủy.
+              Thêm khóa học vào giỏ để đặt đơn mới.
+            </>
+          ) : (
+            <>
+              Đơn hàng <span className="font-mono font-semibold text-ink">{data.order_code}</span> đã bị hủy và không thanh toán
+              được nữa (đơn chưa thanh toán sau 24 giờ sẽ tự động hủy). Thêm khóa học vào giỏ để đặt đơn mới.
+            </>
+          )}
         </StatusScreen>
       </>
     );
@@ -334,7 +356,7 @@ export default function PaymentPendingPage() {
 
         <p className="flex items-center justify-center gap-1.5 font-mono text-[11px] text-ink-3 text-center">
           <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-          Bảo mật SSL · Sau 24h đơn hàng sẽ tự động hủy
+          Đơn hàng tự động hủy nếu chưa thanh toán sau 24 giờ
         </p>
       </div>
     </div>

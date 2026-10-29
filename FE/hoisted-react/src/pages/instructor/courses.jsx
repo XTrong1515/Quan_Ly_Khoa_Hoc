@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
 import { CourseBadge, CurriculumPanel, CourseModal, LEVEL_LABELS } from '@/components/course-editor.jsx';
 import { api, apiMessage } from '@/lib/api';
-import { formatVND } from '@/lib/format';
+import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const API = '/api/instructor';
@@ -47,13 +47,13 @@ export default function InstructorCoursesPage() {
 
   const submitMutation = useMutation({
     mutationFn: (id) => api.post(`${API}/courses/${id}/submit`),
-    onSuccess: () => { toast.success('Đã gửi duyệt — quản trị viên sẽ xem xét sớm'); invalidate(qc); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onSuccess: () => { toast.success('Đã gửi duyệt. Bạn sẽ nhận thông báo khi có kết quả.'); invalidate(qc); },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa gửi duyệt được khóa học. Thử lại sau giây lát.')),
   });
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`${API}/courses/${id}`),
-    onSuccess: () => { toast.success('Đã xóa khóa học'); invalidate(qc); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onSuccess: () => { toast.success('Đã chuyển khóa học sang Lưu trữ'); invalidate(qc); },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu trữ được khóa học. Thử lại sau giây lát.')),
   });
 
   return (
@@ -126,7 +126,7 @@ export default function InstructorCoursesPage() {
               <div className="flex-1 min-w-[180px]">
                 <p className="font-medium text-ink line-clamp-1">{c.title}</p>
                 <p className="font-mono text-[10.5px] text-ink-3 mt-0.5">
-                  {c.category ?? '—'} · {LEVEL_LABELS[c.level] ?? c.level} · {c.total_lessons ?? 0} bài · {formatVND(c.price)}
+                  {c.category ?? '—'} · {LEVEL_LABELS[c.level] ?? c.level} · {c.total_lessons ?? 0} bài · {formatPrice(c.price)}
                   {c.status === 'PUBLISHED' && ` · ${c.student_count ?? 0} học viên`}
                 </p>
               </div>
@@ -160,8 +160,11 @@ export default function InstructorCoursesPage() {
                 </button>
                 {SUBMITTABLE.includes(c.status) && (
                   <button
-                    onClick={() => { if (window.confirm(`Xóa "${c.title}"?`)) deleteMutation.mutate(c.id); }}
-                    className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors" title="Xóa">
+                    onClick={() => { if (window.confirm(`Lưu trữ "${c.title}"?
+
+Khóa học chuyển sang trạng thái Lưu trữ và không gửi duyệt được nữa.`)) deleteMutation.mutate(c.id); }}
+                    className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors"
+                    title="Lưu trữ khóa học" aria-label={`Lưu trữ khóa học "${c.title}"`}>
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}

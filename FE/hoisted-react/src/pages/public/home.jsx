@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight, ArrowUpRight, CheckCircle2, Search, Star,
-  ChevronRight, Clock, Users, BookOpen, Sparkles, Terminal,
-  Infinity as InfinityIcon, ShieldCheck, MessageSquareText, RefreshCw, Quote,
+  ChevronRight, Users, BookOpen, Sparkles, Terminal,
+  Infinity as InfinityIcon, ShieldCheck, MessageSquareText, Quote,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { CourseCard } from '@/components/course-card.jsx';
@@ -12,6 +12,7 @@ import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { levelLabel } from '@/lib/format';
 
 function useHomeData() {
   return useQuery({
@@ -33,69 +34,68 @@ const EMPTY = []; // tham chiếu cố định cho useMemo khi chưa có dữ li
 
 /* ── Static content ─────────────────────────────────────────────── */
 
-const POPULAR_TERMS = ['Event Loop', 'React Hooks', 'TypeScript', 'Node.js', 'Closure'];
+const POPULAR_TERMS = ['Event loop', 'Closure', 'Promise', 'React', 'TypeScript'];
 
 const COURSE_TABS = ['Phổ biến nhất', 'Mới nhất', 'Miễn phí'];
 
+// Chỉ liệt kê khái niệm / chủ đề có trong danh mục thật
 const TECH_TICKER = [
-  'JavaScript', 'TypeScript', 'React', 'Node.js', 'Express',
-  'Next.js', 'MySQL', 'Docker', 'Git & CI/CD', 'System Design',
+  'Execution context', 'Hoisting', 'Closure', 'Prototype', 'Event loop',
+  'Promise', 'async/await', 'React', 'TypeScript', 'Node.js', 'Testing',
 ];
 
 const BENTO_SMALL = [
-  { icon: InfinityIcon, title: 'Truy cập trọn đời', desc: 'Mua một lần, học mãi mãi — kể cả khi khóa học được cập nhật nội dung mới.' },
-  { icon: MessageSquareText, title: 'Hỏi đáp trong bài học', desc: 'Thảo luận ngay dưới mỗi video, được instructor giải đáp tận gốc.' },
-  { icon: ShieldCheck, title: 'Thanh toán VNPay', desc: 'ATM nội địa, QR, thẻ quốc tế — mở khóa học ngay sau khi thanh toán.' },
-  { icon: RefreshCw, title: 'Cập nhật liên tục', desc: 'React, Node hay tooling đổi — bài học được quay lại, học viên cũ nhận miễn phí.' },
+  { icon: InfinityIcon, title: 'Truy cập trọn đời', desc: 'Mua một lần, khóa học ở lại trong tài khoản của bạn — không gia hạn, không hết hạn.' },
+  { icon: MessageSquareText, title: 'Hỏi đáp trong bài học', desc: 'Đặt câu hỏi ngay dưới bài học; giảng viên và học viên khác cùng trả lời.' },
+  { icon: ShieldCheck, title: 'Thanh toán VNPay', desc: 'Thẻ ATM, QR hoặc thẻ quốc tế. Thanh toán xong là khóa học mở ngay.' },
+  { icon: Sparkles, title: 'Trợ lý AI chọn khóa', desc: 'Hỏi bằng tiếng Việt về JavaScript hay nên học gì tiếp — trợ lý chỉ gợi ý khóa học có thật trên Hoisted.' },
 ];
 
 const LEARNING_PATHS = [
   {
-    level: '01', tag: 'Người mới bắt đầu',
-    title: 'JavaScript Cơ Bản → Nâng Cao',
-    desc: 'Từ var/let/const đến closure, prototype chain, async/await. Nền tảng vững cho mọi con đường.',
-    steps: ['JS Core (20h)', 'DOM & Events (12h)', 'Async Patterns (18h)'],
-    time: '~50 giờ',
+    level: 'BEGINNER', tag: 'Mới bắt đầu',
+    title: 'Nền tảng JavaScript',
+    desc: 'Chưa vững cú pháp và cách JS chạy? Bắt đầu từ biến, hàm, scope rồi mới đến những phần khó.',
+    steps: ['Biến, kiểu dữ liệu, hàm', 'Scope & hoisting', 'DOM & sự kiện'],
     color: 'text-success', bar: 'from-success/70 to-success/10',
   },
   {
-    level: '02', tag: 'Đang đi làm',
-    title: 'React & Node Thực Chiến',
-    desc: 'React internals, state management, SSR, REST API và deployment thực tế.',
-    steps: ['React Internals (24h)', 'Node Runtime (16h)', 'Full-stack Deploy (10h)'],
-    time: '~50 giờ',
+    level: 'INTERMEDIATE', tag: 'Đã biết cơ bản',
+    title: 'Bất đồng bộ & bản chất JS',
+    desc: 'Viết được code nhưng chưa giải thích được vì sao nó chạy như vậy — closure, this, Promise, event loop.',
+    steps: ['Closure & this', 'Promise & async/await', 'Event loop'],
     color: 'text-accent', bar: 'from-accent/70 to-accent/10',
   },
   {
-    level: '03', tag: 'Senior / Lead',
-    title: 'Kiến Trúc & Hiệu Năng',
-    desc: 'System design, micro-frontend, performance profiling, CI/CD — tư duy kiến trúc hệ thống.',
-    steps: ['System Design (20h)', 'Micro-frontend (14h)', 'Perf & DevOps (16h)'],
-    time: '~50 giờ',
-    color: 'text-violet-500', bar: 'from-violet-500/70 to-violet-500/10',
+    level: 'ADVANCED', tag: 'Muốn đi sâu',
+    title: 'Engine, framework & runtime',
+    desc: 'Đọc code như engine đọc nó, rồi mang hiểu biết đó vào React và Node.',
+    steps: ['Prototype chain & class', 'React rendering', 'Node runtime'],
+    // Thang độ khó xanh → vàng → đỏ, dùng token sẵn có
+    color: 'text-danger', bar: 'from-danger/70 to-danger/10',
   },
 ];
 
 const FAQS = [
   {
     q: 'Tôi chưa biết gì về lập trình, có học được không?',
-    a: 'Được. Lộ trình "Người mới bắt đầu" thiết kế từ con số 0: bắt đầu với JS core căn bản, mỗi khái niệm đều có ví dụ chạy được và bài tập thực hành trước khi sang phần tiếp theo.',
+    a: 'Được, nhưng hãy bắt đầu với các khóa cấp độ Cơ bản (lọc theo cấp độ ở trang Khóa học). Phần lớn nội dung trên Hoisted dành cho người đã biết code cơ bản và muốn hiểu sâu JavaScript.',
   },
   {
     q: 'Khóa học có thời hạn truy cập không?',
-    a: 'Không. Mọi khóa học đều là truy cập trọn đời — bạn mua một lần và học bất cứ lúc nào, bao gồm cả các bản cập nhật nội dung sau này.',
+    a: 'Không. Khóa học đã mua ở lại trong mục "Học tập của tôi" và bạn học lúc nào cũng được, không cần gia hạn.',
   },
   {
     q: 'Thanh toán như thế nào?',
-    a: 'Hoisted hỗ trợ thanh toán qua VNPay (ATM nội địa, QR, thẻ quốc tế). Sau khi thanh toán thành công, khóa học được mở ngay lập tức trong mục "Khóa học của tôi".',
+    a: 'Qua VNPay: thẻ ATM nội địa, QR hoặc thẻ quốc tế. Thanh toán thành công thì khóa học mở ngay trong mục "Học tập của tôi".',
+  },
+  {
+    q: 'Bài tập code được chấm thế nào?',
+    a: 'Bạn viết JavaScript ngay trong trình duyệt. "Chạy thử" kiểm tra với các test công khai; "Nộp bài" chấm thêm các test ẩn. Qua hết test thì bài học được đánh dấu hoàn thành.',
   },
   {
     q: 'Nếu gặp bài khó, tôi hỏi ai?',
-    a: 'Mỗi bài học có khu vực thảo luận riêng — bạn đặt câu hỏi ngay dưới video và nhận giải đáp từ instructor cùng cộng đồng học viên.',
-  },
-  {
-    q: 'Nội dung có được cập nhật theo công nghệ mới không?',
-    a: 'Có. Khi React, Node hay tooling thay đổi đáng kể, bài học liên quan được quay lại hoặc bổ sung — và học viên cũ nhận cập nhật miễn phí.',
+    a: 'Mỗi bài học có khu vực thảo luận để hỏi giảng viên và học viên khác. Cần câu trả lời ngay thì hỏi trợ lý AI ở góc màn hình — trợ lý trả lời các câu hỏi về JavaScript và lập trình web.',
   },
 ];
 
@@ -138,7 +138,7 @@ function CodeWindow() {
         <span className="w-3 h-3 rounded-full bg-[#ff5f57]" aria-hidden="true" />
         <span className="w-3 h-3 rounded-full bg-[#febc2e]" aria-hidden="true" />
         <span className="w-3 h-3 rounded-full bg-[#28c840]" aria-hidden="true" />
-        <span className="ml-3 text-[11px] text-slate-400">hoisted.js — Hoisted Academy</span>
+        <span className="ml-3 text-[11px] text-slate-400">hoisted.js</span>
       </div>
       {/* Code */}
       <pre className="p-5 text-slate-300 overflow-x-auto" aria-hidden="true">
@@ -211,6 +211,7 @@ export default function HomePage() {
 
   // Không dùng dữ liệu mẫu: API lỗi thì hiện trạng thái rỗng, không hiện khóa học / số liệu giả
   const categories = data?.categories ?? EMPTY;
+  const reviewers  = (data?.reviews ?? EMPTY).slice(0, 4);
   const allCourses = data?.featured ?? EMPTY;
   const newestCourses = data?.newest ?? [...allCourses].sort((a, b) => b.id - a.id).slice(0, 4);
 
@@ -233,9 +234,14 @@ export default function HomePage() {
     return [...map.values()].sort((a, b) => b.students - a.students).slice(0, 6);
   }, [allCourses]);
 
+  // totalUsers đếm mọi tài khoản → không gọi là "đang học", không thêm "+"
   const heroStats = [
-    { n: stats ? `${formatCount(stats.totalUsers)}+` : '—', l: 'Học viên đang học' },
-    { n: stats?.avgRating ? `${stats.avgRating}/5` : '—', l: 'Đánh giá trung bình' },
+    { n: stats ? formatCount(stats.totalUsers) : '—', l: 'Tài khoản đã đăng ký' },
+    // Điểm TB chỉ có nghĩa khi có lượt đánh giá thật — ghi kèm số lượt để 5/5 từ 2 người không bị đọc thành "xuất sắc"
+    {
+      n: stats?.totalReviews ? `${stats.avgRating}/5` : '—',
+      l: stats?.totalReviews ? `Điểm đánh giá từ ${formatCount(stats.totalReviews)} lượt` : 'Chưa có đánh giá',
+    },
     { n: stats ? formatCount(stats.totalPublishedCourses) : '—', l: 'Khóa học đã xuất bản' },
     { n: stats ? formatCount(stats.freeCourses) : '—', l: 'Khóa học miễn phí' },
   ];
@@ -291,7 +297,7 @@ export default function HomePage() {
     <>
       <Seo
         title="Hoisted — Học JavaScript chuyên sâu từ gốc đến production"
-        description="Nền tảng học JavaScript, React và Node.js bằng tiếng Việt. 120h+ video chuyên sâu về JS core, async patterns, React internals — dạy bởi instructor đang làm trong production team thật."
+        description="Học JavaScript từ bản chất bằng tiếng Việt: execution context, closure, event loop, async. Video bài giảng, bài tập code chấm tự động ngay trên trình duyệt và trợ lý AI gợi ý khóa học."
         jsonLd={jsonLd}
       />
 
@@ -315,9 +321,9 @@ export default function HomePage() {
               <Reveal>
                 <div className="inline-flex items-center gap-2 h-7 pl-1.5 pr-3 rounded-full border border-accent/25 bg-accent/10 mb-6">
                   <span className="chip !h-5 !px-2 !text-[10px]">
-                    <Sparkles className="w-3 h-3" aria-hidden="true" /> Mới
+                    <Terminal className="w-3 h-3" aria-hidden="true" /> Bài tập
                   </span>
-                  <span className="text-xs text-ink-2 font-medium">Lộ trình Senior 2026 đã ra mắt</span>
+                  <span className="text-xs text-ink-2 font-medium">Viết code, chấm bằng test ngay trên trình duyệt</span>
                 </div>
               </Reveal>
 
@@ -325,7 +331,7 @@ export default function HomePage() {
                 <h1 id="hero-heading" className="display text-[38px] sm:text-[48px] lg:text-[56px] leading-[1.06] mb-5">
                   Code như người
                   <br />
-                  <span className="bg-gradient-to-r from-accent via-accent to-indigo bg-clip-text text-transparent">
+                  <span className="text-accent">
                     hiểu bản chất.
                   </span>
                 </h1>
@@ -333,9 +339,9 @@ export default function HomePage() {
 
               <Reveal delay={120}>
                 <p className="text-[15.5px] text-ink-2 max-w-[480px] leading-[1.7] mb-7">
-                  120h+ nội dung chuyên sâu về JS core, async patterns, React internals
-                  và Node runtime — dạy bởi instructor đang làm việc trong
-                  <strong className="text-ink"> production team thật</strong>.
+                  Execution context, closure, event loop, async — xem bài giảng, rồi
+                  <strong className="text-ink"> tự viết code và được chấm bằng test</strong>{' '}
+                  ngay trên trình duyệt. Bí chỗ nào thì hỏi trợ lý AI.
                 </p>
               </Reveal>
 
@@ -381,27 +387,40 @@ export default function HomePage() {
                       Khám phá khóa học <ArrowRight className="w-4 h-4" aria-hidden="true" />
                     </Button>
                   </Link>
-                  <div className="flex items-center gap-3">
-                    <div className="flex -space-x-2" aria-hidden="true">
-                      {['MT', 'HD', 'TH', 'KP'].map((init, i) => (
-                        <div
-                          key={i}
-                          className="w-8 h-8 rounded-full bg-accent/20 border-2 border-bg text-accent font-bold text-[10px] grid place-items-center"
-                        >
-                          {init}
+                  {/* Avatar = người đánh giá thật (từ /api/home); số sao theo điểm thật; chưa có số liệu thì ẩn */}
+                  {stats && (
+                    <div className="flex items-center gap-3">
+                      {reviewers.length > 0 && (
+                        <div className="flex -space-x-2" aria-hidden="true">
+                          {reviewers.map((r) => (
+                            r.avatar_url ? (
+                              <img key={r.id} src={r.avatar_url} alt="" width="32" height="32" loading="lazy"
+                                className="w-8 h-8 rounded-full object-cover border-2 border-bg" />
+                            ) : (
+                              <div key={r.id}
+                                className="w-8 h-8 rounded-full bg-accent/20 border-2 border-bg text-accent font-bold text-[10px] grid place-items-center">
+                                {getInitials(r.name)}
+                              </div>
+                            )
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                    <div className="text-xs leading-tight">
-                      <div className="flex items-center gap-0.5" aria-label={`Đánh giá ${heroStats[1].n}`}>
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <Star key={i} className="w-3 h-3 fill-accent text-accent" aria-hidden="true" />
-                        ))}
-                        <b className="ml-1 text-ink">{heroStats[1].n}</b>
+                      )}
+                      <div className="text-xs leading-tight">
+                        {stats.totalReviews > 0 && (
+                          <div className="flex items-center gap-0.5"
+                            aria-label={`${stats.avgRating} trên 5 sao từ ${formatCount(stats.totalReviews)} lượt đánh giá`}>
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <Star key={i} aria-hidden="true"
+                                className={cn('w-3 h-3', i <= Math.round(stats.avgRating) ? 'fill-accent text-accent' : 'text-line')} />
+                            ))}
+                            <b className="ml-1 text-ink">{stats.avgRating}/5</b>
+                            <span className="ml-1 text-ink-3">· {formatCount(stats.totalReviews)} lượt</span>
+                          </div>
+                        )}
+                        <span className="text-ink-3">{heroStats[0].n} tài khoản đã đăng ký</span>
                       </div>
-                      <span className="text-ink-3">{heroStats[0].n} developer đang học</span>
                     </div>
-                  </div>
+                  )}
                 </div>
               </Reveal>
             </div>
@@ -434,8 +453,8 @@ export default function HomePage() {
                       <Terminal className="w-5 h-5" aria-hidden="true" />
                     </div>
                     <div>
-                      <div className="font-display font-bold text-[13px] leading-tight">120h+ video</div>
-                      <div className="text-[11px] text-ink-3">JS · React · Node</div>
+                      <div className="font-display font-bold text-[13px] leading-tight">Chấm code tự động</div>
+                      <div className="text-[11px] text-ink-3">Test công khai · test ẩn</div>
                     </div>
                   </div>
                 </div>
@@ -507,7 +526,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <ul className="mt-6 space-y-2.5">
-                  {['Sơ đồ hoá từng bước engine thực thi', 'Bài tập dự đoán output sau mỗi chương', 'Quiz + thảo luận ngay trong bài học'].map((s) => (
+                  {['Video, tài liệu PDF và quiz trong cùng một bài học', 'Bài tập code chấm bằng test ẩn', 'Thảo luận với giảng viên ngay dưới bài học'].map((s) => (
                     <li key={s} className="flex items-center gap-2.5 text-sm text-ink-2">
                       <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0" aria-hidden="true" />
                       {s}
@@ -533,6 +552,8 @@ export default function HomePage() {
       </section>
 
       {/* ════ CATEGORIES ═════════════════════════════════════════ */}
+      {/* API lỗi / chưa có danh mục → ẩn cả mục, không để lại tiêu đề trên lưới rỗng */}
+      {categories.length > 0 && (
       <section aria-labelledby="categories-heading" className="px-5 sm:px-8 lg:px-16 py-14 border-t border-line bg-bg-2">
         <SectionHeader
           index="02"
@@ -566,6 +587,7 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      )}
 
       {/* ════ COURSES ════════════════════════════════════════════ */}
       <section aria-labelledby="courses-heading" className="px-5 sm:px-8 lg:px-16 py-14 border-t border-line">
@@ -631,12 +653,12 @@ export default function HomePage() {
             index="04"
             eyebrow="Lộ trình"
             title="Bạn đang ở đâu trên con đường?"
-            desc="Ba lộ trình được thiết kế theo cấp độ thực tế — chọn đúng điểm bắt đầu, không học lại thứ đã biết."
+            desc="Mỗi khóa học ghi rõ cấp độ. Chọn đúng điểm bắt đầu để không học lại thứ đã biết."
             align="center"
             id="paths-heading"
           />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-            {LEARNING_PATHS.map(({ level, tag, title, desc, steps, time, color, bar }, i) => (
+            {LEARNING_PATHS.map(({ level, tag, title, desc, steps, color, bar }, i) => (
               <Reveal key={level} delay={i * 90}>
                 <div className="card h-full flex flex-col overflow-hidden hover:-translate-y-1 motion-reduce:hover:translate-y-0 hover:shadow-xl transition-all duration-200">
                   <div className={cn('h-1 bg-gradient-to-r', bar)} aria-hidden="true" />
@@ -646,7 +668,7 @@ export default function HomePage() {
                         {tag}
                       </span>
                       <span className="font-mono text-[28px] font-bold text-ink/10 leading-none select-none" aria-hidden="true">
-                        {level}
+                        {String(i + 1).padStart(2, '0')}
                       </span>
                     </div>
                     <div>
@@ -668,11 +690,11 @@ export default function HomePage() {
                     </ol>
                     <div className="flex items-center justify-between pt-4 border-t border-line mt-auto">
                       <div className="flex items-center gap-1.5 text-xs text-ink-3">
-                        <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-                        {time}
+                        <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
+                        Cấp độ {levelLabel(level)}
                       </div>
-                      <Link to="/courses" className={cn('flex items-center gap-1 text-xs font-semibold hover:gap-2 transition-all', color)}>
-                        Bắt đầu ngay <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                      <Link to={`/courses?level=${level}`} className={cn('flex items-center gap-1 text-xs font-semibold hover:gap-2 transition-all', color)}>
+                        Xem khóa {levelLabel(level).toLowerCase()} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                       </Link>
                     </div>
                   </div>
@@ -689,7 +711,7 @@ export default function HomePage() {
           <SectionHeader
             index="05"
             eyebrow="Instructor"
-            title="Học từ người đang làm nghề"
+            title="Giảng viên các khóa nổi bật"
             id="instructors-heading"
             action={
               <Link to="/courses" className="flex items-center gap-1 text-[13px] font-medium text-ink-2 hover:text-accent transition-colors">
@@ -714,7 +736,7 @@ export default function HomePage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="w-3 h-3" aria-hidden="true" />
-                      <b className="text-ink">{formatCount(students)}</b>
+                      <b className="text-ink">{formatCount(students)}</b> học viên
                     </span>
                   </div>
                 </div>
@@ -730,7 +752,7 @@ export default function HomePage() {
           <SectionHeader
             index="06"
             eyebrow="Học viên"
-            title="Kết quả thật, từ người thật"
+            title="Học viên nói gì"
             align="center"
             id="reviews-heading"
           />
@@ -827,11 +849,11 @@ export default function HomePage() {
               </div>
               <h2 id="cta-heading" className="display text-[30px] sm:text-[42px] mb-4 max-w-2xl mx-auto">
                 Sẵn sàng trở thành developer{' '}
-                <span className="bg-gradient-to-r from-accent to-indigo bg-clip-text text-transparent">hiểu bản chất</span>?
+                <span className="text-accent">hiểu bản chất</span>?
               </h2>
               <p className="text-ink-2 max-w-[480px] mx-auto mb-8 leading-[1.7] text-[15px]">
-                Tạo tài khoản miễn phí, học thử các bài mở đầu của mọi khóa học
-                và bắt đầu lộ trình của bạn ngay hôm nay.
+                Tạo tài khoản miễn phí, xem thử các bài học mở sẵn và hỏi trợ lý AI
+                nên bắt đầu từ khóa nào.
               </p>
               <div className="flex flex-wrap gap-3 justify-center">
                 <Link to="/register">
@@ -845,7 +867,7 @@ export default function HomePage() {
                   </Button>
                 </Link>
               </div>
-              <p className="text-xs text-ink-3 mt-4">Không cần thẻ tín dụng · Hủy bất cứ lúc nào</p>
+              <p className="text-xs text-ink-3 mt-4">Đăng ký không cần thẻ thanh toán · Chỉ trả tiền cho khóa bạn mua</p>
             </div>
           </div>
         </Reveal>

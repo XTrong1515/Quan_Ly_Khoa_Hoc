@@ -50,7 +50,7 @@ export default function AdminCategoriesPage() {
       qc.invalidateQueries({ queryKey: ['admin-categories'] });
       if (editingId !== 'new') closePanel();
     },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa xóa được danh mục. Thử lại sau giây lát.')),
   });
 
   const openEdit = (cat) => {
@@ -92,7 +92,7 @@ export default function AdminCategoriesPage() {
       qc.invalidateQueries({ queryKey: ['admin-categories'] });
       closePanel();
     } catch (err) {
-      toast.error(apiMessage(err));
+      toast.error(apiMessage(err, 'Chưa lưu được danh mục. Thử lại sau giây lát.'));
     } finally { setSaving(false); }
   };
 
@@ -178,7 +178,9 @@ export default function AdminCategoriesPage() {
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => { if (window.confirm(`Xóa "${cat.name}"?`)) deleteMutation.mutate(cat.id); }}
+                    onClick={() => { if (window.confirm(`Xóa danh mục "${cat.name}"?
+
+Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu trữ) thuộc danh mục này.`)) deleteMutation.mutate(cat.id); }}
                     className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors" title="Xóa">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

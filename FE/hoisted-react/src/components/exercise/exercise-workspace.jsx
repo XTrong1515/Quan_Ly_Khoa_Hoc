@@ -20,7 +20,7 @@ const MARKDOWN_CLS = 'text-[13.5px] text-ink-2 leading-[1.7] [&_p]:mb-3 [&_h1]:t
 /** Khung làm bài tập lập trình của học viên: đề bài | editor | kết quả chấm. */
 export function ExerciseWorkspace({ lessonId, onSolved }) {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: exerciseQueryKey(lessonId),
     queryFn: () => api.get(`/api/lessons/${lessonId}/exercise`).then((r) => r.data),
   });
@@ -47,7 +47,7 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
   const runMutation = useMutation({
     mutationFn: () => api.post(`/api/lessons/${lessonId}/exercise/run`, { code }).then((r) => r.data),
     onSuccess: (res) => { setResult(res); setLabel('Chạy thử'); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa chạy được code. Code của bạn vẫn còn — thử lại sau giây lát.')),
   });
 
   const submitMutation = useMutation({
@@ -61,12 +61,20 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
         onSolved?.(res);
       }
     },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa nộp được bài. Code của bạn vẫn còn — thử lại sau giây lát.')),
   });
 
   const busy = runMutation.isPending || submitMutation.isPending;
 
   if (isLoading) return <p className="p-6 font-mono text-[12px] text-ink-3">Đang tải bài tập…</p>;
+  if (isError) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-sm text-ink-2 mb-3">Không tải được đề bài. Kiểm tra kết nối rồi thử lại.</p>
+        <button type="button" onClick={() => refetch()} className="text-sm text-accent font-semibold hover:underline">Thử lại</button>
+      </div>
+    );
+  }
   if (!exercise) return null;
 
   return (
@@ -106,7 +114,7 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
           <div className="ml-auto flex items-center gap-2">
             <button
               type="button"
-              onClick={() => { if (window.confirm('Khôi phục code mẫu? Code hiện tại sẽ mất.')) handleChange(exercise.starterCode ?? ''); }}
+              onClick={() => { if (window.confirm('Thay code hiện tại bằng code mẫu ban đầu? Phần bạn đã viết sẽ bị xóa khỏi editor.')) handleChange(exercise.starterCode ?? ''); }}
               className="flex items-center gap-1 px-2 py-1 rounded text-[11.5px] text-ink-3 hover:text-ink hover:bg-bg-2"
               title="Khôi phục code mẫu">
               <RotateCcw className="w-3.5 h-3.5" />

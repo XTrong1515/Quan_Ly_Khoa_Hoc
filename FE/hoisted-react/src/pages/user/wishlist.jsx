@@ -9,14 +9,14 @@ import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { CourseThumb } from '@/components/course-thumb.jsx';
 import { useCart } from '@/store/cart';
-import { formatVND } from '@/lib/format';
+import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export default function WishlistPage() {
   const qc = useQueryClient();
   const { items, add } = useCart();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['wishlist'],
     queryFn: () => api.get('/api/wishlists/me').then(r => r.data),
     staleTime: 30_000,
@@ -29,7 +29,7 @@ export default function WishlistPage() {
       qc.invalidateQueries({ queryKey: ['wishlist-ids'] });
       toast.success('Đã xóa khỏi danh sách yêu thích');
     },
-    onError: (err) => toast.error(apiMessage(err)),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa xóa được khóa học khỏi yêu thích. Thử lại sau giây lát.')),
   });
 
   const courses = data?.courses ?? [];
@@ -47,7 +47,14 @@ export default function WishlistPage() {
         </div>
       )}
 
-      {!isLoading && courses.length === 0 && (
+      {isError && (
+        <div className="card p-10 text-center">
+          <p className="text-sm text-ink-2 mb-4">Không tải được danh sách yêu thích. Kiểm tra kết nối rồi thử lại.</p>
+          <Button variant="ghost" onClick={() => refetch()}>Thử lại</Button>
+        </div>
+      )}
+
+      {!isLoading && !isError && courses.length === 0 && (
         <div className="card relative overflow-hidden py-20 px-6 text-center">
           <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
           <div className="relative">
@@ -56,9 +63,9 @@ export default function WishlistPage() {
             </div>
             <h3 className="font-display font-bold text-[17px] mb-1.5">Danh sách yêu thích trống</h3>
             <p className="text-ink-2 text-[13.5px] mb-6">
-              Bấm biểu tượng ♥ trên khóa học bất kỳ để lưu lại đây.
+              Bấm biểu tượng trái tim trên khóa học bất kỳ để lưu lại đây.
             </p>
-            <Link to="/courses"><Button>Khám phá khóa học</Button></Link>
+            <Link to="/courses"><Button>Xem khóa học</Button></Link>
           </div>
         </div>
       )}
@@ -104,7 +111,7 @@ function WishlistItem({ course, inCart, onAddCart, onRemove, removing }) {
         </Link>
         <p className="font-mono text-[11.5px] text-ink-3 mt-1">bởi {course.instructor_name}</p>
         <p className={cn('font-mono font-bold text-[16px] mt-2', isFree ? 'text-accent' : 'text-ink')}>
-          {formatVND(course.price)}
+          {formatPrice(course.price)}
         </p>
       </div>
 

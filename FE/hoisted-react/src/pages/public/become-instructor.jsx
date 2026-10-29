@@ -15,7 +15,7 @@ const labelCls = 'block font-mono text-[10px] text-ink-3 mb-1.5 uppercase tracki
 const BENEFITS = [
   { icon: GraduationCap, title: 'Công cụ soạn khóa học', text: 'Video bảo mật, tài liệu PDF, quiz và bài tập code chấm tự động.' },
   { icon: Sparkles, title: 'Trợ lý AI cho giảng viên', text: 'AI soạn nháp nội dung bài học và câu hỏi trắc nghiệm — bạn duyệt trước khi đăng.' },
-  { icon: Wallet, title: 'Chia sẻ doanh thu', text: 'Theo dõi doanh thu từng khóa, Hoisted chi trả định kỳ vào tài khoản của bạn.' },
+  { icon: Wallet, title: 'Chia sẻ doanh thu', text: 'Theo dõi doanh thu từng khóa; quản trị viên đối soát và chuyển khoản vào tài khoản ngân hàng bạn khai báo.' },
 ];
 
 const EMPTY = { headline: '', expertise: '', bio: '', portfolioUrl: '', courseIdea: '' };
@@ -26,8 +26,8 @@ function ApplicationForm({ onSubmitted }) {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const m = useMutation({
     mutationFn: () => api.post('/api/instructor-applications', form),
-    onSuccess: () => { toast.success('Đã gửi đơn — quản trị viên sẽ phản hồi sớm'); onSubmitted(); },
-    onError: (err) => toast.error(apiMessage(err)),
+    onSuccess: () => { toast.success('Đã gửi đơn. Bạn sẽ nhận thông báo khi có kết quả duyệt.'); onSubmitted(); },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa gửi được đơn đăng ký. Thử lại sau giây lát.')),
   });
   const invalid = Object.entries(RULES).some(([k, [min, max]]) => form[k].trim().length < min || form[k].trim().length > max);
   const counter = (k) => {
@@ -86,7 +86,7 @@ export default function BecomeInstructorPage() {
       useAuth.setState({ token: t.accessToken, role: 'instructor', user: { ...user, role: 'INSTRUCTOR' } });
       navigate('/instructor');
     } catch {
-      toast.error('Vui lòng đăng nhập lại để vào khu vực giảng viên');
+      toast.error('Phiên đăng nhập đã cũ. Đăng nhập lại để vào khu vực giảng viên.');
     } finally { setSwitching(false); }
   };
 
@@ -110,7 +110,7 @@ export default function BecomeInstructorPage() {
       </div>
     );
   } else if (isLoading) {
-    body = <p className="font-mono text-[12px] text-ink-3">Đang tải…</p>;
+    body = <p className="font-mono text-[12px] text-ink-3">Đang tải trạng thái đơn…</p>;
   } else if (application?.status === 'APPROVED') {
     body = (
       <div className="card p-6 flex flex-wrap items-center gap-3">
@@ -136,7 +136,7 @@ export default function BecomeInstructorPage() {
         {application?.status === 'REJECTED' && (
           <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-danger/10 text-danger text-[13px]">
             <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <p><b>Đơn trước chưa được duyệt:</b> {application.adminNote} — bạn có thể bổ sung và gửi lại.</p>
+            <p><b>Đơn trước chưa được duyệt.</b> Lý do: {application.adminNote || 'không ghi lý do'} — bổ sung thông tin bên dưới rồi gửi lại.</p>
           </div>
         )}
         <ApplicationForm onSubmitted={() => qc.invalidateQueries({ queryKey: ['my-instructor-application'] })} />
@@ -150,7 +150,7 @@ export default function BecomeInstructorPage() {
       <div className="max-w-[880px] mx-auto px-5 sm:px-8 py-10">
         <p className="eyebrow mb-2"><span className="text-accent">~/</span><span className="text-ink-3">trở-thành-giảng-viên</span></p>
         <h1 className="display text-[30px] sm:text-[36px] leading-tight mb-3">Dạy JavaScript cùng Hoisted</h1>
-        <p className="text-ink-2 text-[15px] mb-8 max-w-[620px]">Chia sẻ kinh nghiệm thực chiến, xây khóa học của riêng bạn và nhận doanh thu từ mỗi học viên.</p>
+        <p className="text-ink-2 text-[15px] mb-8 max-w-[620px]">Chia sẻ kinh nghiệm thực chiến, xây khóa học của riêng bạn và nhận phần doanh thu từ mỗi lượt mua.</p>
 
         <div className="grid sm:grid-cols-3 gap-4 mb-10">
           {BENEFITS.map(({ icon: Icon, title, text }) => (
