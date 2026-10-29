@@ -693,7 +693,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
 
           <div className="grid grid-cols-2 gap-4">
             {locked && (
-              <p className="col-span-2 font-mono text-[11px] text-js bg-js/10 rounded-lg px-3 py-2">
+              <p className="col-span-2 font-mono text-[11px] text-accent bg-accent/10 rounded-lg px-3 py-2">
                 Khóa học đã xuất bản — không thể đổi tên, slug, giá, danh mục. Liên hệ quản trị viên nếu cần.
               </p>
             )}

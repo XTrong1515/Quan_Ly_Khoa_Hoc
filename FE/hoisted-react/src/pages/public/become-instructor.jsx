@@ -122,7 +122,7 @@ export default function BecomeInstructorPage() {
   } else if (application?.status === 'PENDING') {
     body = (
       <div className="card p-6 flex items-start gap-3">
-        <Clock className="w-5 h-5 text-js shrink-0 mt-0.5" />
+        <Clock className="w-5 h-5 text-accent shrink-0 mt-0.5" />
         <div>
           <p className="text-[14px] text-ink font-medium">Đơn đang chờ duyệt</p>
           <p className="text-[13px] text-ink-3 mt-1">Gửi lúc {new Date(application.createdAt).toLocaleString('vi-VN')} · {application.expertise}</p>

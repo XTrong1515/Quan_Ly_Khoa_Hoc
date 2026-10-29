@@ -159,7 +159,7 @@ export default function AdminUsersPage() {
         </div>
         {[
           { value: role,   set: v => { setRole(v); setPage(1); },   opts: [['','Mọi vai trò'], ...ROLE_OPTIONS] },
-          { value: status, set: v => { setStatus(v); setPage(1); }, opts: [['','Mọi status'],['ACTIVE','Hoạt động'],['LOCKED','Khóa']] },
+          { value: status, set: v => { setStatus(v); setPage(1); }, opts: [['','Mọi trạng thái'],['ACTIVE','Hoạt động'],['LOCKED','Khóa']] },
           { value: sort,   set: v => { setSort(v); setPage(1); },   opts: [['newest','Mới nhất'],['oldest','Cũ nhất'],['name','Tên A-Z'],['spent','Chi nhiều nhất']] },
         ].map(({ value, set, opts }, i) => (
           <select key={i} value={value} onChange={e => set(e.target.value)}

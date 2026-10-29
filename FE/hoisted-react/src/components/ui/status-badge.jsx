@@ -2,19 +2,20 @@ import { cn } from '@/lib/utils';
 
 const MAP = {
   paid:      { color: 'text-success bg-success/15',  label: 'Đã thanh toán' },
-  pending:   { color: 'text-js bg-js/15',            label: 'Đang chờ' },
+  // Trạng thái chờ dùng accent (vàng ở dark, indigo ở light) — vàng `js` viết cứng không đọc được trên nền sáng
+  pending:   { color: 'text-accent bg-accent/15',    label: 'Đang chờ' },
   failed:    { color: 'text-danger bg-danger/15',    label: 'Thất bại' },
   cancelled: { color: 'text-ink-3 bg-bg-2',          label: 'Đã hủy' },
   refund:    { color: 'text-ink-3 bg-bg-2',          label: 'Hoàn tiền' },
   active:    { color: 'text-success bg-success/15',  label: 'Hoạt động' },
   locked:    { color: 'text-danger bg-danger/15',    label: 'Khóa' },
-  published: { color: 'text-success bg-success/15',  label: 'Hoạt động' },
+  published: { color: 'text-success bg-success/15',  label: 'Đã xuất bản' },
   draft:     { color: 'text-ink-3 bg-bg-2',          label: 'Nháp' },
   archived:  { color: 'text-ink-3 bg-bg-3',          label: 'Lưu trữ' },
   visible:   { color: 'text-success bg-success/15',  label: 'Hiển thị' },
   hidden:    { color: 'text-ink-3 bg-bg-2',          label: 'Đã ẩn' },
-  review:    { color: 'text-js bg-js/15',            label: 'Đang duyệt' },
-  pending_review: { color: 'text-js bg-js/15',       label: 'Chờ duyệt' },
+  review:    { color: 'text-accent bg-accent/15',    label: 'Đang duyệt' },
+  pending_review: { color: 'text-accent bg-accent/15', label: 'Chờ duyệt' },
   rejected:  { color: 'text-danger bg-danger/15',    label: 'Bị từ chối' },
 };
 

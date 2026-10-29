@@ -47,6 +47,10 @@ describe('Giảng viên tạo & quản lý khóa học của mình', () => {
     expect(res.status).toBe(200);
     expect(res.body.statusCounts.DRAFT).toBeGreaterThan(0);
     expect(typeof res.body.lessons).toBe('number');
+    expect(typeof res.body.reviewCount).toBe('number');
+    // Doanh thu trên tổng quan phải trùng với trang Doanh thu (cùng services/revenue)
+    const rev = await request(app).get('/api/instructor/revenue').set(authHeader(teacherA));
+    expect(res.body.earnings).toEqual(rev.body.summary);
   });
 
   it('danh sách chỉ gồm khóa học của chính mình', async () => {

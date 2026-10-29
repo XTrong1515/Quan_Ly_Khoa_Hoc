@@ -35,7 +35,7 @@ export default function InstructorRevenuePage() {
     { label: 'Thu nhập của bạn',          value: s?.earned, icon: Wallet, hint: `sau hoa hồng ${data?.commissionRate ?? '—'}%` },
     { label: 'Đã nhận',                   value: s?.paidOut, icon: BadgeCheck },
     { label: 'Số dư chờ chi trả',          value: s ? s.balance + s.pending : undefined, icon: Hourglass,
-      hint: s?.pending ? `${formatVND(s.pending)} đang được xử lý` : 'chi trả định kỳ bởi Hoisted' },
+      hint: s?.pending ? `${formatVND(s.pending)} đang được xử lý` : 'chuyển khoản khi quản trị viên đối soát' },
   ];
 
   return (
@@ -48,7 +48,7 @@ export default function InstructorRevenuePage() {
       </div>
 
       {data && !data.bankReady && (
-        <div className="flex items-center gap-2 mb-5 px-4 py-3 rounded-lg bg-js/10 text-js text-[13px]">
+        <div className="flex items-center gap-2 mb-5 px-4 py-3 rounded-lg bg-accent/10 text-accent text-[13px]">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <span className="flex-1">Bạn chưa cập nhật tài khoản ngân hàng — Hoisted chưa thể chi trả doanh thu.</span>
           <Link to="/instructor/profile" className="font-semibold underline">Cập nhật ngay</Link>

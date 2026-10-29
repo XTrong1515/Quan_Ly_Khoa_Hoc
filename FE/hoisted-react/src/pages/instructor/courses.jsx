@@ -114,7 +114,7 @@ export default function InstructorCoursesPage() {
               </div>
             )}
             {c.status === 'PENDING_REVIEW' && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-js/10 border-b border-js/20 text-[12px] text-js">
+              <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border-b border-accent/20 text-[12px] text-accent">
                 <Clock className="w-3.5 h-3.5 shrink-0" />
                 Đang chờ quản trị viên duyệt{c.submitted_at ? ` · gửi lúc ${new Date(c.submitted_at).toLocaleString('vi-VN')}` : ''}.
                 Thông tin khóa học tạm khóa chỉnh sửa.

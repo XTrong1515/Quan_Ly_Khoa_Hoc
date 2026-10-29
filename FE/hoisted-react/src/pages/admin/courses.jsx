@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 
 const API = '/api/admin';
 const STATUS_LABELS = {
-  DRAFT: 'Nháp', PENDING_REVIEW: 'Chờ duyệt', PUBLISHED: 'Hoạt động', REJECTED: 'Bị từ chối', ARCHIVED: 'Lưu trữ',
+  DRAFT: 'Nháp', PENDING_REVIEW: 'Chờ duyệt', PUBLISHED: 'Đã xuất bản', REJECTED: 'Bị từ chối', ARCHIVED: 'Lưu trữ',
 };
 
 function invalidateCourseQueries(qc) {
@@ -138,7 +138,7 @@ export default function AdminCoursesPage() {
             )}>
             {label}
             {value === 'PENDING_REVIEW' && pendingReview > 0 && (
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-js/15 text-js">{pendingReview}</span>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">{pendingReview}</span>
             )}
           </button>
         ))}
@@ -246,7 +246,7 @@ export default function AdminCoursesPage() {
                   <td className="px-4 py-3">
                     {Number(c.rating) > 0 ? (
                       <span className="flex items-center gap-1 font-mono text-[12px] text-ink-2">
-                        <Star className="w-3.5 h-3.5 fill-js text-js" />
+                        <Star className="w-3.5 h-3.5 fill-accent text-accent" />
                         {Number(c.rating).toFixed(1)}
                       </span>
                     ) : <span className="text-ink-3">—</span>}
@@ -256,7 +256,7 @@ export default function AdminCoursesPage() {
                     <span className={cn(
                       'font-mono text-[10px] px-2 py-0.5 rounded uppercase',
                       c.level === 'BEGINNER'     ? 'bg-success/10 text-success' :
-                      c.level === 'INTERMEDIATE' ? 'bg-js/10 text-js' :
+                      c.level === 'INTERMEDIATE' ? 'bg-accent/10 text-accent' :
                                                    'bg-danger/10 text-danger',
                     )}>
                       {LEVEL_LABELS[c.level] ?? c.level}
@@ -348,7 +348,7 @@ Khóa học bị gỡ khỏi trang công khai và chuyển sang trạng thái L�
 
 /* ── Inline status dropdown ─────────────────────────────────────── */
 const STATUS_OPTIONS = [
-  { value: 'PUBLISHED', label: 'Hoạt động', dot: 'bg-success' },
+  { value: 'PUBLISHED', label: 'Đã xuất bản', dot: 'bg-success' },
   { value: 'DRAFT',     label: 'Nháp',      dot: 'bg-ink-3'   },
   { value: 'ARCHIVED',  label: 'Lưu trữ',   dot: 'bg-ink-3'   },
 ];

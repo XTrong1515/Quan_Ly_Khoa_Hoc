@@ -38,7 +38,7 @@ export default function AdminInstructorApplicationsPage() {
             className={cn('px-3 py-2 -mb-px border-b-2 text-[13px] font-medium flex items-center gap-2',
               status === v ? 'border-accent text-accent' : 'border-transparent text-ink-2 hover:text-ink')}>
             {l}
-            {v === 'PENDING' && data?.pending > 0 && <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-js/15 text-js">{data.pending}</span>}
+            {v === 'PENDING' && data?.pending > 0 && <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">{data.pending}</span>}
           </button>
         ))}
       </div>

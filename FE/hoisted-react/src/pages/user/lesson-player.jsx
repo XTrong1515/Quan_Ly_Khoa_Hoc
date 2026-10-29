@@ -492,7 +492,7 @@ export default function LessonPlayerPage() {
           {/* Mark complete button */}
           <div className="p-3 border-b border-line shrink-0">
             {isStaffView ? (
-              <p className="font-mono text-[11px] text-js bg-js/10 rounded-lg px-3 py-2 text-center">
+              <p className="font-mono text-[11px] text-accent bg-accent/10 rounded-lg px-3 py-2 text-center">
                 Chế độ xem của giảng viên / admin — không ghi tiến độ
               </p>
             ) : (

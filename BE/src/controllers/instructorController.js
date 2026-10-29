@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const admin = require('./adminController');
 const { createNotification } = require('./notificationController');
+const revenue = require('../services/revenue');
 
 /*
  * Khu vực Giảng viên. Mọi route đã qua authMiddleware + requireRole('INSTRUCTOR');
@@ -25,21 +26,30 @@ async function dashboard(req, res) {
     const [byStatus] = await pool.query(
       'SELECT status, COUNT(*) AS count FROM courses WHERE instructor_id = ? GROUP BY status', [req.user.id],
     );
-    const [[totals]] = await pool.query(
-      `SELECT COUNT(DISTINCT e.user_id) AS students,
-              (SELECT COALESCE(SUM(total_lessons), 0) FROM courses WHERE instructor_id = ?) AS lessons,
-              (SELECT ROUND(AVG(NULLIF(rating, 0)), 1) FROM courses WHERE instructor_id = ? AND status = 'PUBLISHED') AS avgRating
-       FROM enrollments e JOIN courses c ON c.id = e.course_id
-       WHERE c.instructor_id = ?`,
-      [req.user.id, req.user.id, req.user.id],
-    );
+    // Điểm TB và số lượt cùng một tập: đánh giá VISIBLE trên khóa PUBLISHED của giảng viên
+    const [[[totals]], earnings] = await Promise.all([
+      pool.query(
+        `SELECT COUNT(DISTINCT e.user_id) AS students,
+                (SELECT COALESCE(SUM(total_lessons), 0) FROM courses WHERE instructor_id = ?) AS lessons,
+                (SELECT ROUND(AVG(r.rating), 1) FROM reviews r JOIN courses rc ON rc.id = r.course_id
+                  WHERE rc.instructor_id = ? AND rc.status = 'PUBLISHED' AND r.status = 'VISIBLE') AS avgRating,
+                (SELECT COUNT(*) FROM reviews r JOIN courses rc ON rc.id = r.course_id
+                  WHERE rc.instructor_id = ? AND rc.status = 'PUBLISHED' AND r.status = 'VISIBLE') AS reviewCount
+         FROM enrollments e JOIN courses c ON c.id = e.course_id
+         WHERE c.instructor_id = ?`,
+        [req.user.id, req.user.id, req.user.id, req.user.id],
+      ),
+      revenue.balanceOf(req.user.id), // cùng nguồn với trang Doanh thu → hai trang luôn khớp
+    ]);
     const statusCounts = Object.fromEntries(byStatus.map((r) => [r.status, r.count]));
     // SUM/AVG trả DECIMAL → mysql2 trả chuỗi
     return res.json({
       statusCounts,
-      students:  totals.students,
-      lessons:   Number(totals.lessons),
-      avgRating: totals.avgRating === null ? null : Number(totals.avgRating),
+      students:    totals.students,
+      lessons:     Number(totals.lessons),
+      avgRating:   totals.avgRating === null ? null : Number(totals.avgRating),
+      reviewCount: Number(totals.reviewCount),
+      earnings,    // { gross, earned, sales, paidOut, pending, balance }
     });
   } catch (err) {
     console.error('[instructor/dashboard]', err);

@@ -89,7 +89,7 @@ export default function AdminPayoutsPage() {
                 </td>
                 <td className="px-4 py-3 font-mono text-[12px]">{formatVND(i.earned)}</td>
                 <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{formatVND(i.paidOut)}</td>
-                <td className="px-4 py-3 font-mono text-[12px] text-js">{i.pending ? formatVND(i.pending) : '—'}</td>
+                <td className="px-4 py-3 font-mono text-[12px] text-accent">{i.pending ? formatVND(i.pending) : '—'}</td>
                 <td className="px-4 py-3 font-mono text-[12.5px] font-semibold text-ink">{formatVND(i.balance)}</td>
                 <td className="px-4 py-3 text-[11.5px] text-ink-3 max-w-[200px] truncate" title={i.bank ?? ''}>
                   {i.bank ?? <span className="text-danger">Chưa có</span>}
