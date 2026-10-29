@@ -199,7 +199,7 @@ function OrderRow({ order, expanded, onToggle, onPay }) {
             <span>{new Date(order.created_at).toLocaleDateString('vi-VN')}</span>
             <span>{order.items?.length ?? 0} khóa học</span>
             {isPending && !isExpired && remainingMs < Infinity && (
-              <span className="flex items-center gap-1 text-warning">
+              <span className="flex items-center gap-1 text-warn">
                 <Clock className="w-3 h-3" aria-hidden="true" /> Còn {formatCountdown(remainingMs)} để thanh toán
               </span>
             )}

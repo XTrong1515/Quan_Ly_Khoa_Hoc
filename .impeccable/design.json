@@ -1,0 +1,530 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-29T08:28:08+00:00",
+  "title": "Design System: Hoisted",
+  "extensions": {
+    "colorMeta": {
+      "ink-night": {
+        "role": "neutral",
+        "displayName": "Ink Night",
+        "canonical": "#0B0F19",
+        "tonalRamp": [
+          "#1C2230",
+          "#2D3853",
+          "#3D4E7B",
+          "#4C66A9",
+          "#758ABD",
+          "#A1AECE",
+          "#CBD1E1",
+          "#EFF1F5"
+        ]
+      },
+      "panel-night": {
+        "role": "neutral",
+        "displayName": "Panel Night",
+        "canonical": "#0F1525",
+        "tonalRamp": [
+          "#1B2131",
+          "#2B3655",
+          "#3A4C7E",
+          "#4863AD",
+          "#7287C0",
+          "#9FADD0",
+          "#CAD1E2",
+          "#EFF1F5"
+        ]
+      },
+      "well-night": {
+        "role": "neutral",
+        "displayName": "Well Night",
+        "canonical": "#161C2F",
+        "tonalRamp": [
+          "#1D2130",
+          "#2E3652",
+          "#3F4D79",
+          "#4F64A6",
+          "#7788BB",
+          "#A3ADCC",
+          "#CCD1E0",
+          "#F0F1F5"
+        ]
+      },
+      "raised-night": {
+        "role": "neutral",
+        "displayName": "Raised Night",
+        "canonical": "#1E263D",
+        "tonalRamp": [
+          "#1D222F",
+          "#2F3851",
+          "#404F77",
+          "#5167A3",
+          "#798AB9",
+          "#A4AECB",
+          "#CDD2E0",
+          "#F0F1F5"
+        ]
+      },
+      "hairline-night": {
+        "role": "neutral",
+        "displayName": "Hairline Night",
+        "canonical": "rgba(255, 255, 255, 0.07)"
+      },
+      "ink-bright": {
+        "role": "neutral",
+        "displayName": "Ink Bright",
+        "canonical": "#F4F5F9",
+        "tonalRamp": [
+          "#1F222E",
+          "#31374E",
+          "#444E73",
+          "#57659E",
+          "#7E89B4",
+          "#A7ADC8",
+          "#CED1DF",
+          "#F0F1F4"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#B6BCD0",
+        "tonalRamp": [
+          "#21232C",
+          "#353A4A",
+          "#4A526D",
+          "#606C94",
+          "#858EAD",
+          "#ABB1C4",
+          "#D0D3DC",
+          "#F1F1F4"
+        ]
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "Ink Faint",
+        "canonical": "#6B7392",
+        "tonalRamp": [
+          "#22242A",
+          "#383B47",
+          "#4F5568",
+          "#686F8D",
+          "#8B91A7",
+          "#AFB2C0",
+          "#D2D4DB",
+          "#F1F2F3"
+        ]
+      },
+      "js-yellow": {
+        "role": "primary",
+        "displayName": "JS Yellow",
+        "canonical": "#F7DF1E",
+        "tonalRamp": [
+          "#3F390E",
+          "#6E6412",
+          "#A79611",
+          "#EAD20A",
+          "#EFDC43",
+          "#EDE182",
+          "#F1EBBC",
+          "#F9F8EB"
+        ]
+      },
+      "paper-day": {
+        "role": "neutral",
+        "displayName": "Paper Day",
+        "canonical": "#F8FAFC",
+        "tonalRamp": [
+          "#1C2631",
+          "#2C4054",
+          "#3C5C7C",
+          "#4A7AAA",
+          "#7499BE",
+          "#A1B8CF",
+          "#CBD6E2",
+          "#EFF2F5"
+        ]
+      },
+      "panel-day": {
+        "role": "neutral",
+        "displayName": "Panel Day",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#262626",
+          "#404040",
+          "#5C5C5C",
+          "#7A7A7A",
+          "#999999",
+          "#B8B8B8",
+          "#D6D6D6",
+          "#F2F2F2"
+        ]
+      },
+      "well-day": {
+        "role": "neutral",
+        "displayName": "Well Day",
+        "canonical": "#F1F5F9",
+        "tonalRamp": [
+          "#1C2631",
+          "#2C4054",
+          "#3C5C7C",
+          "#4A7AAA",
+          "#7499BE",
+          "#A1B8CF",
+          "#CBD6E2",
+          "#EFF2F5"
+        ]
+      },
+      "hairline-day": {
+        "role": "neutral",
+        "displayName": "Hairline Day",
+        "canonical": "rgba(15, 23, 42, 0.08)"
+      },
+      "ink-day-muted": {
+        "role": "neutral",
+        "displayName": "Ink Day Muted",
+        "canonical": "#475569",
+        "tonalRamp": [
+          "#21252B",
+          "#363E49",
+          "#4C596B",
+          "#637692",
+          "#8796AB",
+          "#ADB6C3",
+          "#D1D5DC",
+          "#F1F2F4"
+        ]
+      },
+      "ink-day-faint": {
+        "role": "neutral",
+        "displayName": "Ink Day Faint",
+        "canonical": "#94A3B8",
+        "tonalRamp": [
+          "#21252C",
+          "#363E4A",
+          "#4C596C",
+          "#627693",
+          "#8696AC",
+          "#ACB6C3",
+          "#D0D5DC",
+          "#F1F2F4"
+        ]
+      },
+      "indigo-signal": {
+        "role": "primary",
+        "displayName": "Indigo Signal",
+        "canonical": "#4F46E5",
+        "tonalRamp": [
+          "#15133A",
+          "#1F1B65",
+          "#261F98",
+          "#2A20D5",
+          "#5B53DF",
+          "#918CE3",
+          "#C3C1EC",
+          "#EDEDF8"
+        ]
+      },
+      "indigo-glow": {
+        "role": "secondary",
+        "displayName": "Indigo Glow",
+        "canonical": "#6366F1",
+        "tonalRamp": [
+          "#10113C",
+          "#161869",
+          "#191C9F",
+          "#161ADF",
+          "#4B4FE7",
+          "#888AE7",
+          "#BFC0EE",
+          "#ECECF9"
+        ]
+      },
+      "pass-green": {
+        "role": "status",
+        "displayName": "Pass Green",
+        "canonical": "#34D399",
+        "tonalRamp": [
+          "#15372B",
+          "#206048",
+          "#288F6A",
+          "#2DC88F",
+          "#5DD5A9",
+          "#93DCC2",
+          "#C4E8DB",
+          "#EDF7F4"
+        ]
+      },
+      "fail-rose": {
+        "role": "status",
+        "displayName": "Fail Rose",
+        "canonical": "#F43F5E",
+        "tonalRamp": [
+          "#3E0F17",
+          "#6C1423",
+          "#A3142D",
+          "#E60F34",
+          "#EC4663",
+          "#EB8596",
+          "#EFBDC6",
+          "#F9EBEE"
+        ]
+      },
+      "caution-amber": {
+        "role": "status",
+        "displayName": "Caution Amber",
+        "canonical": "#F59E0B",
+        "tonalRamp": [
+          "#3E2C0E",
+          "#6D4B12",
+          "#A66F12",
+          "#E9970C",
+          "#EFAF43",
+          "#ECC583",
+          "#F0DDBC",
+          "#F9F4EB"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "One hero headline per public page (.display)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Public section titles (26–32px) and console page titles (24px)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card, modal and course titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "15px public reading copy, 13–13.5px console; ~65ch measure."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Mono uppercase section labels, table headers, stat captions."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Mono tabular prices, counts, codes, durations, timers."
+      }
+    },
+    "shadows": [
+      {
+        "name": "overlay",
+        "value": "0 25px 50px -12px rgba(0,0,0,0.4)",
+        "purpose": "Modals, dropdowns, notification panel, mobile drawer, sticky purchase rail."
+      },
+      {
+        "name": "signal-glow",
+        "value": "0 8px 24px rgb(var(--accent) / 0.3)",
+        "purpose": "Only under the page's single primary CTA; follows the theme accent."
+      },
+      {
+        "name": "lift",
+        "value": "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+        "purpose": "Interactive cards and rows on hover, paired with a -2 to -4px translate."
+      }
+    ],
+    "motion": [
+      {
+        "name": "reveal",
+        "value": "opacity/transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), from translateY(18px)",
+        "purpose": "The one authored entrance for sections on scroll (.reveal)."
+      },
+      {
+        "name": "state",
+        "value": "150-200ms ease (Tailwind transition)",
+        "purpose": "Hover, focus, colour and border changes."
+      },
+      {
+        "name": "caret",
+        "value": "1.1s step-end infinite",
+        "purpose": "Blinking terminal caret in code windows and the CTA prompt."
+      },
+      {
+        "name": "marquee",
+        "value": "32s linear infinite, pauses on hover",
+        "purpose": "Concept ticker under the home hero."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "@media (prefers-reduced-motion: reduce)",
+        "purpose": "Disables reveal, marquee, float and caret."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "note": "console sidebar becomes fixed (236px); drawer below"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ],
+    "themes": {
+      "default": "dark (html.dark)",
+      "light": "html:not(.dark); accent swaps to indigo-signal with white accent-ink",
+      "tokenSource": "FE/hoisted-react/src/index.css (RGB triplets) exposed as Tailwind colors in tailwind.config.js"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one accent action per view; carries the Signal Glow on a page's main CTA.",
+      "html": "<button class=\"ds-btn-primary\">Tiếp tục thanh toán</button>",
+      "css": ".ds-btn-primary { display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 16px; border:0; border-radius:8px; background:#F7DF1E; color:#0B0F19; font:600 13.5px/1 'Inter Tight', system-ui, sans-serif; box-shadow:0 8px 24px rgba(247,223,30,.3); cursor:pointer; transition:filter .15s, transform .15s; } .ds-btn-primary:hover { filter:brightness(.95); } .ds-btn-primary:active { transform:translateY(1px); } .ds-btn-primary:focus-visible { outline:2px solid #F7DF1E; outline-offset:2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action: hairline border, fills with Well tone on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Xem khóa học</button>",
+      "css": ".ds-btn-ghost { height:38px; padding:0 16px; border:1px solid rgba(255,255,255,.07); border-radius:8px; background:transparent; color:#F4F5F9; font:600 13.5px/1 'Inter Tight', system-ui, sans-serif; cursor:pointer; transition:background .15s; } .ds-btn-ghost:hover { background:#161C2F; } .ds-btn-ghost:focus-visible { outline:2px solid #F7DF1E; outline-offset:2px; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Tertiary toolbar action: muted text, brightens and fills on hover.",
+      "html": "<button class=\"ds-btn-quiet\">Hủy</button>",
+      "css": ".ds-btn-quiet { height:38px; padding:0 16px; border:0; border-radius:8px; background:transparent; color:#B6BCD0; font:600 13.5px/1 'Inter Tight', system-ui, sans-serif; cursor:pointer; transition:background .15s, color .15s; } .ds-btn-quiet:hover { background:#161C2F; color:#F4F5F9; } .ds-btn-quiet:focus-visible { outline:2px solid #F7DF1E; outline-offset:2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Raised-tone field with a persistent mono label; border turns accent on focus.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Email</span><input class=\"ds-input\" placeholder=\"hoisted@dev.com\" /></label>",
+      "css": ".ds-field { display:flex; flex-direction:column; gap:6px; width:280px; } .ds-field-label { font:500 12.5px/1 'JetBrains Mono', ui-monospace, monospace; color:#B6BCD0; } .ds-input { height:38px; padding:0 12px; background:#1E263D; border:1px solid rgba(255,255,255,.07); border-radius:8px; color:#F4F5F9; font:500 14px/1 'Inter Tight', system-ui, sans-serif; outline:none; transition:border-color .15s; } .ds-input::placeholder { color:#6B7392; } .ds-input:focus { border-color:#F7DF1E; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Solid accent tag; the line variant labels category and level on cards.",
+      "html": "<span class=\"ds-chip\">Bài tập</span> <span class=\"ds-chip ds-chip-line\">Nâng cao</span>",
+      "css": ".ds-chip { display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:9999px; background:rgba(247,223,30,.10); color:#F7DF1E; font:600 11px/1 'JetBrains Mono', ui-monospace, monospace; } .ds-chip-line { background:transparent; color:#B6BCD0; border:1px solid rgba(255,255,255,.07); }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status-badge-pass",
+      "description": "Mono pill with a currentColor dot; one wording map for every state.",
+      "html": "<span class=\"ds-badge ds-badge-pass\"><i></i>Đã thanh toán</span> <span class=\"ds-badge ds-badge-wait\"><i></i>Chờ duyệt</span> <span class=\"ds-badge ds-badge-fail\"><i></i>Bị từ chối</span>",
+      "css": ".ds-badge { display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:9999px; font:600 11px/1.4 'JetBrains Mono', ui-monospace, monospace; white-space:nowrap; } .ds-badge i { width:6px; height:6px; border-radius:50%; background:currentColor; } .ds-badge-pass { color:#34D399; background:rgba(52,211,153,.15); } .ds-badge-wait { color:#F7DF1E; background:rgba(247,223,30,.15); } .ds-badge-fail { color:#F43F5E; background:rgba(244,63,94,.15); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Panel-tone container with a hairline; flat at rest, lifts with an accent border on hover when interactive.",
+      "html": "<article class=\"ds-card\"><p class=\"ds-card-label\">Học viên</p><p class=\"ds-card-num\">7</p></article>",
+      "css": ".ds-card { width:220px; padding:20px; background:#0F1525; border:1px solid rgba(255,255,255,.07); border-radius:12px; transition:border-color .2s, transform .2s, box-shadow .2s; } .ds-card:hover { border-color:rgba(247,223,30,.3); transform:translateY(-2px); box-shadow:0 10px 15px -3px rgba(0,0,0,.3); } .ds-card-label { margin:0 0 8px; font:500 10.5px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing:.14em; text-transform:uppercase; color:#6B7392; } .ds-card-num { margin:0; font:700 30px/1 'Inter Tight', system-ui, sans-serif; letter-spacing:-.025em; color:#F4F5F9; font-variant-numeric:tabular-nums; }"
+    },
+    {
+      "name": "Console Nav Item",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Sidebar item in the admin/instructor console; active state is accent tint, accent icon and a 3px left bar.",
+      "html": "<nav class=\"ds-side\"><p class=\"ds-side-group\">Giảng dạy</p><a class=\"ds-side-item is-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"9\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\"/></svg>Tổng quan</a><a class=\"ds-side-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M20 12V8H6a2 2 0 0 1 0-4h12v4\"/><path d=\"M4 6v12a2 2 0 0 0 2 2h14v-4\"/><circle cx=\"18\" cy=\"14\" r=\"2\"/></svg>Doanh thu</a></nav>",
+      "css": ".ds-side { width:220px; padding:16px 12px; background:#0F1525; } .ds-side-group { margin:0 12px 8px; font:500 10px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing:.14em; text-transform:uppercase; color:#6B7392; } .ds-side-item { position:relative; display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; color:#B6BCD0; font:500 13.5px/1.2 'Inter Tight', system-ui, sans-serif; text-decoration:none; transition:background .15s, color .15s; } .ds-side-item svg { color:#6B7392; } .ds-side-item:hover { background:#161C2F; color:#F4F5F9; } .ds-side-item.is-active { background:rgba(247,223,30,.10); color:#F7DF1E; } .ds-side-item.is-active svg { color:#F7DF1E; } .ds-side-item.is-active::before { content:''; position:absolute; left:-12px; top:8px; width:3px; height:16px; border-radius:3px; background:#F7DF1E; } .ds-side-item:focus-visible { outline:2px solid #F7DF1E; outline-offset:2px; }"
+    },
+    {
+      "name": "Path Breadcrumb",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Mono location path with the root in accent; brand voice that also tells you where you are.",
+      "html": "<p class=\"ds-path\"><b>~/instructor</b> / tổng-quan</p>",
+      "css": ".ds-path { margin:0; font:500 11.5px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing:.06em; text-transform:uppercase; color:#6B7392; } .ds-path b { font-weight:600; color:#F7DF1E; }"
+    },
+    {
+      "name": "Code Window",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Always-dark IDE frame with traffic lights, filename tab, syntax colours and a blinking caret.",
+      "html": "<div class=\"ds-code\"><div class=\"ds-code-bar\"><i></i><i></i><i></i><span>hoisted.js</span></div><pre><span class=\"c\">// hoisting: dùng trước, khai báo sau</span>\n<span class=\"f\">console</span>.<span class=\"f\">log</span>(<span class=\"f\">greet</span>());\n\n<span class=\"k\">function</span> <span class=\"f\">greet</span>() {\n  <span class=\"k\">return</span> <span class=\"s\">'Hello, dev!'</span>;\n}<b></b></pre></div>",
+      "css": ".ds-code { width:340px; background:#0d1117; border:1px solid rgba(255,255,255,.1); border-radius:16px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,.4); } .ds-code-bar { display:flex; align-items:center; gap:8px; height:36px; padding:0 14px; background:rgba(255,255,255,.04); border-bottom:1px solid rgba(255,255,255,.1); } .ds-code-bar i { width:10px; height:10px; border-radius:50%; background:#ff5f57; } .ds-code-bar i:nth-child(2) { background:#febc2e; } .ds-code-bar i:nth-child(3) { background:#28c840; } .ds-code-bar span { margin-left:8px; font:400 11px/1 'JetBrains Mono', ui-monospace, monospace; color:#94a3b8; } .ds-code pre { margin:0; padding:16px 18px; font:400 12.5px/1.9 'JetBrains Mono', ui-monospace, monospace; color:#cbd5e1; white-space:pre; } .ds-code .c { color:#64748b; } .ds-code .f { color:#7dd3fc; } .ds-code .k { color:#fb7185; } .ds-code .s { color:#6ee7b7; } .ds-code b { display:inline-block; width:8px; height:15px; margin-left:2px; vertical-align:middle; background:#cbd5e1; animation:ds-caret 1.1s step-end infinite; } @keyframes ds-caret { 50% { opacity:0; } } @media (prefers-reduced-motion: reduce) { .ds-code b { animation:none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Runtime Console",
+    "overview": "Hoisted looks like the inside of a JavaScript runtime, seen by someone who finally understands it. Surfaces are deep night ink, layered in quiet tonal steps. The JS yellow is the signal, the way a cursor or a breakpoint is: small, exact, and always meaning \"here\". Code, terminal prompts, `//` comments and `~/path` breadcrumbs are the material of the brand, never pasted on as decoration. Every screen should feel like a well-made developer tool before it feels like a marketing page.\n\nDensity follows the surface. Public pages breathe (56px between sections, generous gutters, one large display headline). The console areas for admins and instructors are compact and scannable: 13px body, mono labels, tables and list rows. Both share one token set and one component vocabulary, so a learner moving into the instructor studio recognises it immediately.\n\nPrecision beats ornament. Depth comes from tonal layering and hairlines, not stacked shadows. Emphasis comes from weight and the single accent, not gradients. Motion is one authored entrance (the reveal) plus the living details of a terminal (blinking caret, scrolling ticker), and it all switches off under reduced motion.",
+    "keyCharacteristics": [
+      "Dark-first: dark is the default theme. Light mode is a real theme, not an inversion, and it swaps the accent from JS yellow to indigo for contrast.",
+      "One accent at a time, carried by the semantic `accent` token.",
+      "Two typefaces: Inter Tight for language, JetBrains Mono for anything a machine would print.",
+      "Flat by default, tonal layers, 1px hairlines at 7–8% opacity.",
+      "Always-dark code surfaces, in both themes."
+    ],
+    "rules": [
+      {
+        "name": "The One Signal Rule",
+        "body": "The accent marks exactly what the user should act on or where they are: one primary button per view, the active nav item, focus, progress. If two things on a screen glow yellow, one of them is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Token-Not-Hex Rule",
+        "body": "Themed surfaces use the semantic tokens (`bg`, `bg-1…3`, `ink`, `ink-2…3`, `line`, `accent`, `accent-ink`) through Tailwind, never raw hex. The raw `js` yellow is reserved for always-dark surfaces such as auth side panels and code windows, where the theme never changes.",
+        "section": "colors"
+      },
+      {
+        "name": "The Status Is Not Brand Rule",
+        "body": "Green, rose and amber appear only when they report a state. Never use them to decorate a card, colour a category, or add variety.",
+        "section": "colors"
+      },
+      {
+        "name": "The Machine Truth Rule",
+        "body": "If a computer would print it (a price, a count, an ID, a path, code, a timestamp), set it in JetBrains Mono with tabular numerals. Sentences meant for people are never mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The Weight-Not-Gradient Rule",
+        "body": "Emphasis inside a headline comes from the accent colour on one phrase, or from weight. Gradient text (`bg-clip-text`) is not part of this system.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Surfaces are flat at rest. A shadow means \"this is above the page\" (overlay) or \"act here\" (signal glow). A card at rest never carries a shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Always-Dark Code Rule",
+        "body": "Code windows, IDE frames and terminal blocks stay dark (`#0d1117` / Ink Night) in both themes, with their own syntax palette. They are the one place a fixed palette overrides theming.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use the semantic tokens (`bg-bg-1`, `text-ink-2`, `border-line`, `bg-accent text-accent-ink`) for every themed surface, so light mode swaps correctly.",
+      "**Do** keep one primary (accent) button per view, with the Signal Glow only on the page's main call to action.",
+      "**Do** set prices, counts, codes, durations and paths in JetBrains Mono with `tabular-nums`.",
+      "**Do** separate surfaces with tone and 1px hairlines before reaching for a shadow.",
+      "**Do** give every icon-only control an `aria-label`, and keep a visible focus state.",
+      "**Do** honour `prefers-reduced-motion`: the reveal, marquee, float and caret all stop."
+    ],
+    "donts": [
+      "**Don't** use gradient text (`bg-clip-text` with a gradient) for emphasis. Use the accent on one phrase, or weight.",
+      "**Don't** use purple or violet as a decorative accent or gradient. The difficulty scale uses Pass Green → JS Yellow → Fail Rose.",
+      "**Don't** hardcode `#F7DF1E` or any hex on a themed surface. Use `accent`, which is indigo in light mode.",
+      "**Don't** use status colours (green, rose, amber) to decorate. They only report state.",
+      "**Don't** give resting cards a shadow, or stack shadow on shadow.",
+      "**Don't** use `warning` colour classes. The token is `warn`, and `bg-warning` generates nothing.",
+      "**Don't** use emoji or unicode glyphs as icons in new UI. Use lucide-react at 14–20px with a consistent stroke."
+    ]
+  }
+}

@@ -134,8 +134,8 @@ export default function CartPage() {
         )}
 
         {hasOwnedItem && (
-          <div className="flex items-start gap-2.5 px-4 py-3 mb-6 bg-warning/10 border border-warning/30 rounded-xl text-[13px] text-ink-2" role="alert">
-            <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="flex items-start gap-2.5 px-4 py-3 mb-6 bg-warn/10 border border-warn/30 rounded-xl text-[13px] text-ink-2" role="alert">
+            <AlertCircle className="w-4 h-4 text-warn shrink-0 mt-0.5" aria-hidden="true" />
             <span>Giỏ hàng có khóa học bạn đã sở hữu. Xóa các khóa có nhãn "Đã sở hữu" để tiếp tục thanh toán.</span>
           </div>
         )}
@@ -175,7 +175,7 @@ export default function CartPage() {
                 <Reveal key={id} delay={i * 40}>
                   <div className={cn(
                     'card p-4 flex flex-col sm:flex-row gap-4 items-start transition-colors',
-                    isOwned ? 'opacity-70 ring-1 ring-warning/40' : 'hover:border-accent/30',
+                    isOwned ? 'opacity-70 ring-1 ring-warn/40' : 'hover:border-accent/30',
                   )}>
                     <Link to={`/courses/${course.slug}`} className="w-full sm:w-36 shrink-0">
                       <CourseThumb course={course} />
@@ -184,7 +184,7 @@ export default function CartPage() {
                       <div className="flex gap-2 mb-1.5 flex-wrap">
                         <Chip variant="line" className="text-[11px]">{course.instructor}</Chip>
                         {isOwned && (
-                          <Chip className="text-[11px] bg-warning/15 text-warning border-warning/30">
+                          <Chip className="text-[11px] bg-warn/15 text-warn border-warn/30">
                             Đã sở hữu
                           </Chip>
                         )}
@@ -196,7 +196,7 @@ export default function CartPage() {
                         {course.title}
                       </Link>
                       {isOwned ? (
-                        <p className="font-mono text-[12.5px] text-warning">
+                        <p className="font-mono text-[12.5px] text-warn">
                           Bạn đã đăng ký khóa học này
                         </p>
                       ) : (

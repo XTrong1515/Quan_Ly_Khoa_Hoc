@@ -269,7 +269,7 @@ function OrderDetailModal({ orderId, onClose }) {
                   ['Tổng tiền', <span key="p" className="font-mono font-semibold">{formatVND(data.order.total_amount)}</span>],
                   ['Ngày tạo', new Date(data.order.created_at).toLocaleString('vi-VN')],
                   data.order.status === 'PENDING' && data.order.expires_at &&
-                    ['Hết hạn thanh toán', <span key="x" className="font-mono text-warning">{new Date(data.order.expires_at).toLocaleString('vi-VN')}</span>],
+                    ['Hết hạn thanh toán', <span key="x" className="font-mono text-warn">{new Date(data.order.expires_at).toLocaleString('vi-VN')}</span>],
                   data.order.paid_at && ['Thanh toán lúc', new Date(data.order.paid_at).toLocaleString('vi-VN')],
                 ].filter(Boolean).map(([label, value]) => (
                   <div key={label}>
