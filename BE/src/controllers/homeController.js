@@ -52,6 +52,7 @@ async function home(req, res) {
         JOIN   users   u  ON u.id  = r.user_id
         JOIN   courses co ON co.id = r.course_id
         WHERE  r.status = 'VISIBLE'
+          AND  co.status = 'PUBLISHED'
           AND  r.comment IS NOT NULL
           AND  r.comment != ''
         ORDER BY r.rating DESC, r.created_at DESC

@@ -18,8 +18,8 @@ async function list(req, res) {
     page = 1, limit = 12,
   } = req.query;
 
-  const p   = Math.max(1, parseInt(page, 10));
-  const lim = Math.min(50, Math.max(10, parseInt(limit, 10)));
+  const p   = Math.max(1, parseInt(page, 10) || 1);
+  const lim = Math.min(50, Math.max(10, parseInt(limit, 10) || 0));
   const offset = (p - 1) * lim;
 
   const wheres = ["co.status = 'PUBLISHED'"];

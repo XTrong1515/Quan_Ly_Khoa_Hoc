@@ -55,6 +55,12 @@ async function deleteCourseReview(req, res) {
   const courseId = parseInt(req.params.id, 10);
 
   try {
+    // Đánh giá đã bị ẩn không tự xóa được: nếu không, xóa rồi đăng lại là lách được kiểm duyệt
+    const [[existing]] = await pool.query('SELECT status FROM reviews WHERE user_id = ? AND course_id = ?', [userId, courseId]);
+    if (existing?.status === 'HIDDEN') {
+      return res.status(409).json({ message: 'Đánh giá này đã bị quản trị viên ẩn nên không thể xóa' });
+    }
+
     await pool.query(
       `DELETE FROM reviews WHERE user_id = ? AND course_id = ?`,
       [userId, courseId],
@@ -99,6 +105,9 @@ async function createSiteReview(req, res) {
 
   if (!validRating(rating)) {
     return res.status(400).json({ message: 'Rating phải từ 1 đến 5 sao' });
+  }
+  if (comment && String(comment).length > 1000) {
+    return res.status(400).json({ message: 'Nhận xét tối đa 1000 ký tự' });
   }
 
   try {

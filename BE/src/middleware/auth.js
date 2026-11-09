@@ -1,16 +1,26 @@
+const pool = require('../config/db');
 const { verifyAccess } = require('../utils/jwt');
 
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Chưa đăng nhập' });
   }
+
+  let decoded;
   try {
-    req.user = verifyAccess(header.slice(7)); // { id, email, role }
-    next();
+    decoded = verifyAccess(header.slice(7)); // { id, email, role }
   } catch {
     return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
   }
+
+  // Đọc trạng thái thật: khóa tài khoản / đổi quyền có hiệu lực ngay, không phải đợi access token hết hạn
+  const [[account]] = await pool.query('SELECT role, status FROM users WHERE id = ?', [decoded.id]);
+  if (!account || account.status !== 'ACTIVE') {
+    return res.status(401).json({ message: 'Tài khoản không còn hoạt động' });
+  }
+  req.user = { ...decoded, role: account.role };
+  return next();
 }
 
 function requireAdmin(req, res, next) {

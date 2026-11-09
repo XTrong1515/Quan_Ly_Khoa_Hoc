@@ -1,5 +1,7 @@
 const pool = require('../config/db');
 
+const MAX_CONTENT = 2000;
+
 /* ── GET /api/lessons/:id/discussions ─────────────────────────── */
 // Returns top-level comments, each with nested replies
 async function listDiscussions(req, res) {
@@ -63,7 +65,8 @@ async function createDiscussion(req, res) {
   const userId   = req.user.id;
   const { content, parentId = null } = req.body;
 
-  if (!content?.trim()) return res.status(400).json({ message: 'Nội dung không được để trống' });
+  if (typeof content !== 'string' || !content.trim()) return res.status(400).json({ message: 'Nội dung không được để trống' });
+  if (content.length > MAX_CONTENT) return res.status(400).json({ message: `Bình luận tối đa ${MAX_CONTENT} ký tự` });
 
   try {
     // Validate parentId belongs to the same lesson
@@ -101,7 +104,8 @@ async function updateDiscussion(req, res) {
   const userId       = req.user.id;
   const { content }  = req.body;
 
-  if (!content?.trim()) return res.status(400).json({ message: 'Nội dung không được để trống' });
+  if (typeof content !== 'string' || !content.trim()) return res.status(400).json({ message: 'Nội dung không được để trống' });
+  if (content.length > MAX_CONTENT) return res.status(400).json({ message: `Bình luận tối đa ${MAX_CONTENT} ký tự` });
 
   try {
     const [[row]] = await pool.query(
@@ -127,11 +131,17 @@ async function deleteDiscussion(req, res) {
 
   try {
     const [[row]] = await pool.query(
-      'SELECT user_id FROM lesson_discussions WHERE id = ? LIMIT 1',
+      `SELECT d.user_id, c.instructor_id
+       FROM lesson_discussions d
+       JOIN lessons l ON l.id = d.lesson_id
+       JOIN courses c ON c.id = l.course_id
+       WHERE d.id = ? LIMIT 1`,
       [discussionId],
     );
     if (!row) return res.status(404).json({ message: 'Không tìm thấy bình luận' });
-    if (!isAdmin && row.user_id !== userId) {
+    // Giảng viên sở hữu khóa được gỡ bình luận trong khóa của mình
+    const isCourseOwner = req.user.role === 'INSTRUCTOR' && row.instructor_id === userId;
+    if (!isAdmin && !isCourseOwner && row.user_id !== userId) {
       return res.status(403).json({ message: 'Không có quyền xóa bình luận này' });
     }
 

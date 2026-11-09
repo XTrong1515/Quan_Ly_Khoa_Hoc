@@ -12,7 +12,7 @@ async function getMyWishlist(req, res) {
               w.created_at AS wishlistedAt
        FROM wishlists w
        JOIN courses c ON c.id = w.course_id
-       WHERE w.user_id = ?
+       WHERE w.user_id = ? AND c.status = 'PUBLISHED'
        ORDER BY w.created_at DESC`,
       [userId],
     );
@@ -46,7 +46,7 @@ async function addToWishlist(req, res) {
   if (!courseId) return res.status(400).json({ message: 'courseId không hợp lệ' });
 
   try {
-    const [[course]] = await pool.query('SELECT id FROM courses WHERE id = ? LIMIT 1', [courseId]);
+    const [[course]] = await pool.query("SELECT id FROM courses WHERE id = ? AND status = 'PUBLISHED' LIMIT 1", [courseId]);
     if (!course) return res.status(404).json({ message: 'Khóa học không tồn tại' });
 
     await pool.query(

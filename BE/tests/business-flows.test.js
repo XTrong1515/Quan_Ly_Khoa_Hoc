@@ -312,6 +312,27 @@ describe('Nộp quiz', () => {
     expect(passed.body.results[0].correctOptionIds).toEqual([right]);
   });
 
+  it('làm sai phải chờ mới được nộp lại; thời gian chờ trả về cho FE; hết chờ thì nộp được', async () => {
+    const other = await createLesson((await pool.query('SELECT course_id FROM lessons WHERE id = ?', [lesson.id]))[0][0].course_id);
+    const { quizId, questions: [q] } = await createQuiz(other.id, [{ options: [true, false] }]);
+    const [right, wrong] = q.optionIds;
+    process.env.QUIZ_RETRY_SECONDS = '60';
+    try {
+      const failed = await submit(student, quizId, [{ questionId: q.id, optionIds: [wrong] }]);
+      expect(failed.body.retryAfterSeconds).toBe(60);
+      const blocked = await submit(student, quizId, [{ questionId: q.id, optionIds: [right] }]);
+      expect(blocked.status).toBe(429);
+      expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
+      expect(blocked.body.results).toBeUndefined();
+      expect((await request(app).get(`/api/lessons/${other.id}/quiz`).set(H(student))).body.quiz.retryAfterSeconds).toBeGreaterThan(0);
+
+      await pool.query('UPDATE quiz_attempts SET submitted_at = DATE_SUB(NOW(), INTERVAL 2 MINUTE) WHERE quiz_id = ?', [quizId]);
+      expect((await submit(student, quizId, [{ questionId: q.id, optionIds: [right] }])).body.passed).toBe(true);
+    } finally {
+      process.env.QUIZ_RETRY_SECONDS = '0';
+    }
+  });
+
   it('soạn câu hỏi: bắt buộc có đáp án đúng; câu một đáp án chỉ 1 đáp án đúng', async () => {
     const [[{ id: quizId }]] = await pool.query('SELECT id FROM quizzes WHERE lesson_id = ?', [lesson.id]);
     const add = (body) => request(app).post(`/api/instructor/quizzes/${quizId}/questions`).set(H(teacher)).send(body);
@@ -399,6 +420,114 @@ describe('Đổi role giảng viên', () => {
     const teacher = await createUser({ role: 'INSTRUCTOR' });
     expect((await setRole(teacher, 'USER')).status).toBe(200);
     expect((await setRole({ id: 999999 }, 'USER')).status).toBe(404);
+  });
+});
+
+describe('Độ bền API', () => {
+  it('query lặp tham số / lồng object không làm sập server', async () => {
+    expect((await request(app).get('/api/courses?search=a&search=b&category[x]=1&level=1&level=2')).status).toBe(200);
+    expect((await request(app).get('/health')).status).toBe(200);
+  });
+
+  it('page / limit không phải số → dùng mặc định, không lỗi 500', async () => {
+    expect((await request(app).get('/api/courses?page=abc&limit=xyz')).status).toBe(200);
+  });
+
+  it('JSON hỏng → 400 dạng JSON; kiểu dữ liệu sai ở đăng nhập → 400', async () => {
+    const bad = await request(app).post('/api/auth/login').set('Content-Type', 'application/json').send('{bad');
+    expect(bad.status).toBe(400);
+    expect(bad.body.message).toBeTruthy();
+    expect((await request(app).post('/api/auth/login').send({ email: 123, password: {} })).status).toBe(400);
+  });
+
+  it('handler async ném lỗi → 500 JSON thay vì sập tiến trình', async () => {
+    const user = await createUser();
+    const spy = jest.spyOn(pool, 'query').mockImplementationOnce(async () => { throw new Error('boom'); });
+    const err = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await request(app).get('/api/notifications').set(H(user));
+    expect(res.status).toBe(500);
+    expect(res.body.message).toBe('Lỗi máy chủ');
+    spy.mockRestore();
+    err.mockRestore();
+  });
+});
+
+describe('Tài khoản bị khóa / đổi quyền', () => {
+  it('khóa tài khoản: access token đang còn hạn bị từ chối ngay', async () => {
+    const user = await createUser();
+    expect((await request(app).get('/api/notifications').set(H(user))).status).toBe(200);
+    await pool.query("UPDATE users SET status = 'LOCKED' WHERE id = ?", [user.id]);
+    expect((await request(app).get('/api/notifications').set(H(user))).status).toBe(401);
+  });
+
+  it('hạ quyền admin: token cũ mất quyền ngay', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    expect((await request(app).get('/api/admin/users').set(H(admin))).status).toBe(200);
+    await pool.query("UPDATE users SET role = 'USER' WHERE id = ?", [admin.id]);
+    expect((await request(app).get('/api/admin/users').set(H(admin))).status).toBe(403);
+  });
+});
+
+describe('Các ràng buộc khác', () => {
+  it('upload ảnh: đuôi file theo loại ảnh, không theo tên người dùng gửi', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    const res = await request(app).post('/api/admin/upload/image').set(H(admin))
+      .attach('image', Buffer.from('<script>alert(1)</script>'), { filename: 'x.html', contentType: 'image/png' });
+    expect(res.status).toBe(200);
+    expect(res.body.url).toMatch(/\.png$/);
+    require('fs').unlinkSync(require('path').join(__dirname, '../uploads', res.body.url.split('/').pop()));
+  });
+
+  it('admin lọc khóa học theo danh mục và cấp độ', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    const course = await createCourse({ status: 'PUBLISHED' });
+    await createCourse({ status: 'PUBLISHED' });
+    const byCategory = await request(app).get(`/api/admin/courses?category=${course.categoryId}`).set(H(admin));
+    expect(byCategory.body.courses.map((c) => c.id)).toEqual([course.id]);
+    await pool.query("UPDATE courses SET level = 'ADVANCED' WHERE id = ?", [course.id]);
+    const byLevel = await request(app).get(`/api/admin/courses?category=${course.categoryId}&level=BEGINNER`).set(H(admin));
+    expect(byLevel.body.courses).toEqual([]);
+  });
+
+  it('wishlist không nhận khóa chưa xuất bản', async () => {
+    const user = await createUser();
+    const draft = await createCourse({ status: 'DRAFT' });
+    expect((await request(app).post('/api/wishlists').set(H(user)).send({ courseId: draft.id })).status).toBe(404);
+  });
+
+  it('đánh giá bị ẩn không xóa được để đăng lại', async () => {
+    const student = await createUser();
+    const course = await createCourse({ status: 'PUBLISHED' });
+    await enroll(student, course.id);
+    await pool.query("INSERT INTO reviews (user_id, course_id, rating, status) VALUES (?, ?, 1, 'HIDDEN')", [student.id, course.id]);
+    expect((await request(app).delete(`/api/courses/${course.id}/reviews/me`).set(H(student))).status).toBe(409);
+  });
+
+  it('xóa danh mục còn khóa lưu trữ → 409, không lỗi 500', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    const course = await createCourse({ status: 'ARCHIVED' });
+    expect((await request(app).delete(`/api/admin/categories/${course.categoryId}`).set(H(admin))).status).toBe(409);
+  });
+
+  it('admin không xuất bản được khóa chưa có bài học; trạng thái lạ → 400', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    const course = await createCourse({ status: 'DRAFT' });
+    const put = (status) => request(app).put(`/api/admin/courses/${course.id}`).set(H(admin)).send({ status });
+    expect((await put('PUBLISHED')).status).toBe(400);
+    expect((await put('LUNG_TUNG')).status).toBe(400);
+    await createLesson(course.id);
+    expect((await put('PUBLISHED')).status).toBe(200);
+  });
+
+  it('giảng viên sở hữu được gỡ bình luận trong khóa của mình, giảng viên khác thì không', async () => {
+    const owner = await createUser({ role: 'INSTRUCTOR' });
+    const stranger = await createUser({ role: 'INSTRUCTOR' });
+    const student = await createUser();
+    const course = await createCourse({ instructor: owner, status: 'PUBLISHED' });
+    const lesson = await createLesson(course.id);
+    const [d] = await pool.query('INSERT INTO lesson_discussions (lesson_id, user_id, content) VALUES (?, ?, ?)', [lesson.id, student.id, 'x']);
+    expect((await request(app).delete(`/api/discussions/${d.insertId}`).set(H(stranger))).status).toBe(403);
+    expect((await request(app).delete(`/api/discussions/${d.insertId}`).set(H(owner))).status).toBe(200);
   });
 });
 

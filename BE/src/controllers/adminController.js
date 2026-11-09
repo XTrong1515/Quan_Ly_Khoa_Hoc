@@ -97,9 +97,9 @@ async function dashboard(req, res) {
    UC21 — Course CRUD
    ───────────────────────────────────────────────────────────────── */
 async function adminListCourses(req, res) {
-  const { search = '', status = '', sort = 'manual', page = 1, limit = 15 } = req.query;
-  const p      = Math.max(1, parseInt(page, 10));
-  const lim    = Math.min(50, Math.max(10, parseInt(limit, 10)));
+  const { search = '', status = '', category = '', level = '', sort = 'manual', page = 1, limit = 15 } = req.query;
+  const p      = Math.max(1, parseInt(page, 10) || 1);
+  const lim    = Math.min(50, Math.max(10, parseInt(limit, 10) || 0));
   const offset = (p - 1) * lim;
 
   const wheres = []; const params = [];
@@ -108,6 +108,8 @@ async function adminListCourses(req, res) {
     params.push(`%${search.trim()}%`, `%${search.trim()}%`);
   }
   if (status) { wheres.push('c.status = ?'); params.push(status.toUpperCase()); }
+  if (category) { wheres.push('c.category_id = ?'); params.push(Number(category) || 0); }
+  if (level) { wheres.push('c.level = ?'); params.push(level.toUpperCase()); }
 
   const where   = wheres.length ? `WHERE ${wheres.join(' AND ')}` : '';
   const orderBy = {
@@ -216,6 +218,7 @@ async function _resolveInstructor(instructorId) {
   return rows[0];
 }
 
+const COURSE_STATUSES = ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED', 'ARCHIVED'];
 const MIN_PAID_PRICE = 5000;      // Giao dịch VNPay tối thiểu 5.000đ
 const MAX_PRICE = 999_999_999;    // và dưới 1 tỷ đồng
 
@@ -301,7 +304,20 @@ async function adminUpdateCourse(req, res) {
     return res.status(400).json({ message: 'Không có gì để cập nhật' });
   }
 
+  if (req.body.status !== undefined && !COURSE_STATUSES.includes(req.body.status)) {
+    return res.status(400).json({ message: 'Trạng thái khóa học không hợp lệ' });
+  }
+
   try {
+    if (req.body.status === 'PUBLISHED') {
+      // Khóa đang bán thì sửa thông tin vẫn được; chỉ chặn việc đưa khóa rỗng lên bán
+      const [[current]] = await pool.query(
+        'SELECT status, (SELECT COUNT(*) FROM lessons WHERE course_id = ?) AS lessons FROM courses WHERE id = ?', [id, id],
+      );
+      if (current && current.status !== 'PUBLISHED' && !current.lessons) {
+        return res.status(400).json({ message: 'Khóa học cần ít nhất 1 bài học trước khi xuất bản' });
+      }
+    }
     if (req.body.instructorId !== undefined) {
       const instructor = await _resolveInstructor(req.body.instructorId);
       if (instructor === undefined) return res.status(400).json({ message: 'Giảng viên không hợp lệ' });
@@ -568,10 +584,9 @@ async function adminUpdateCategory(req, res) {
 async function adminDeleteCategory(req, res) {
   const id = parseInt(req.params.id, 10);
   try {
-    const [rows] = await pool.query(
-      "SELECT COUNT(*) AS cnt FROM courses WHERE category_id = ? AND status != 'ARCHIVED'", [id],
-    );
-    if (rows[0].cnt > 0) return res.status(409).json({ message: 'Không thể xóa: danh mục đang có khóa học' });
+    // Khóa đã lưu trữ vẫn tham chiếu danh mục qua khóa ngoại → phải đếm cả chúng, nếu không DELETE lỗi 500
+    const [rows] = await pool.query('SELECT COUNT(*) AS cnt FROM courses WHERE category_id = ?', [id]);
+    if (rows[0].cnt > 0) return res.status(409).json({ message: 'Không thể xóa: danh mục vẫn còn khóa học (kể cả khóa đã lưu trữ)' });
     await pool.query('DELETE FROM categories WHERE id = ?', [id]);
     return res.json({ ok: true });
   } catch (err) {
@@ -587,8 +602,8 @@ const bcrypt = require('../utils/hash');
 
 async function adminListUsers(req, res) {
   const { search = '', role = '', status = '', page = 1, limit = 20, sort = 'newest' } = req.query;
-  const p = Math.max(1, parseInt(page, 10));
-  const lim = Math.min(50, Math.max(10, parseInt(limit, 10)));
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const lim = Math.min(50, Math.max(10, parseInt(limit, 10) || 0));
   const offset = (p - 1) * lim;
 
   const wheres = []; const params = [];
@@ -771,8 +786,8 @@ async function adminUpdateUserStatus(req, res) {
    ───────────────────────────────────────────────────────────────── */
 async function adminListOrders(req, res) {
   const { search = '', status = '', page = 1, limit = 15, dateFrom, dateTo } = req.query;
-  const p = Math.max(1, parseInt(page, 10));
-  const lim = Math.min(50, Math.max(10, parseInt(limit, 10)));
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const lim = Math.min(50, Math.max(10, parseInt(limit, 10) || 0));
   const offset = (p - 1) * lim;
 
   const wheres = []; const params = [];
@@ -976,8 +991,8 @@ async function adminConfirmOrder(req, res) {
    ───────────────────────────────────────────────────────────────── */
 async function adminListReviews(req, res) {
   const { status = '', page = 1, limit = 15, type = 'course' } = req.query;
-  const p = Math.max(1, parseInt(page, 10));
-  const lim = Math.min(50, Math.max(10, parseInt(limit, 10)));
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const lim = Math.min(50, Math.max(10, parseInt(limit, 10) || 0));
   const offset = (p - 1) * lim;
 
   const wheres = []; const params = [];

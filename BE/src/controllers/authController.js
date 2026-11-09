@@ -9,6 +9,8 @@ const SALT_ROUNDS = 12;
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 ngày
 
 /* ── Helpers ──────────────────────────────────────────────────── */
+const isText = (value) => typeof value === 'string' && value.trim().length > 0;
+
 function saveRefreshToken(userId, token) {
   const expiresAt = new Date(Date.now() + REFRESH_TTL_MS);
   return pool.query(
@@ -21,7 +23,7 @@ function saveRefreshToken(userId, token) {
 async function register(req, res) {
   const { name, email, password } = req.body;
 
-  if (!name?.trim() || !email?.trim() || !password) {
+  if (!isText(name) || !isText(email) || !isText(password)) {
     return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
   }
   const pwError = passwordError(password);
@@ -68,7 +70,7 @@ async function register(req, res) {
 async function login(req, res) {
   const { email, password } = req.body;
 
-  if (!email?.trim() || !password) {
+  if (!isText(email) || !isText(password)) {
     return res.status(400).json({ message: 'Thiếu email hoặc mật khẩu' });
   }
 
@@ -175,10 +177,11 @@ async function me(req, res) {
 /* ── POST /api/auth/forgot-password ───────────────────────────── */
 async function forgotPassword(req, res) {
   const { email } = req.body;
-  if (!email?.trim()) return res.status(400).json({ message: 'Thiếu email' });
+  if (!isText(email)) return res.status(400).json({ message: 'Thiếu email' });
+  const normalizedEmail = email.trim().toLowerCase();
 
   try {
-    const [rows] = await pool.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    const [rows] = await pool.query('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
 
     // Không tiết lộ email có tồn tại hay không
     if (rows.length === 0) {
@@ -200,7 +203,7 @@ async function forgotPassword(req, res) {
     console.log(`\n[forgot-password] Reset URL:\n  ${resetUrl}\n`);
 
     try {
-      await sendResetPasswordEmail(email.toLowerCase(), resetUrl);
+      await sendResetPasswordEmail(normalizedEmail, resetUrl);
     } catch (mailErr) {
       console.error('[forgotPassword] Gửi email thất bại:', mailErr.message);
     }

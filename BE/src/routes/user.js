@@ -4,10 +4,12 @@ const multer = require('multer');
 const { updateProfile, changePassword, uploadAvatar, removeAvatar } = require('../controllers/userController');
 const { authMiddleware } = require('../middleware/auth');
 
+const AVATAR_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+
 const avatarStorage = multer.diskStorage({
   destination: path.join(__dirname, '../../uploads'),
   filename: (_req, file, cb) => {
-    const ext  = path.extname(file.originalname).toLowerCase();
+    const ext  = AVATAR_EXT[file.mimetype]; // không tin đuôi file trong tên do người dùng gửi
     const name = `avatar_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`;
     cb(null, name);
   },

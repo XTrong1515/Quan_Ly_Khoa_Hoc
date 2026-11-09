@@ -2,6 +2,20 @@ const pool = require('../config/db');
 const { completeLesson, unmetRequirement } = require('./lessonProgressController');
 
 /* ── helpers ─────────────────────────────────────────────────────── */
+const quizRetrySeconds = () => Number(process.env.QUIZ_RETRY_SECONDS ?? 30);
+
+/** Số giây còn phải chờ sau lần làm chưa đạt gần nhất (điểm số cho biết thử đúng hay sai → cần giãn cách để không dò được). */
+async function retryWaitSeconds(quizId, userId) {
+  const cooldown = quizRetrySeconds();
+  if (cooldown <= 0) return 0;
+  const [[last]] = await pool.query(
+    `SELECT passed, TIMESTAMPDIFF(SECOND, submitted_at, NOW()) AS age
+     FROM quiz_attempts WHERE quiz_id = ? AND user_id = ? ORDER BY id DESC LIMIT 1`,
+    [quizId, userId],
+  );
+  return !last || last.passed ? 0 : Math.max(0, cooldown - Number(last.age));
+}
+
 /** Câu một đáp án: đúng 1 đáp án đúng. Câu nhiều đáp án: ít nhất 1. Trả chuỗi lỗi hoặc null. */
 function optionsError(type, options) {
   if (!Array.isArray(options) || options.length < 2) return 'Phải có ít nhất 2 đáp án';
@@ -210,6 +224,7 @@ async function getQuizForUser(req, res) {
         passScore: quiz.pass_score,
         questions,
         latestAttempt: latestAttempt ?? null,
+        retryAfterSeconds: await retryWaitSeconds(quiz.id, userId),
       },
     });
   } catch (err) {
@@ -243,6 +258,13 @@ async function submitAttempt(req, res) {
     const isStaff = req.user.role === 'ADMIN' || (req.user.role === 'INSTRUCTOR' && access.ownerId === userId);
     if (!access.enrollmentId && !isStaff) {
       return res.status(403).json({ message: 'Bạn chưa đăng ký khóa học này' });
+    }
+
+    if (access.enrollmentId) {
+      const wait = await retryWaitSeconds(quizId, userId);
+      if (wait > 0) {
+        return res.status(429).json({ message: `Vui lòng đợi ${wait} giây trước khi làm lại`, retryAfterSeconds: wait });
+      }
     }
 
     const [allRows] = await pool.query(
@@ -318,7 +340,10 @@ async function submitAttempt(req, res) {
     }
 
     // Chưa đạt thì không trả đúng/sai từng câu: quiz làm lại không giới hạn, lộ ra là dò được đáp án
-    return res.json({ score, passed, total, correct: correctCount, ...(passed && { results }) });
+    return res.json({
+      score, passed, total, correct: correctCount,
+      ...(passed ? { results } : { retryAfterSeconds: quizRetrySeconds() }),
+    });
   } catch (err) {
     console.error('[quiz/submitAttempt]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });

@@ -403,8 +403,8 @@ async function myOrders(req, res) {
   const userId = req.user.id;
   const { status = '', page = 1, limit = 10 } = req.query;
 
-  const p      = Math.max(1, parseInt(page, 10));
-  const lim    = Math.min(50, Math.max(5, parseInt(limit, 10)));
+  const p      = Math.max(1, parseInt(page, 10) || 1);
+  const lim    = Math.min(50, Math.max(5, parseInt(limit, 10) || 0));
   const offset = (p - 1) * lim;
 
   const wheres = ['o.user_id = ?'];

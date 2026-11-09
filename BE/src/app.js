@@ -1,8 +1,10 @@
 require('dotenv').config();
+require('./utils/express-async');
 const path    = require('path');
 const express = require('express');
 const cors    = require('cors');
 const helmet  = require('helmet');
+const multer  = require('multer');
 
 const adminRoutes          = require('./routes/admin');
 const instructorRoutes     = require('./routes/instructor');
@@ -37,7 +39,15 @@ app.use(cors({
   origin: process.env.FE_ORIGIN || 'http://localhost:5173',
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '2mb' })); // nội dung bài học (MEDIUMTEXT) có thể vượt mức mặc định 100 KB
+
+// ?a=1&a=2 hoặc ?a[b]=1 làm req.query.a thành mảng / object → handler gọi .trim() sẽ lỗi. Luôn đưa về chuỗi.
+app.use((req, _res, next) => {
+  for (const [key, value] of Object.entries(req.query)) {
+    if (typeof value !== 'string') req.query[key] = Array.isArray(value) && typeof value[0] === 'string' ? value[0] : '';
+  }
+  next();
+});
 
 // Serve uploaded images as static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -66,5 +76,17 @@ app.get('/api/transactions/me', authMiddleware, myTransactions);
 app.post('/api/site-reviews',   authMiddleware, createSiteReview);
 
 app.get('/health', (_, res) => res.json({ ok: true, ts: new Date() }));
+
+// eslint-disable-next-line no-unused-vars -- Express nhận diện error middleware qua đúng 4 tham số
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ message: err.code === 'LIMIT_FILE_SIZE' ? 'File vượt quá dung lượng cho phép' : 'File tải lên không hợp lệ' });
+  }
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ message: 'Dữ liệu gửi lên không hợp lệ' });
+  if (err.type === 'entity.too.large') return res.status(413).json({ message: 'Dữ liệu gửi lên quá lớn' });
+  console.error('[unhandled]', req.method, req.originalUrl, err);
+  return res.status(500).json({ message: 'Lỗi máy chủ' });
+});
 
 module.exports = app;
