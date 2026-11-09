@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
       <Seo title="Quên mật khẩu — Hoisted" />
 
       <div className="mb-8">
-        <Logo size={18} />
+        <Logo size={18} onDark />
       </div>
 
       {!sent ? (

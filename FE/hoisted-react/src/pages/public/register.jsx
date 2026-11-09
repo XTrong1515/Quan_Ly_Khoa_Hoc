@@ -115,7 +115,7 @@ export default function RegisterPage() {
         />
 
         <div className="relative">
-          <Logo size={18} />
+          <Logo size={18} onDark />
         </div>
 
         <div className="relative flex-1 flex flex-col justify-center max-w-[480px]">

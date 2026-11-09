@@ -1,5 +1,5 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, Bell, ShoppingCart, Moon, Sun, LogOut, BookOpen, Settings, ChevronDown, X, Heart, Check, Sparkles, GraduationCap } from 'lucide-react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Bell, ShoppingCart, Moon, Sun, LogOut, BookOpen, Settings, ChevronDown, X, Heart, Check, Sparkles, GraduationCap, Menu } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Logo } from '../logo.jsx';
@@ -28,8 +28,12 @@ export function Nav() {
   const { user, role, logout } = useAuth();
   const { mode, toggle } = useTheme();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false); // menu thu gọn trên điện thoại
   const menuRef = useRef(null);
+
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
     function handle(e) {
@@ -46,11 +50,12 @@ export function Nav() {
   };
 
   const avatarLabel = user?.name?.[0]?.toUpperCase() ?? '?';
+  const themeLabel = mode === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối';
 
   return (
-    <nav className="flex items-center gap-7 h-16 px-8 border-b border-line bg-bg/70 backdrop-blur sticky top-0 z-10">
+    <nav className="relative flex items-center gap-3 lg:gap-7 h-16 px-4 md:px-8 border-b border-line bg-bg/70 backdrop-blur sticky top-0 z-10">
       <Logo />
-      <div className="flex gap-5">
+      <div className="hidden md:flex gap-5">
         {LINKS.map((l) => (
           <NavLink key={l.to} to={l.to}
             className={({ isActive }) =>
@@ -60,11 +65,10 @@ export function Nav() {
         ))}
       </div>
 
-      <SearchBox />
+      <SearchBox className="hidden md:block flex-1 max-w-sm ml-auto" />
 
-      <div className="flex items-center gap-1.5">
-        <IconBtn onClick={toggle} title={mode === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
-          aria-label={mode === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}>
+      <div className="flex items-center gap-1.5 ml-auto md:ml-0">
+        <IconBtn onClick={toggle} className="hidden sm:grid" title={themeLabel} aria-label={themeLabel}>
           {mode === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </IconBtn>
 
@@ -81,14 +85,14 @@ export function Nav() {
         </Link>
 
         {role === 'guest' ? (
-          <>
-            <Link to="/login" className="h-[30px] px-3 inline-flex items-center text-[12.5px] font-semibold rounded-md border border-line text-ink hover:bg-bg-2">
+          <div className="hidden sm:flex items-center gap-1.5">
+            <Link to="/login" className="h-[30px] px-3 inline-flex items-center text-[12.5px] font-semibold rounded-md border border-line text-ink hover:bg-bg-2 whitespace-nowrap">
               Đăng nhập
             </Link>
-            <Link to="/register" className="h-[30px] px-3 inline-flex items-center text-[12.5px] font-semibold rounded-md bg-accent text-accent-ink hover:brightness-95">
+            <Link to="/register" className="h-[30px] px-3 inline-flex items-center text-[12.5px] font-semibold rounded-md bg-accent text-accent-ink hover:brightness-95 whitespace-nowrap">
               Đăng ký
             </Link>
-          </>
+          </div>
         ) : (
           <div className="relative" ref={menuRef}>
             <button
@@ -180,7 +184,49 @@ export function Nav() {
             )}
           </div>
         )}
+
+        <IconBtn
+          onClick={() => setMobileOpen((v) => !v)}
+          className="md:hidden"
+          aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu'}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-nav"
+        >
+          {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+        </IconBtn>
       </div>
+
+      {mobileOpen && (
+        <div id="mobile-nav" className="md:hidden absolute top-full inset-x-0 bg-bg border-b border-line shadow-xl p-4 space-y-2">
+          <SearchBox className="w-full mb-2" />
+          {LINKS.map((l) => (
+            <NavLink key={l.to} to={l.to}
+              className={({ isActive }) => cn(
+                'flex items-center h-11 px-3 rounded-lg text-[14px] font-medium hover:bg-bg-2',
+                isActive ? 'text-accent' : 'text-ink-2',
+              )}>
+              {l.label}
+            </NavLink>
+          ))}
+          <button
+            onClick={toggle}
+            className="sm:hidden w-full flex items-center gap-2.5 h-11 px-3 rounded-lg text-[14px] font-medium text-ink-2 hover:bg-bg-2"
+          >
+            {mode === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {themeLabel}
+          </button>
+          {role === 'guest' && (
+            <div className="sm:hidden grid grid-cols-2 gap-2 pt-2 border-t border-line">
+              <Link to="/login" className="h-11 inline-flex items-center justify-center text-[14px] font-semibold rounded-lg border border-line text-ink">
+                Đăng nhập
+              </Link>
+              <Link to="/register" className="h-11 inline-flex items-center justify-center text-[14px] font-semibold rounded-lg bg-accent text-accent-ink">
+                Đăng ký
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </nav>
   );
 }
@@ -248,7 +294,7 @@ function NotificationsBell() {
       </div>
 
       {open && (
-        <div className="absolute right-0 top-11 w-80 rounded-xl border border-line bg-bg shadow-2xl z-50 overflow-hidden">
+        <div className="fixed inset-x-3 top-[68px] sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-80 rounded-xl border border-line bg-bg shadow-2xl z-50 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
             <p className="font-semibold text-[13px] text-ink">Thông báo</p>
@@ -307,7 +353,7 @@ function NotificationsBell() {
 }
 
 /* ── Search box with live dropdown ─────────────────────────────── */
-function SearchBox() {
+function SearchBox({ className }) {
   const navigate    = useNavigate();
   const inputRef    = useRef(null);
   const containerRef = useRef(null);
@@ -400,7 +446,7 @@ function SearchBox() {
   };
 
   return (
-    <div ref={containerRef} className="flex-1 max-w-sm ml-auto relative">
+    <div ref={containerRef} className={cn('relative', className)}>
       <Search className="absolute left-3 top-2.5 w-4 h-4 text-ink-3 pointer-events-none z-10" />
       <input
         ref={inputRef}
@@ -502,9 +548,9 @@ function MenuItem({ to, icon: Icon, onClick, accent, children }) {
   );
 }
 
-function IconBtn({ children, ...props }) {
+function IconBtn({ children, className, ...props }) {
   return (
-    <button className="w-[34px] h-[34px] rounded-lg border border-line text-ink-2 hover:text-ink hover:bg-bg-2 grid place-items-center transition"
+    <button className={cn('w-[34px] h-[34px] rounded-lg border border-line text-ink-2 hover:text-ink hover:bg-bg-2 grid place-items-center transition', className)}
       {...props}>
       {children}
     </button>

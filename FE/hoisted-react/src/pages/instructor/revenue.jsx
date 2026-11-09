@@ -93,9 +93,9 @@ export default function InstructorRevenuePage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           <p className="px-5 pt-4 pb-3 font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">Theo khóa học ({RANGES.find(([v]) => v === days)?.[1]})</p>
-          <table className="w-full text-[13px]">
+          <table className="w-full min-w-[480px] text-[13px]">
             <thead>
               <tr className="border-y border-line bg-bg-2">
                 {['Khóa học', 'Lượt mua', 'Doanh số', 'Thu nhập'].map((h) => (
@@ -119,9 +119,9 @@ export default function InstructorRevenuePage() {
           </table>
         </div>
 
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           <p className="px-5 pt-4 pb-3 font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">Lịch sử chi trả</p>
-          <table className="w-full text-[13px]">
+          <table className="w-full min-w-[480px] text-[13px]">
             <thead>
               <tr className="border-y border-line bg-bg-2">
                 {['Ngày tạo', 'Số tiền', 'Trạng thái', 'Mã GD'].map((h) => (

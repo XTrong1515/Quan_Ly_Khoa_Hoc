@@ -18,7 +18,8 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
 import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
 
-const TABS = ['Tổng quan', 'Tài liệu', 'Quiz', 'Thảo luận'];
+const TABS = ['Tổng quan', 'Tài liệu', 'Thảo luận'];
+const DESKTOP_MIN_WIDTH = 1024;
 
 // Khung làm bài tập (kèm editor) chỉ tải khi bài học có bài tập
 const ExerciseWorkspace = lazy(() =>
@@ -90,7 +91,8 @@ export default function LessonPlayerPage() {
   const [hlsUnsupported, setHlsUnsupported] = useState(false); // không có MSE → phát MP4 dự phòng
   const [tab, setTab]                   = useState('Tổng quan');
   const [sheetSnap, setSheetSnap]       = useState(0); // 0=collapsed 1=peek 2=expanded
-  const [sidebarOpen, setSidebarOpen]   = useState(true);
+  // Trên điện thoại danh sách bài học là lớp phủ → mặc định đóng để không che nội dung
+  const [sidebarOpen, setSidebarOpen]   = useState(() => window.innerWidth >= DESKTOP_MIN_WIDTH);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [quizBlockedModal, setQuizBlockedModal] = useState(false);
   const resizeDrag = useRef({ active: false, startX: 0, startW: 0 });
@@ -133,9 +135,8 @@ export default function LessonPlayerPage() {
     enabled: !isLoading && !isError,
   });
   const hasExercise = !!exerciseData?.exercise;
-  const [view, setView] = useState(null); // 'video' | 'exercise' — null = tự chọn
+  const [view, setView] = useState(null); // 'video' | 'exercise' | 'quiz' — null = tự chọn
   useEffect(() => { setView(null); }, [lessonId]);
-  const mainView = hasExercise ? (view ?? (data?.lesson?.videoUrl ? 'video' : 'exercise')) : 'video';
 
   const { data: quizData, refetch: refetchQuiz } = useQuery({
     queryKey: ['lesson-quiz', lessonId],
@@ -143,6 +144,15 @@ export default function LessonPlayerPage() {
     enabled: !isLoading && !isError,
     staleTime: 0,
   });
+
+  // Mỗi loại nội dung là một khung xem; video luôn được ưu tiên hiện trước, quiz không còn che mất video
+  const hasQuiz = !!quizData?.quiz?.questions?.length;
+  const views = [
+    !!data?.lesson?.videoUrl && ['video', 'Video', MonitorPlay],
+    hasExercise && ['exercise', 'Bài tập', Code2],
+    hasQuiz && ['quiz', 'Quiz', ListChecks],
+  ].filter(Boolean);
+  const mainView = views.some(([v]) => v === view) ? view : (views[0]?.[0] ?? 'video');
 
   // Redirect to course detail when user is not enrolled
   useEffect(() => {
@@ -227,16 +237,31 @@ export default function LessonPlayerPage() {
   };
 
   // Bài có quiz / bài tập: đạt mới tính hoàn thành (BE trả 409 nếu bấm thẳng)
-  const quizUnpassed = !!(quizData?.quiz?.questions?.length && !quizData.quiz.latestAttempt?.passed);
+  const quizUnpassed = hasQuiz && !quizData.quiz.latestAttempt?.passed;
   const exerciseUnsolved = !!(exerciseData?.exercise && !exerciseData.exercise.solved);
   const completionLocked = quizUnpassed || exerciseUnsolved;
+  // Giảng viên / admin xem thử không có lượt làm quiz nên không bị chặn chuyển bài
+  const quizLocked = quizUnpassed && !isStaffView;
 
   const handleEnded = () => {
     if (data?.enrollmentId && !data?.progress?.isCompleted && !completionLocked) completeMutation.mutate();
-    if (quizData?.quiz && !quizData.quiz.latestAttempt?.passed) {
-      setTab('Quiz');
-      setSheetSnap(2);
+    if (quizLocked) setView('quiz');
+  };
+
+  const handleSelectLesson = (id) => {
+    const target = allLessons.findIndex(l => l.id === id);
+    if (quizLocked && target > currentIdx && !allLessons[target]?.isCompleted) {
+      setQuizBlockedModal(true);
+      return;
     }
+    navigate(`/learn/${courseId}/${id}`);
+    if (window.innerWidth < DESKTOP_MIN_WIDTH) setSidebarOpen(false);
+  };
+
+  const handleQuizPassed = () => {
+    refetchQuiz();
+    queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] });
+    queryClient.invalidateQueries({ queryKey: ['enrollments'] });
   };
 
   /* ── Loading / error ── */
@@ -261,28 +286,27 @@ export default function LessonPlayerPage() {
   }
 
   const { lesson, sections, progress } = data;
-  const quizLocked = !!(quizData?.quiz && !quizData.quiz.latestAttempt?.passed);
 
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
       {/* ── Top bar ── */}
       <header className="flex items-center gap-3 px-4 py-2.5 border-b border-line bg-bg shrink-0 min-h-[50px]">
         <Link to={`/courses/${lesson.courseSlug}`}
-          className="font-mono text-[12px] text-ink-3 hover:text-ink transition-colors flex items-center gap-1 shrink-0 max-w-[200px] truncate">
+          className="font-mono text-[12px] text-ink-3 hover:text-ink transition-colors flex items-center gap-1 min-w-0 flex-1 sm:flex-none sm:shrink-0 sm:max-w-[200px] truncate">
           <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">{lesson.courseTitle}</span>
         </Link>
 
-        <p className="flex-1 text-center font-semibold text-[13px] text-ink truncate px-2">
+        <p className="hidden sm:block flex-1 text-center font-semibold text-[13px] text-ink truncate px-2">
           {lesson.title}
         </p>
 
         <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="ghost" disabled={!prevLesson}
+          <Button size="sm" variant="ghost" disabled={!prevLesson} aria-label="Bài trước" title="Bài trước"
             onClick={() => prevLesson && navigate(`/learn/${courseId}/${prevLesson.id}`)}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button size="sm" variant="ghost"
+          <Button size="sm" variant="ghost" aria-label="Bài sau" title="Bài sau"
             disabled={!nextLesson}
             onClick={() => {
               if (quizLocked) { setQuizBlockedModal(true); return; }
@@ -320,42 +344,44 @@ export default function LessonPlayerPage() {
       </header>
 
       {/* ── Body ── */}
-      <div className="flex flex-1 min-h-0">
+      <div className="relative flex flex-1 min-h-0">
         {/* Left: video full-height + bottom sheet overlay */}
         <div className="flex flex-col flex-1 min-w-0 min-h-0 relative overflow-hidden">
-          {/* Main content: quiz panel (always shown when lesson has quiz) or video player */}
-          <div className="flex-1 min-h-0 relative" style={{ background: quizData?.quiz || mainView === 'exercise' ? undefined : 'black' }}>
-            {hasExercise && !quizData?.quiz && lesson.videoUrl && (
+          {/* Main content: video, bài tập hoặc quiz — có từ 2 loại thì hiện bộ chuyển */}
+          <div className="flex-1 min-h-0 relative" style={{ background: mainView === 'video' ? 'black' : undefined }}>
+            {views.length > 1 && (
               <div className="absolute top-3 left-3 z-20 flex rounded-lg border border-line bg-bg/90 backdrop-blur p-0.5 shadow">
-                {[['video', 'Video', MonitorPlay], ['exercise', 'Bài tập', Code2]].map(([v, label, Icon]) => (
-                  <button key={v} onClick={() => setView(v)}
-                    className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors',
+                {views.map(([v, label, Icon]) => (
+                  <button key={v} onClick={() => setView(v)} aria-pressed={mainView === v}
+                    className={cn('relative flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors',
                       mainView === v ? 'bg-accent text-bg' : 'text-ink-2 hover:text-ink')}>
                     <Icon className="w-3.5 h-3.5" /> {label}
+                    {v === 'quiz' && quizUnpassed && mainView !== 'quiz' && (
+                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent" aria-hidden="true" />
+                    )}
                   </button>
                 ))}
               </div>
             )}
-            {quizData?.quiz ? (
+            {mainView === 'quiz' ? (
               <div className="w-full h-full overflow-y-auto bg-bg">
-                <div className="max-w-2xl mx-auto px-6 py-8">
+                <div className={cn('max-w-2xl mx-auto px-6 py-8', views.length > 1 && 'pt-16')}>
                   <div className="flex items-center gap-2 mb-6">
-                    <span className={`w-2 h-2 rounded-full ${quizLocked ? 'bg-accent animate-pulse' : 'bg-success'}`} />
+                    <span className={`w-2 h-2 rounded-full ${quizUnpassed ? 'bg-accent animate-pulse' : 'bg-success'}`} />
                     <p className="font-mono text-[12px] text-ink-3 uppercase tracking-widest">
-                      {quizLocked
-                        ? `Quiz bắt buộc — đạt ${quizData.quiz.passScore}% để mở bài tiếp theo`
-                        : 'Quiz đã hoàn thành ✓'}
+                      {isStaffView
+                        ? 'Xem trước quiz — kết quả không được lưu'
+                        : quizLocked
+                          ? `Quiz bắt buộc — đạt ${quizData.quiz.passScore}% để mở bài tiếp theo`
+                          : 'Quiz đã hoàn thành ✓'}
                     </p>
                   </div>
-                  <QuizPanel
-                    quiz={quizData.quiz}
-                    onPassed={() => refetchQuiz()}
-                  />
+                  <QuizPanel key={quizData.quiz.id} quiz={quizData.quiz} onPassed={handleQuizPassed} />
                 </div>
               </div>
             ) : mainView === 'exercise' ? (
               <Suspense fallback={<p className="p-6 font-mono text-[12px] text-ink-3">Đang tải bài tập…</p>}>
-                <div className={cn('h-full', lesson.videoUrl && 'pt-12')}>
+                <div className={cn('h-full', views.length > 1 && 'pt-12')}>
                   <ExerciseWorkspace
                     lessonId={lessonId}
                     onSolved={() => {
@@ -421,23 +447,17 @@ export default function LessonPlayerPage() {
           <BottomSheet snapIndex={sheetSnap} onSnapChange={setSheetSnap}>
             {/* DIV 1 — Tab bar */}
             <div className="flex border-b border-line px-4 bg-bg shrink-0">
-              {TABS.map(t => {
-                const hasQuizBadge = t === 'Quiz' && quizData?.quiz && !quizData.quiz.latestAttempt?.passed;
-                return (
-                  <button key={t} onClick={() => handleTabClick(t)}
-                    className={cn(
-                      'relative px-3 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                      tab === t
-                        ? 'border-accent text-ink'
-                        : 'border-transparent text-ink-3 hover:text-ink-2',
-                    )}>
-                    {t}
-                    {hasQuizBadge && (
-                      <span className="absolute top-1.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
-                    )}
-                  </button>
-                );
-              })}
+              {TABS.map(t => (
+                <button key={t} onClick={() => handleTabClick(t)}
+                  className={cn(
+                    'px-3 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                    tab === t
+                      ? 'border-accent text-ink'
+                      : 'border-transparent text-ink-3 hover:text-ink-2',
+                  )}>
+                  {t}
+                </button>
+              ))}
             </div>
 
             {/* DIV 2 — Tab content */}
@@ -460,20 +480,8 @@ export default function LessonPlayerPage() {
                   : <p className="font-mono text-[13px] text-ink-3">// Bài học không có tài liệu đính kèm</p>
               )}
 
-              {tab === 'Quiz' && (
-                <QuizPanel
-                  quiz={quizData?.quiz ?? null}
-                  lessonId={lessonId}
-                  onPassed={() => {
-                    refetchQuiz();
-                    queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] });
-                    queryClient.invalidateQueries({ queryKey: ['enrollments'] });
-                  }}
-                />
-              )}
-
               {tab === 'Thảo luận' && (
-                <DiscussionPanel lessonId={lessonId} />
+                <DiscussionPanel lessonId={lessonId} canModerate={isStaffView} />
               )}
             </div>
           </BottomSheet>
@@ -482,7 +490,7 @@ export default function LessonPlayerPage() {
         {/* Drag divider — resize sidebar width */}
         {sidebarOpen && (
           <div
-            className="w-[5px] shrink-0 cursor-col-resize hover:bg-accent/20 active:bg-accent/30 transition-colors touch-none"
+            className="hidden lg:block w-[5px] shrink-0 cursor-col-resize hover:bg-accent/20 active:bg-accent/30 transition-colors touch-none"
             onPointerDown={onResizeDown}
             onPointerMove={onResizeMove}
             onPointerUp={onResizeUp}
@@ -493,7 +501,10 @@ export default function LessonPlayerPage() {
         {/* Right: curriculum sidebar — toggleable + resizable */}
         <aside
           style={{ width: sidebarOpen ? sidebarWidth : 0 }}
-          className="border-l border-line flex flex-col overflow-hidden shrink-0 transition-[width] duration-200 min-w-0">
+          className={cn(
+            'border-l border-line flex flex-col overflow-hidden shrink-0 transition-[width] duration-200 min-w-0',
+            'max-lg:absolute max-lg:inset-y-0 max-lg:right-0 max-lg:z-30 max-lg:bg-bg max-lg:max-w-[85vw] max-lg:shadow-2xl',
+          )}>
           {/* Mark complete button */}
           <div className="p-3 border-b border-line shrink-0">
             {isStaffView ? (
@@ -523,7 +534,7 @@ export default function LessonPlayerPage() {
                 key={section.id ?? 'none'}
                 section={section}
                 currentLessonId={parseInt(lessonId, 10)}
-                courseId={courseId}
+                onSelect={handleSelectLesson}
               />
             ))}
           </div>
@@ -536,7 +547,7 @@ export default function LessonPlayerPage() {
           title="Cần hoàn thành quiz trước"
           onClose={() => setQuizBlockedModal(false)}
           actions={
-            <Button onClick={() => setQuizBlockedModal(false)}>
+            <Button onClick={() => { setQuizBlockedModal(false); setView('quiz'); }}>
               Quay lại làm quiz
             </Button>
           }
@@ -553,8 +564,7 @@ export default function LessonPlayerPage() {
 }
 
 /* ── Sidebar section accordion ───────────────────────────────── */
-function SidebarSection({ section, currentLessonId, courseId }) {
-  const navigate = useNavigate();
+function SidebarSection({ section, currentLessonId, onSelect }) {
   const [open, setOpen] = useState(
     section.lessons.some(l => l.id === currentLessonId),
   );
@@ -578,7 +588,7 @@ function SidebarSection({ section, currentLessonId, courseId }) {
             return (
               <button
                 key={l.id}
-                onClick={() => navigate(`/learn/${courseId}/${l.id}`)}
+                onClick={() => onSelect(l.id)}
                 className={cn(
                   'w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition hover:bg-bg-2',
                   isCurrent && 'bg-bg-2 border-l-2 border-accent',
@@ -618,10 +628,25 @@ function QuizPanel({ quiz, onPassed }) {
   const [submitting,       setSubmitting]       = useState(false);
   const [retrying,         setRetrying]         = useState(false);
   const [unansweredModal,  setUnansweredModal]  = useState(false);
+  const [retryAt,          setRetryAt]          = useState(null); // mốc được làm lại sau lần chưa đạt
+  const [now,              setNow]              = useState(() => Date.now());
+
+  useEffect(() => {
+    setRetryAt(quiz?.retryAfterSeconds > 0 ? Date.now() + quiz.retryAfterSeconds * 1000 : null);
+  }, [quiz?.id, quiz?.retryAfterSeconds]);
+
+  useEffect(() => {
+    if (!retryAt) return undefined;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [retryAt]);
 
   if (!quiz) {
     return <p className="font-mono text-[13px] text-ink-3">// Bài học này chưa có quiz</p>;
   }
+
+  const waitSeconds = retryAt ? Math.max(0, Math.ceil((retryAt - now) / 1000)) : 0;
 
   const latestAttempt = quiz.latestAttempt;
   const showResult = result ?? (latestAttempt && !retrying ? latestAttempt : null);
@@ -647,8 +672,11 @@ function QuizPanel({ quiz, onPassed }) {
       setResult(data);
       setRetrying(false);
       setAnswers({});
+      if (data.retryAfterSeconds) setRetryAt(Date.now() + data.retryAfterSeconds * 1000);
       if (data.passed) onPassed();
     } catch (err) {
+      const retryAfter = err?.response?.data?.retryAfterSeconds;
+      if (retryAfter) setRetryAt(Date.now() + retryAfter * 1000);
       toast.error(apiMessage(err, 'Chưa nộp được quiz. Câu trả lời vẫn được giữ — thử nộp lại.'));
     } finally { setSubmitting(false); }
   };
@@ -676,9 +704,10 @@ function QuizPanel({ quiz, onPassed }) {
         </div>
 
         <Button size="sm" variant="ghost"
+          disabled={!passed && waitSeconds > 0}
           onClick={() => { setResult(null); setRetrying(true); setAnswers({}); }}
           className="w-full justify-center">
-          {passed ? 'Làm lại quiz' : 'Làm lại để đạt'}
+          {passed ? 'Làm lại quiz' : waitSeconds > 0 ? `Làm lại sau ${waitSeconds} giây` : 'Làm lại để đạt'}
         </Button>
       </div>
     );
@@ -766,7 +795,7 @@ function QuizPanel({ quiz, onPassed }) {
 }
 
 /* ── Discussion Panel ────────────────────────────────────────── */
-function DiscussionPanel({ lessonId }) {
+function DiscussionPanel({ lessonId, canModerate }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const queryKey = ['discussions', lessonId];
@@ -831,6 +860,7 @@ function DiscussionPanel({ lessonId }) {
           key={d.id}
           comment={d}
           currentUserId={user?.id}
+          canModerate={canModerate}
           onReply={(content) => postMutation.mutate({ content, parentId: d.id })}
           onDelete={(id) => deleteMutation.mutate(id)}
           onEdit={(id, content) => editMutation.mutate({ id, content })}
@@ -841,7 +871,7 @@ function DiscussionPanel({ lessonId }) {
   );
 }
 
-function CommentItem({ comment, currentUserId, onReply, onDelete, onEdit, replying }) {
+function CommentItem({ comment, currentUserId, canModerate, onReply, onDelete, onEdit, replying }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -889,16 +919,16 @@ function CommentItem({ comment, currentUserId, onReply, onDelete, onEdit, replyi
                 <CornerDownRight className="w-3 h-3" /> Trả lời
               </button>
               {isOwn && (
-                <>
-                  <button onClick={() => setEditing(true)}
-                    className="font-mono text-[11px] text-ink-3 hover:text-ink transition-colors flex items-center gap-1">
-                    <Edit2 className="w-3 h-3" /> Sửa
-                  </button>
-                  <button onClick={() => window.confirm('Xóa bình luận này? Mọi câu trả lời bên dưới cũng bị xóa theo.') && onDelete(comment.id)}
-                    className="font-mono text-[11px] text-ink-3 hover:text-danger transition-colors flex items-center gap-1">
-                    <Trash2 className="w-3 h-3" /> Xóa
-                  </button>
-                </>
+                <button onClick={() => setEditing(true)}
+                  className="font-mono text-[11px] text-ink-3 hover:text-ink transition-colors flex items-center gap-1">
+                  <Edit2 className="w-3 h-3" /> Sửa
+                </button>
+              )}
+              {(isOwn || canModerate) && (
+                <button onClick={() => window.confirm('Xóa bình luận này? Mọi câu trả lời bên dưới cũng bị xóa theo.') && onDelete(comment.id)}
+                  className="font-mono text-[11px] text-ink-3 hover:text-danger transition-colors flex items-center gap-1">
+                  <Trash2 className="w-3 h-3" /> Xóa
+                </button>
               )}
             </div>
           )}

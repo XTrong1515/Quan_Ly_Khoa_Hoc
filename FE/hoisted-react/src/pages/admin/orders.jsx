@@ -106,7 +106,7 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Tabs + Search */}
-      <div className="flex items-center justify-between mb-5 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-3 sm:gap-4">
         <div className="flex items-center gap-1 flex-wrap">
           {STATUS_TABS.map(({ value, label }) => {
             const cnt = value === '' ? counts.total : counts[value];
@@ -114,7 +114,7 @@ export default function AdminOrdersPage() {
               <button key={value}
                 onClick={() => { setActiveTab(value); setPage(1); }}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[12px] transition-colors border',
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[12px] transition-colors border whitespace-nowrap',
                   activeTab === value
                     ? 'bg-accent/10 text-accent border-accent/30'
                     : 'text-ink-3 border-transparent hover:bg-bg-2 hover:text-ink',
@@ -132,7 +132,7 @@ export default function AdminOrdersPage() {
             );
           })}
         </div>
-        <div className="relative w-56 shrink-0">
+        <div className="relative w-full sm:w-56 shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3" />
           <input
             value={search}
@@ -144,8 +144,8 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden mb-5">
-        <table className="w-full text-[13px]">
+      <div className="card overflow-x-auto mb-5">
+        <table className="w-full min-w-[1040px] text-[13px]">
           <thead>
             <tr className="border-b border-line bg-bg-2">
               {['Mã đơn', 'Khách hàng', 'Items', 'Tổng', 'Phương thức', 'Thời gian', 'Status', ''].map(h => (
@@ -183,10 +183,10 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{o.itemCount} khóa</td>
+                <td className="px-4 py-3 font-mono text-[12px] text-ink-3 whitespace-nowrap">{o.itemCount} khóa</td>
                 <td className="px-4 py-3 font-mono font-semibold text-[12px]">{formatVND(o.total_amount)}</td>
                 <td className="px-4 py-3 font-mono text-[12px] text-ink-2">{o.payment_method}</td>
-                <td className="px-4 py-3 font-mono text-[12px] text-ink-3">
+                <td className="px-4 py-3 font-mono text-[12px] text-ink-3 whitespace-nowrap">
                   {new Date(o.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                 </td>
                 <td className="px-4 py-3">
@@ -204,7 +204,7 @@ export default function AdminOrdersPage() {
                         <button
                           onClick={() => confirmMutation.mutate(o.id)}
                           disabled={confirmMutation.isPending}
-                          className="px-2.5 py-1 rounded-lg bg-success/10 text-success text-[11px] font-mono font-medium hover:bg-success/20 transition-colors">
+                          className="px-2.5 py-1 rounded-lg bg-success/10 text-success text-[11px] font-mono font-medium hover:bg-success/20 transition-colors whitespace-nowrap">
                           Xác nhận
                         </button>
                         <button
@@ -218,7 +218,7 @@ Học viên không thanh toán đơn này được nữa và phải đặt đơn
                     )}
                     <button
                       onClick={() => setDetailOrder(o.id)}
-                      className="px-2.5 py-1 rounded-lg border border-line text-[11px] font-mono text-ink-2 hover:bg-bg-2 transition-colors">
+                      className="px-2.5 py-1 rounded-lg border border-line text-[11px] font-mono text-ink-2 hover:bg-bg-2 transition-colors whitespace-nowrap">
                       Chi tiết →
                     </button>
                   </div>

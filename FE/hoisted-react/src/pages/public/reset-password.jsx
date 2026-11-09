@@ -64,7 +64,7 @@ export default function ResetPasswordPage() {
     return (
       <AuthScreen>
         <Seo title="Link không hợp lệ — Hoisted" />
-        <div className="mb-8"><Logo size={18} /></div>
+        <div className="mb-8"><Logo size={18} onDark /></div>
         <div className="bg-bg rounded-2xl border border-line p-8 text-center shadow-2xl shadow-black/40">
           <div className="w-14 h-14 rounded-2xl bg-danger/10 grid place-items-center mx-auto mb-5">
             <AlertTriangle className="w-6 h-6 text-danger" aria-hidden="true" />
@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthScreen>
       <Seo title="Đặt lại mật khẩu — Hoisted" />
-      <div className="mb-8"><Logo size={18} /></div>
+      <div className="mb-8"><Logo size={18} onDark /></div>
 
       {done ? (
         <div className="bg-bg rounded-2xl border border-line p-8 text-center shadow-2xl shadow-black/40">

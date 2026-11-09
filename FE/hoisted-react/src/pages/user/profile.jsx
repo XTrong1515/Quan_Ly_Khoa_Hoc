@@ -409,6 +409,7 @@ function PwToggle({ show, onToggle }) {
     <button
       type="button"
       onClick={onToggle}
+      aria-label={show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
       className="absolute right-2 top-2 w-7 h-[26px] grid place-items-center text-ink-3 hover:text-ink"
     >
       {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

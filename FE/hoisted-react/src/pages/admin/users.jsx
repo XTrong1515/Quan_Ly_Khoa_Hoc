@@ -196,8 +196,8 @@ export default function AdminUsersPage() {
       )}
 
       {/* Table */}
-      <div className="card overflow-hidden mb-5">
-        <table className="w-full text-[13px]">
+      <div className="card overflow-x-auto mb-5">
+        <table className="w-full min-w-[820px] text-[13px]">
           <thead>
             <tr className="border-b border-line bg-bg-2">
               <th className="px-4 py-2.5 w-8">

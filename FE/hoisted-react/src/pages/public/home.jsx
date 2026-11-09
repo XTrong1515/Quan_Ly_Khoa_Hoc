@@ -323,7 +323,7 @@ export default function HomePage() {
             <div>
               <Reveal>
                 <div className="inline-flex items-center gap-2 h-7 pl-1.5 pr-3 rounded-full border border-accent/25 bg-accent/10 mb-6">
-                  <span className="chip !h-5 !px-2 !text-[10px]">
+                  <span className="chip !h-5 !px-2 !text-[10px] whitespace-nowrap shrink-0">
                     <Terminal className="w-3 h-3" aria-hidden="true" /> Bài tập
                   </span>
                   <span className="text-xs text-ink-2 font-medium">Viết code, chấm bằng test ngay trên trình duyệt</span>
