@@ -1,12 +1,14 @@
 const pool = require('../config/db');
 
+const validRating = (rating) => Number.isInteger(Number(rating)) && Number(rating) >= 1 && Number(rating) <= 5;
+
 /* ── POST /api/courses/:id/reviews ──────────────────────────── */
 async function upsertCourseReview(req, res) {
   const userId  = req.user.id;
   const courseId = parseInt(req.params.id, 10);
   const { rating, comment } = req.body;
 
-  if (!rating || rating < 1 || rating > 5) {
+  if (!validRating(rating)) {
     return res.status(400).json({ message: 'Rating phải từ 1 đến 5 sao' });
   }
   if (comment && comment.length > 1000) {
@@ -34,7 +36,7 @@ async function upsertCourseReview(req, res) {
     // Recalculate course rating
     await pool.query(
       `UPDATE courses
-       SET rating       = (SELECT ROUND(AVG(rating), 2) FROM reviews WHERE course_id = ? AND status = 'VISIBLE'),
+       SET rating       = COALESCE((SELECT ROUND(AVG(rating), 2) FROM reviews WHERE course_id = ? AND status = 'VISIBLE'), 0),
            review_count = (SELECT COUNT(*)             FROM reviews WHERE course_id = ? AND status = 'VISIBLE')
        WHERE id = ?`,
       [courseId, courseId, courseId],
@@ -95,7 +97,7 @@ async function createSiteReview(req, res) {
   const userId = req.user.id;
   const { rating, comment } = req.body;
 
-  if (!rating || rating < 1 || rating > 5) {
+  if (!validRating(rating)) {
     return res.status(400).json({ message: 'Rating phải từ 1 đến 5 sao' });
   }
 

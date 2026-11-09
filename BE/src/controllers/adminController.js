@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const { createNotification } = require('./notificationController');
 const storage = require('../utils/storage');
 const { markOrderPaid } = require('../services/orders');
+const revenue = require('../services/revenue');
 const { passwordError } = require('../utils/password');
 
 /* ─────────────────────────────────────────────────────────────────
@@ -215,7 +216,26 @@ async function _resolveInstructor(instructorId) {
   return rows[0];
 }
 
+const MIN_PAID_PRICE = 5000;      // Giao dịch VNPay tối thiểu 5.000đ
+const MAX_PRICE = 999_999_999;    // và dưới 1 tỷ đồng
+
+function _priceError({ price, originalPrice }) {
+  if (price !== undefined) {
+    const value = Number(price);
+    if (!Number.isFinite(value) || value < 0 || value > MAX_PRICE) return 'Giá khóa học không hợp lệ';
+    if (value > 0 && value < MIN_PAID_PRICE) return 'Giá tối thiểu 5.000đ (giới hạn của VNPay), hoặc đặt 0đ cho khóa miễn phí';
+  }
+  if (originalPrice !== undefined && originalPrice !== null) {
+    const value = Number(originalPrice);
+    if (!Number.isFinite(value) || value < 0 || value > MAX_PRICE) return 'Giá gốc không hợp lệ';
+  }
+  return null;
+}
+
 async function adminCreateCourse(req, res) {
+  const priceError = _priceError(req.body);
+  if (priceError) return res.status(400).json({ message: priceError });
+
   const {
     title, slug, shortDescription, description,
     price = 0, originalPrice, level = 'BEGINNER',
@@ -259,6 +279,9 @@ async function adminCreateCourse(req, res) {
 }
 
 async function adminUpdateCourse(req, res) {
+  const priceError = _priceError(req.body);
+  if (priceError) return res.status(400).json({ message: priceError });
+
   const id = parseInt(req.params.id, 10);
   const fields = [
     ['title','title'],['slug','slug'],['short_description','shortDescription'],
@@ -358,6 +381,21 @@ async function _updateCourseTotals(courseId) {
   );
 }
 
+/** Số bài học đổi → tính lại % của mọi học viên, để khóa đã "hoàn thành" không còn đúng khi có bài mới. */
+async function _recomputeEnrollmentProgress(courseId) {
+  const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM lessons WHERE course_id = ?', [courseId]);
+  // MySQL gán SET từ trái sang phải: completed_at đọc progress_percent vừa tính
+  await pool.query(
+    `UPDATE enrollments e
+     SET e.progress_percent = IF(? = 0, 0, ROUND(100 * (
+           SELECT COUNT(*) FROM lesson_progress lp WHERE lp.enrollment_id = e.id AND lp.is_completed = 1
+         ) / ?)),
+         e.completed_at = IF(e.progress_percent = 100, COALESCE(e.completed_at, NOW()), NULL)
+     WHERE e.course_id = ?`,
+    [total, total, courseId],
+  );
+}
+
 async function adminListLessons(req, res) {
   const courseId = parseInt(req.params.courseId, 10);
   try {
@@ -398,6 +436,7 @@ async function adminCreateLesson(req, res) {
        durationMinutes, maxRows[0].next, isPreview ? 1 : 0, attachmentUrl ?? null],
     );
     await _updateCourseTotals(courseId);
+    await _recomputeEnrollmentProgress(courseId);
     return res.status(201).json({ id: result.insertId });
   } catch (err) {
     console.error('[admin/lessons/create]', err);
@@ -459,6 +498,7 @@ async function adminDeleteLesson(req, res) {
     }
     await pool.query('DELETE FROM lessons WHERE id = ?', [lessonId]);
     await _updateCourseTotals(rows[0].course_id);
+    await _recomputeEnrollmentProgress(rows[0].course_id);
     // Không để file mồ côi trên storage
     await Promise.all([
       storage.deleteObject(rows[0].video_key), storage.deleteObject(rows[0].attachment_key), storage.deletePrefix(rows[0].hls_prefix),
@@ -619,6 +659,19 @@ async function adminUpdateUserRole(req, res) {
   if (!['USER', 'INSTRUCTOR', 'ADMIN'].includes(role?.toUpperCase())) return res.status(400).json({ message: 'Role không hợp lệ' });
   if (id === req.user.id) return res.status(400).json({ message: 'Không thể tự thay đổi role của mình' });
   try {
+    const [[target]] = await pool.query('SELECT role FROM users WHERE id = ?', [id]);
+    if (!target) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+
+    if (target.role === 'INSTRUCTOR' && role.toUpperCase() !== 'INSTRUCTOR') {
+      // Đổi role sẽ mất quyền quản lý khóa học và biến mất khỏi trang chi trả → phải xử lý xong trước
+      const [[{ active }]] = await pool.query(
+        "SELECT COUNT(*) AS active FROM courses WHERE instructor_id = ? AND status IN ('PUBLISHED', 'PENDING_REVIEW')", [id],
+      );
+      if (active) return res.status(409).json({ message: `Giảng viên còn ${active} khóa học đang bán / chờ duyệt — hãy chuyển giao hoặc lưu trữ trước` });
+      const { balance, pending } = await revenue.balanceOf(id);
+      if (balance > 0 || pending > 0) return res.status(409).json({ message: 'Giảng viên còn doanh thu chưa chi trả — hãy hoàn tất chi trả trước' });
+    }
+
     await pool.query('UPDATE users SET role = ? WHERE id = ?', [role.toUpperCase(), id]);
     return res.json({ ok: true });
   } catch (err) {
@@ -744,6 +797,7 @@ async function adminListOrders(req, res) {
     const [rows] = await pool.query(
       `SELECT o.id, o.order_code, o.total_amount, o.status, o.payment_method,
               o.transaction_id, o.created_at, o.paid_at, o.expires_at,
+              (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS itemCount,
               u.full_name AS userName, u.email
        FROM orders o JOIN users u ON u.id = o.user_id
        ${where} ORDER BY o.created_at DESC LIMIT ? OFFSET ?`,
@@ -805,30 +859,52 @@ async function adminGetOrder(req, res) {
 
 async function adminCancelOrder(req, res) {
   const id = parseInt(req.params.id, 10);
+  const conn = await pool.getConnection();
   try {
-    const [orderRows] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
-    if (!orderRows.length) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
-    const order = orderRows[0];
+    await conn.beginTransaction();
+    // Khóa dòng đơn → không chen ngang markOrderPaid, 2 lần hủy đồng thời không trừ số học viên 2 lần
+    const [[order]] = await conn.query('SELECT id, user_id, order_code, status FROM orders WHERE id = ? FOR UPDATE', [id]);
+    if (!order) {
+      await conn.rollback();
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+    if (!['PENDING', 'PAID'].includes(order.status)) {
+      await conn.rollback();
+      return res.status(409).json({ message: 'Đơn hàng này đã kết thúc, không thể hủy' });
+    }
 
-    await pool.query("UPDATE orders SET status = 'CANCELLED' WHERE id = ?", [id]);
+    await conn.query("UPDATE orders SET status = 'CANCELLED' WHERE id = ?", [id]);
 
     if (order.status === 'PAID') {
-      const [items] = await pool.query('SELECT course_id FROM order_items WHERE order_id = ?', [id]);
+      const [items] = await conn.query('SELECT course_id FROM order_items WHERE order_id = ?', [id]);
       for (const item of items) {
-        await pool.query(
+        const [removed] = await conn.query(
           'DELETE FROM enrollments WHERE user_id = ? AND course_id = ? AND order_id = ?',
           [order.user_id, item.course_id, id],
         );
-        await pool.query(
-          'UPDATE courses SET student_count = GREATEST(0, student_count - 1) WHERE id = ?',
-          [item.course_id],
-        );
+        // Chỉ trừ khi đơn này thật sự tạo ra enrollment
+        if (removed.affectedRows) {
+          await conn.query('UPDATE courses SET student_count = GREATEST(0, student_count - 1) WHERE id = ?', [item.course_id]);
+        }
       }
     }
+    await conn.commit();
+
+    createNotification(order.user_id, {
+      type:  'order_cancelled',
+      title: 'Đơn hàng đã bị hủy',
+      body:  order.status === 'PAID'
+        ? `Đơn hàng #${order.order_code} đã bị quản trị viên hủy và khóa học đã được gỡ khỏi tài khoản của bạn.`
+        : `Đơn hàng #${order.order_code} đã bị quản trị viên hủy.`,
+      link:  '/me/orders',
+    });
     return res.json({ ok: true });
   } catch (err) {
+    await conn.rollback();
     console.error('[admin/orders/cancel]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
+  } finally {
+    conn.release();
   }
 }
 

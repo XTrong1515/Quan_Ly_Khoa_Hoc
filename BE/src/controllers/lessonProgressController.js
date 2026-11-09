@@ -23,7 +23,7 @@ async function updateProgress(req, res) {
        ON DUPLICATE KEY UPDATE
          last_watched_seconds = VALUES(last_watched_seconds),
          updated_at = NOW()`,
-      [enrollmentId, lessonId, Math.floor(lastWatchedSeconds)],
+      [enrollmentId, lessonId, Math.max(0, Math.floor(Number(lastWatchedSeconds)) || 0)],
     );
 
     return res.json({ ok: true });
@@ -31,6 +31,26 @@ async function updateProgress(req, res) {
     console.error('[lesson-progress/update]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
+}
+
+/**
+ * Bài học có quiz / bài tập thì phải làm đạt mới được tính hoàn thành.
+ * Trả 'quiz' | 'exercise' nếu còn thiếu, null nếu đủ điều kiện. Quiz chưa có câu hỏi không tính là yêu cầu.
+ */
+async function unmetRequirement(userId, lessonId) {
+  const [[row]] = await pool.query(
+    `SELECT
+       EXISTS(SELECT 1 FROM quizzes q JOIN quiz_questions qq ON qq.quiz_id = q.id WHERE q.lesson_id = ?) AS hasQuiz,
+       EXISTS(SELECT 1 FROM quiz_attempts a JOIN quizzes q ON q.id = a.quiz_id
+              WHERE q.lesson_id = ? AND a.user_id = ? AND a.passed = 1) AS quizPassed,
+       EXISTS(SELECT 1 FROM coding_exercises e WHERE e.lesson_id = ?) AS hasExercise,
+       EXISTS(SELECT 1 FROM code_submissions s JOIN coding_exercises e ON e.id = s.exercise_id
+              WHERE e.lesson_id = ? AND s.user_id = ? AND s.status = 'ACCEPTED') AS exerciseSolved`,
+    [lessonId, lessonId, userId, lessonId, lessonId, userId],
+  );
+  if (row.hasQuiz && !row.quizPassed) return 'quiz';
+  if (row.hasExercise && !row.exerciseSolved) return 'exercise';
+  return null;
 }
 
 /**
@@ -71,17 +91,13 @@ async function completeLesson(userId, lessonId) {
   const { total, completed } = countRows[0];
   const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  if (progressPercent === 100) {
-    await pool.query(
-      `UPDATE enrollments SET progress_percent = ?, completed_at = NOW() WHERE id = ?`,
-      [progressPercent, enrollmentId],
-    );
-  } else {
-    await pool.query(
-      `UPDATE enrollments SET progress_percent = ? WHERE id = ?`,
-      [progressPercent, enrollmentId],
-    );
-  }
+  // COALESCE: làm lại bài cũ không làm đổi ngày hoàn thành khóa học
+  await pool.query(
+    `UPDATE enrollments
+     SET progress_percent = ?, completed_at = IF(? = 100, COALESCE(completed_at, NOW()), NULL)
+     WHERE id = ?`,
+    [progressPercent, progressPercent, enrollmentId],
+  );
 
   return { progressPercent };
 }
@@ -89,7 +105,15 @@ async function completeLesson(userId, lessonId) {
 /* ── POST /api/lesson-progress/:lessonId/complete ────────────── */
 async function markComplete(req, res) {
   try {
-    const result = await completeLesson(req.user.id, parseInt(req.params.lessonId, 10));
+    const lessonId = parseInt(req.params.lessonId, 10);
+    const unmet = await unmetRequirement(req.user.id, lessonId);
+    if (unmet) {
+      return res.status(409).json({
+        message: unmet === 'quiz' ? 'Bạn cần đạt quiz để hoàn thành bài học này' : 'Bạn cần nộp đạt bài tập để hoàn thành bài học này',
+        requirement: unmet,
+      });
+    }
+    const result = await completeLesson(req.user.id, lessonId);
     if (!result) return res.status(403).json({ message: 'Chưa đăng ký khóa học' });
     return res.json({ ok: true, progressPercent: result.progressPercent });
   } catch (err) {
@@ -98,4 +122,4 @@ async function markComplete(req, res) {
   }
 }
 
-module.exports = { updateProgress, markComplete, completeLesson };
+module.exports = { updateProgress, markComplete, completeLesson, unmetRequirement };

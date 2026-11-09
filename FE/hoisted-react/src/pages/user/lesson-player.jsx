@@ -226,8 +226,13 @@ export default function LessonPlayerPage() {
     refetchLesson();
   };
 
+  // Bài có quiz / bài tập: đạt mới tính hoàn thành (BE trả 409 nếu bấm thẳng)
+  const quizUnpassed = !!(quizData?.quiz?.questions?.length && !quizData.quiz.latestAttempt?.passed);
+  const exerciseUnsolved = !!(exerciseData?.exercise && !exerciseData.exercise.solved);
+  const completionLocked = quizUnpassed || exerciseUnsolved;
+
   const handleEnded = () => {
-    if (data?.enrollmentId && !data?.progress?.isCompleted) completeMutation.mutate();
+    if (data?.enrollmentId && !data?.progress?.isCompleted && !completionLocked) completeMutation.mutate();
     if (quizData?.quiz && !quizData.quiz.latestAttempt?.passed) {
       setTab('Quiz');
       setSheetSnap(2);
@@ -500,11 +505,13 @@ export default function LessonPlayerPage() {
               size="sm"
               className="w-full justify-center"
               variant={progress.isCompleted ? 'ghost' : 'primary'}
-              disabled={progress.isCompleted || completeMutation.isPending}
+              disabled={progress.isCompleted || completionLocked || completeMutation.isPending}
               onClick={() => completeMutation.mutate()}>
               {progress.isCompleted
                 ? <><Check className="w-3.5 h-3.5" /> Đã hoàn thành</>
-                : <><CheckCircle className="w-3.5 h-3.5" /> Đánh dấu hoàn thành</>}
+                : completionLocked
+                  ? (quizUnpassed ? 'Đạt quiz để hoàn thành' : 'Nộp đạt bài tập để hoàn thành')
+                  : <><CheckCircle className="w-3.5 h-3.5" /> Đánh dấu hoàn thành</>}
             </Button>
             )}
           </div>
@@ -619,17 +626,23 @@ function QuizPanel({ quiz, onPassed }) {
   const latestAttempt = quiz.latestAttempt;
   const showResult = result ?? (latestAttempt && !retrying ? latestAttempt : null);
 
-  const handleSelect = (questionId, optionId) =>
-    setAnswers(prev => ({ ...prev, [questionId]: optionId }));
+  // answers[questionId] luôn là mảng optionId; câu nhiều đáp án bật / tắt từng lựa chọn
+  const handleSelect = (question, optionId) =>
+    setAnswers(prev => {
+      const current = prev[question.id] ?? [];
+      if (question.type !== 'multiple') return { ...prev, [question.id]: [optionId] };
+      const next = current.includes(optionId) ? current.filter(id => id !== optionId) : [...current, optionId];
+      return { ...prev, [question.id]: next };
+    });
 
   const handleSubmit = async () => {
-    if (Object.keys(answers).length < quiz.questions.length) {
+    if (quiz.questions.some(q => !answers[q.id]?.length)) {
       setUnansweredModal(true);
       return;
     }
     setSubmitting(true);
     try {
-      const payload = quiz.questions.map(q => ({ questionId: q.id, optionId: answers[q.id] }));
+      const payload = quiz.questions.map(q => ({ questionId: q.id, optionIds: answers[q.id] }));
       const { data } = await api.post(`/api/quizzes/${quiz.id}/attempt`, { answers: payload });
       setResult(data);
       setRetrying(false);
@@ -690,11 +703,14 @@ function QuizPanel({ quiz, onPassed }) {
             <span className="font-mono text-ink-3 mr-1.5">{qi + 1}.</span>
             {q.question}
           </p>
+          {q.type === 'multiple' && (
+            <p className="font-mono text-[11px] text-accent">// chọn tất cả đáp án đúng</p>
+          )}
           <div className="space-y-1.5">
             {q.options.map(o => {
-              const selected = answers[q.id] === o.id;
+              const selected = !!answers[q.id]?.includes(o.id);
               return (
-                <button key={o.id} onClick={() => handleSelect(q.id, o.id)}
+                <button key={o.id} onClick={() => handleSelect(q, o.id)} aria-pressed={selected}
                   className={cn(
                     'w-full text-left px-3.5 py-2.5 rounded-lg border text-[13px] transition-colors',
                     selected
@@ -720,7 +736,7 @@ function QuizPanel({ quiz, onPassed }) {
       {unansweredModal && (() => {
         const unanswered = quiz.questions
           .map((q, i) => ({ idx: i + 1, q }))
-          .filter(({ q }) => !answers[q.id]);
+          .filter(({ q }) => !answers[q.id]?.length);
         return (
           <WarningModal
             title="Bạn chưa trả lời hết câu hỏi"

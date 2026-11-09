@@ -170,6 +170,36 @@ async function submitMyCourse(req, res) {
   }
 }
 
+/* ── POST /api/instructor/courses/:id/withdraw ────────────────── */
+// Nội dung bị khóa khi chờ duyệt → giảng viên phát hiện lỗi thì rút về Nháp để sửa, không phải đợi admin từ chối
+async function withdrawMyCourse(req, res) {
+  try {
+    const [r] = await pool.query(
+      "UPDATE courses SET status = 'DRAFT', submitted_at = NULL WHERE id = ? AND status = 'PENDING_REVIEW'",
+      [req.course.courseId],
+    );
+    if (!r.affectedRows) return res.status(409).json({ message: 'Khóa học không ở trạng thái chờ duyệt' });
+    return res.json({ ok: true, status: 'DRAFT' });
+  } catch (err) {
+    console.error('[instructor/courses/withdraw]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+/* ── Học viên đã mua khóa thì giảng viên không được xóa bớt bài học ── */
+async function requireNoStudents(req, res, next) {
+  try {
+    const [rows] = await pool.query('SELECT id FROM enrollments WHERE course_id = ? LIMIT 1', [req.course.courseId]);
+    if (rows.length) {
+      return res.status(409).json({ message: 'Khóa học đã có học viên nên không thể xóa bài học. Hãy sửa nội dung bài, hoặc liên hệ quản trị viên.' });
+    }
+    next();
+  } catch (err) {
+    console.error('[instructor/no-students]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
 /* ── Bài học: section phải thuộc đúng khóa học ────────────────── */
 async function requireOwnSection(req, res, next) {
   const { sectionId } = req.body ?? {};
@@ -187,6 +217,6 @@ async function requireOwnSection(req, res, next) {
 }
 
 module.exports = {
-  dashboard, listMyCourses, createMyCourse, updateMyCourse, deleteMyCourse, submitMyCourse,
-  requireOwnSection,
+  dashboard, listMyCourses, createMyCourse, updateMyCourse, deleteMyCourse, submitMyCourse, withdrawMyCourse,
+  requireOwnSection, requireNoStudents,
 };

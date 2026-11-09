@@ -60,11 +60,16 @@ export default function CartPage() {
   const checkoutMutation = useMutation({
     mutationFn: () =>
       api.post('/api/orders', { courseIds: payableIds }).then((r) => r.data),
-    onSuccess: ({ orderId }) => {
-      clear();
+    // Giỏ chỉ được xóa khi thanh toán xong — trả tiền thất bại thì học viên không phải chọn lại từ đầu
+    onSuccess: ({ orderId, free }) => {
+      if (free) clear();
       navigate(`/payment/pending/${orderId}`);
     },
-    onError: (err) => toast.error(apiMessage(err, 'Không tạo được đơn hàng. Thử lại sau giây lát.')),
+    onError: (err) => {
+      toast.error(apiMessage(err, 'Không tạo được đơn hàng. Thử lại sau giây lát.'));
+      const pendingOrderId = err?.response?.data?.pendingOrderId;
+      if (pendingOrderId) navigate(`/payment/pending/${pendingOrderId}`);
+    },
   });
 
   const handleCheckout = () => {

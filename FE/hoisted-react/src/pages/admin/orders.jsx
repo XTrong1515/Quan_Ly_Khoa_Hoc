@@ -34,7 +34,7 @@ const STATUS_TABS = [
   { value: 'PAID',       label: 'Đã thanh toán' },
   { value: 'PENDING',    label: 'Đang chờ' },
   { value: 'FAILED',     label: 'Thất bại' },
-  { value: 'REFUND',     label: 'Hoàn tiền' },
+  { value: 'CANCELLED',  label: 'Đã hủy' },
 ];
 
 /* ── Page ───────────────────────────────────────────────────────── */
@@ -46,7 +46,8 @@ export default function AdminOrdersPage() {
   const [detailOrder, setDetailOrder] = useState(null);
 
   const params = { search, status: activeTab, page, limit: 15 };
-  const { data, isLoading } = useOrders(params);
+  const { data, isLoading, isError, refetch } = useOrders(params);
+  const stats      = data?.todayStats;
   const orders     = data?.orders ?? [];
   const totalPages = data?.totalPages ?? 1;
   const counts     = data?.counts ?? {};
@@ -89,20 +90,17 @@ export default function AdminOrdersPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Đơn hôm nay',      value: data?.todayStats?.todayOrders  ?? 42,          delta: '+9',     positive: true,  dot: false },
-          { label: 'Đang chờ TT',      value: data?.todayStats?.pendingCount  ?? 24,          delta: '+1',     positive: false, dot: true  },
-          { label: 'Doanh thu hôm nay', value: formatVND(data?.todayStats?.todayRevenue ?? 18_400_000), delta: '+11%', positive: true,  dot: false },
-          { label: 'Tỉ lệ failed',     value: `${data?.todayStats?.failRate ?? 2.4}%`,        delta: '-0.6pp', positive: true,  dot: false },
-        ].map(({ label, value, delta, positive, dot }) => (
+          { label: 'Đơn hôm nay',       value: stats ? stats.todayOrders : '—',                  dot: false },
+          { label: 'Đang chờ TT',       value: stats ? stats.pendingCount : '—',                 dot: true  },
+          { label: 'Doanh thu hôm nay', value: stats ? formatVND(stats.todayRevenue) : '—',      dot: false },
+          { label: 'Tỉ lệ failed',      value: stats ? `${stats.failRate}%` : '—',               dot: false },
+        ].map(({ label, value, dot }) => (
           <div key={label} className="card p-5">
             <div className="flex items-center gap-1.5 mb-1">
               <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{label}</p>
               {dot && <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />}
             </div>
-            <p className="font-mono font-bold text-[22px] text-ink leading-none mb-1">{value}</p>
-            <p className={cn('font-mono text-[11px]', positive ? 'text-success' : 'text-danger')}>
-              {positive ? '▲' : '▼'} {delta}
-            </p>
+            <p className="font-mono font-bold text-[22px] text-ink leading-none">{value}</p>
           </div>
         ))}
       </div>
@@ -159,7 +157,15 @@ export default function AdminOrdersPage() {
             {isLoading && (
               <tr><td colSpan={8} className="px-4 py-8 text-center font-mono text-[12px] text-ink-3">Đang tải...</td></tr>
             )}
-            {!isLoading && orders.length === 0 && (
+            {isError && (
+              <tr>
+                <td colSpan={8} className="px-4 py-8 text-center text-[13px] text-ink-2">
+                  Không tải được danh sách đơn hàng.
+                  <Button size="sm" variant="ghost" className="ml-3" onClick={() => refetch()}>Thử lại</Button>
+                </td>
+              </tr>
+            )}
+            {!isLoading && !isError && orders.length === 0 && (
               <tr><td colSpan={8} className="px-4 py-8 text-center font-mono text-[12px] text-ink-3">// Không có đơn hàng</td></tr>
             )}
             {orders.map(o => (
@@ -177,11 +183,11 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{o.itemCount ?? 1} khóa</td>
+                <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{o.itemCount} khóa</td>
                 <td className="px-4 py-3 font-mono font-semibold text-[12px]">{formatVND(o.total_amount)}</td>
                 <td className="px-4 py-3 font-mono text-[12px] text-ink-2">{o.payment_method}</td>
                 <td className="px-4 py-3 font-mono text-[12px] text-ink-3">
-                  {new Date(o.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(o.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                 </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={o.status?.toLowerCase()} />

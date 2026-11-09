@@ -117,6 +117,16 @@ export default function PaymentPendingPage() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: () => api.post(`/api/orders/${orderId}/cancel`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success('Đã hủy đơn hàng');
+      qc.invalidateQueries({ queryKey: ['order', orderId] });
+      qc.invalidateQueries({ queryKey: ['my-orders'] });
+    },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa hủy được đơn hàng. Thử lại sau giây lát.')),
+  });
+
   const remainingMs = useCountdown(data?.expires_at ?? null);
   const time        = splitTime(remainingMs);
 
@@ -181,9 +191,9 @@ export default function PaymentPendingPage() {
   /* ── Cancelled / expired state ── */
   if (isCancelled || isExpired) {
     const failed = data.status === 'FAILED';
-    // CANCELLED đến từ job hết hạn 24h hoặc do quản trị viên hủy. Chỉ chắc chắn "admin hủy" khi hạn chưa tới;
-    // hạn đã qua thì không phân biệt được (DB không lưu ai hủy) → câu trung tính
-    const adminCancelled = data.status === 'CANCELLED' && data.expires_at && new Date(data.expires_at).getTime() > Date.now();
+    // CANCELLED đến từ job hết hạn 24h, từ học viên hoặc quản trị viên — DB không lưu ai hủy.
+    // Hạn chưa tới thì chắc chắn không phải do hết hạn → câu trung tính cho trường hợp đó
+    const cancelledEarly = data.status === 'CANCELLED' && data.expires_at && new Date(data.expires_at).getTime() > Date.now();
     return (
       <>
         <Seo title={failed ? 'Thanh toán không thành công — Hoisted' : 'Đơn hàng đã hủy — Hoisted'} />
@@ -194,7 +204,7 @@ export default function PaymentPendingPage() {
           title={failed ? 'Thanh toán không thành công' : 'Đơn hàng đã hủy'}
           actions={
             <>
-              <Link to="/courses"><Button size="lg">Chọn lại khóa học</Button></Link>
+              <Link to="/cart"><Button size="lg">Về giỏ hàng</Button></Link>
               <Link to="/me/orders"><Button size="lg" variant="ghost">← Đơn hàng của tôi</Button></Link>
             </>
           }
@@ -202,12 +212,12 @@ export default function PaymentPendingPage() {
           {failed ? (
             <>
               VNPay báo giao dịch cho đơn <span className="font-mono font-semibold text-ink">{data.order_code}</span> không
-              thành công. Thêm khóa học vào giỏ để đặt đơn mới; nếu tài khoản vẫn bị trừ tiền, giữ lại mã đơn này để đối soát.
+              thành công. Đặt đơn mới từ giỏ hàng; nếu tài khoản vẫn bị trừ tiền, giữ lại mã đơn này để đối soát.
             </>
-          ) : adminCancelled ? (
+          ) : cancelledEarly ? (
             <>
-              Đơn hàng <span className="font-mono font-semibold text-ink">{data.order_code}</span> đã được quản trị viên hủy.
-              Thêm khóa học vào giỏ để đặt đơn mới.
+              Đơn hàng <span className="font-mono font-semibold text-ink">{data.order_code}</span> đã được hủy trước khi thanh toán.
+              Đặt đơn mới từ giỏ hàng nếu bạn vẫn muốn mua.
             </>
           ) : (
             <>
@@ -352,6 +362,18 @@ export default function PaymentPendingPage() {
         >
           <CreditCard className="w-4 h-4" aria-hidden="true" />
           {payMutation.isPending ? 'Đang chuyển đến VNPay…' : 'Thanh toán qua VNPay'}
+        </Button>
+
+        <Button
+          size="sm"
+          variant="quiet"
+          className="w-full justify-center mb-4"
+          disabled={cancelMutation.isPending}
+          onClick={() => {
+            if (window.confirm(`Hủy đơn ${data.order_code}?\n\nĐơn này sẽ không thanh toán được nữa, bạn cần đặt đơn mới nếu vẫn muốn mua.`)) cancelMutation.mutate();
+          }}
+        >
+          {cancelMutation.isPending ? 'Đang hủy…' : 'Hủy đơn hàng'}
         </Button>
 
         <p className="flex items-center justify-center gap-1.5 font-mono text-[11px] text-ink-3 text-center">

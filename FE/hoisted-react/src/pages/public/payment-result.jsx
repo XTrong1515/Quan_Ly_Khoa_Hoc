@@ -165,14 +165,14 @@ export default function PaymentResultPage() {
           title="Thanh toán không thành công"
           actions={
             <>
-              <Link to="/courses"><Button size="lg">Chọn lại khóa học</Button></Link>
+              <Link to="/cart"><Button size="lg">Về giỏ hàng để thử lại</Button></Link>
               <Link to="/me/orders"><Button size="lg" variant="ghost">Đơn hàng của tôi</Button></Link>
             </>
           }
         >
           <p className="text-ink-2 leading-relaxed">
             VNPay báo giao dịch{orderCode ? <> <span className="font-mono text-ink">{orderCode}</span></> : ''} bị hủy
-            hoặc bị từ chối, nên khóa học chưa được mở. Thêm khóa học vào giỏ để đặt đơn mới.
+            hoặc bị từ chối, nên khóa học chưa được mở. Khóa học vẫn nằm trong giỏ của bạn để đặt đơn mới.
           </p>
         </ResultScreen>
       </>

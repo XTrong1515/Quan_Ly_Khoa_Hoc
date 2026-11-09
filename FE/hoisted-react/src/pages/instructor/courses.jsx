@@ -50,6 +50,11 @@ export default function InstructorCoursesPage() {
     onSuccess: () => { toast.success('Đã gửi duyệt. Bạn sẽ nhận thông báo khi có kết quả.'); invalidate(qc); },
     onError: (err) => toast.error(apiMessage(err, 'Chưa gửi duyệt được khóa học. Thử lại sau giây lát.')),
   });
+  const withdrawMutation = useMutation({
+    mutationFn: (id) => api.post(`${API}/courses/${id}/withdraw`),
+    onSuccess: () => { toast.success('Đã rút yêu cầu duyệt. Khóa học trở về Nháp để bạn chỉnh sửa.'); invalidate(qc); },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa rút được yêu cầu duyệt. Thử lại sau giây lát.')),
+  });
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`${API}/courses/${id}`),
     onSuccess: () => { toast.success('Đã chuyển khóa học sang Lưu trữ'); invalidate(qc); },
@@ -117,7 +122,7 @@ export default function InstructorCoursesPage() {
               <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border-b border-accent/20 text-[12px] text-accent">
                 <Clock className="w-3.5 h-3.5 shrink-0" />
                 Đang chờ quản trị viên duyệt{c.submitted_at ? ` · gửi lúc ${new Date(c.submitted_at).toLocaleString('vi-VN')}` : ''}.
-                Thông tin khóa học tạm khóa chỉnh sửa.
+                Nội dung khóa học tạm khóa chỉnh sửa — rút yêu cầu duyệt nếu cần sửa.
               </div>
             )}
 
@@ -139,6 +144,16 @@ export default function InstructorCoursesPage() {
                     disabled={submitMutation.isPending}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-accent text-bg text-[12px] font-semibold hover:opacity-90 disabled:opacity-50">
                     <Send className="w-3.5 h-3.5" /> Gửi duyệt
+                  </button>
+                )}
+                {c.status === 'PENDING_REVIEW' && (
+                  <button
+                    onClick={() => { if (window.confirm(`Rút yêu cầu duyệt "${c.title}"?
+
+Khóa học trở về Nháp và bạn cần gửi duyệt lại sau khi sửa.`)) withdrawMutation.mutate(c.id); }}
+                    disabled={withdrawMutation.isPending}
+                    className="px-2.5 py-1.5 rounded-lg border border-line text-[12px] text-ink-2 hover:bg-bg-3 disabled:opacity-50">
+                    Rút yêu cầu duyệt
                   </button>
                 )}
                 {c.status === 'PUBLISHED' && (

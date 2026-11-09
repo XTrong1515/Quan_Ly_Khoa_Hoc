@@ -1,6 +1,16 @@
 const pool = require('../config/db');
+const { completeLesson, unmetRequirement } = require('./lessonProgressController');
 
 /* ── helpers ─────────────────────────────────────────────────────── */
+/** Câu một đáp án: đúng 1 đáp án đúng. Câu nhiều đáp án: ít nhất 1. Trả chuỗi lỗi hoặc null. */
+function optionsError(type, options) {
+  if (!Array.isArray(options) || options.length < 2) return 'Phải có ít nhất 2 đáp án';
+  const correct = options.filter((o) => o.isCorrect).length;
+  if (correct === 0) return 'Phải có ít nhất 1 đáp án đúng';
+  if (type === 'single' && correct > 1) return 'Câu hỏi một đáp án chỉ được có 1 đáp án đúng';
+  return null;
+}
+
 async function loadQuestionsWithOptions(quizId, includeCorrect = false) {
   const [rows] = await pool.query(
     `SELECT q.id AS qid, q.question, q.type, q.position,
@@ -104,7 +114,8 @@ async function addQuestion(req, res) {
   const quizId = parseInt(req.params.id, 10);
   const { question, type = 'single', options = [] } = req.body;
   if (!question?.trim()) return res.status(400).json({ message: 'Câu hỏi không được để trống' });
-  if (options.length < 2) return res.status(400).json({ message: 'Phải có ít nhất 2 đáp án' });
+  const invalidOptions = optionsError(type, options);
+  if (invalidOptions) return res.status(400).json({ message: invalidOptions });
 
   const conn = await pool.getConnection();
   try {
@@ -137,7 +148,8 @@ async function updateQuestion(req, res) {
   const questionId = parseInt(req.params.id, 10);
   const { question, type = 'single', options = [] } = req.body;
   if (!question?.trim()) return res.status(400).json({ message: 'Câu hỏi không được để trống' });
-  if (options.length < 2) return res.status(400).json({ message: 'Phải có ít nhất 2 đáp án' });
+  const invalidOptions = optionsError(type, options);
+  if (invalidOptions) return res.status(400).json({ message: invalidOptions });
 
   const conn = await pool.getConnection();
   try {
@@ -207,11 +219,11 @@ async function getQuizForUser(req, res) {
 }
 
 /* ── USER: POST /api/quizzes/:id/attempt ────────────────────────── */
-// body: { answers: [{questionId, optionId}] }
+// body: { answers: [{ questionId, optionIds: [..] }] } — optionId (một số) vẫn được nhận
 async function submitAttempt(req, res) {
   const quizId = parseInt(req.params.id, 10);
   const userId = req.user.id;
-  const { answers = [] } = req.body;
+  const answers = Array.isArray(req.body?.answers) ? req.body.answers : [];
 
   try {
     const [[quizRow]] = await pool.query(
@@ -219,6 +231,19 @@ async function submitAttempt(req, res) {
       [quizId],
     );
     if (!quizRow) return res.status(404).json({ message: 'Quiz không tồn tại' });
+
+    // Kết quả trả về chứa đáp án đúng, và lượt làm chặn việc xóa bài học → chỉ học viên của khóa mới được nộp.
+    // Admin / giảng viên sở hữu được chấm thử nhưng không lưu lượt làm.
+    const [[access]] = await pool.query(
+      `SELECT c.instructor_id AS ownerId,
+              (SELECT e.id FROM enrollments e WHERE e.course_id = c.id AND e.user_id = ? LIMIT 1) AS enrollmentId
+       FROM lessons l JOIN courses c ON c.id = l.course_id WHERE l.id = ?`,
+      [userId, quizRow.lesson_id],
+    );
+    const isStaff = req.user.role === 'ADMIN' || (req.user.role === 'INSTRUCTOR' && access.ownerId === userId);
+    if (!access.enrollmentId && !isStaff) {
+      return res.status(403).json({ message: 'Bạn chưa đăng ký khóa học này' });
+    }
 
     const [allRows] = await pool.query(
       `SELECT q.id AS questionId, o.id AS optionId, o.is_correct
@@ -231,25 +256,38 @@ async function submitAttempt(req, res) {
 
     // Build correct-answer map
     const correctMap = {};
+    const validOptions = {};
     for (const r of allRows) {
-      if (!correctMap[r.questionId]) correctMap[r.questionId] = new Set();
+      if (!correctMap[r.questionId]) { correctMap[r.questionId] = new Set(); validOptions[r.questionId] = new Set(); }
+      validOptions[r.questionId].add(r.optionId);
       if (r.is_correct) correctMap[r.questionId].add(r.optionId);
     }
 
     const questionIds = Object.keys(correctMap).map(Number);
     let correctCount = 0;
     const results = [];
+    const picks = []; // { questionId, optionId } đã kiểm tra thuộc đúng câu hỏi
 
     for (const qId of questionIds) {
-      const userAnswer  = answers.find(a => a.questionId === qId);
-      const isCorrect   = userAnswer?.optionId && correctMap[qId].has(userAnswer.optionId);
+      const userAnswer = answers.find(a => a.questionId === qId);
+      const rawIds = Array.isArray(userAnswer?.optionIds) ? userAnswer.optionIds : [userAnswer?.optionId];
+      const chosen = new Set(rawIds.filter((id) => validOptions[qId].has(id)));
+      chosen.forEach((optionId) => picks.push({ questionId: qId, optionId }));
+
+      // Đúng khi chọn ĐÚNG VÀ ĐỦ tập đáp án đúng (câu nhiều đáp án không được tính khi mới chọn trúng 1)
+      const expected  = correctMap[qId];
+      const isCorrect = chosen.size > 0 && chosen.size === expected.size && [...chosen].every((id) => expected.has(id));
       if (isCorrect) correctCount++;
-      results.push({ questionId: qId, isCorrect: !!isCorrect, correctOptionIds: [...correctMap[qId]] });
+      results.push({ questionId: qId, isCorrect, correctOptionIds: [...expected] });
     }
 
     const total   = questionIds.length;
     const score   = Math.round((correctCount / total) * 100);
     const passed  = score >= quizRow.pass_score;
+
+    if (!access.enrollmentId) {
+      return res.json({ score, passed, total, correct: correctCount, results, staffPreview: true });
+    }
 
     // Persist attempt
     const conn = await pool.getConnection();
@@ -259,13 +297,11 @@ async function submitAttempt(req, res) {
         'INSERT INTO quiz_attempts (quiz_id, user_id, score, passed) VALUES (?, ?, ?, ?)',
         [quizId, userId, score, passed ? 1 : 0],
       );
-      for (const a of answers) {
-        if (a.questionId && a.optionId) {
-          await conn.query(
-            'INSERT INTO quiz_attempt_answers (attempt_id, question_id, option_id) VALUES (?, ?, ?)',
-            [aRes.insertId, a.questionId, a.optionId],
-          );
-        }
+      for (const { questionId, optionId } of picks) {
+        await conn.query(
+          'INSERT INTO quiz_attempt_answers (attempt_id, question_id, option_id) VALUES (?, ?, ?)',
+          [aRes.insertId, questionId, optionId],
+        );
       }
       await conn.commit();
     } catch (e) {
@@ -275,32 +311,7 @@ async function submitAttempt(req, res) {
     // If passed → mark lesson complete + recalculate enrollment progress
     if (passed) {
       try {
-        const [[enroll]] = await pool.query(
-          `SELECT e.id, e.course_id FROM enrollments e
-           JOIN lessons l ON l.course_id = e.course_id
-           WHERE e.user_id = ? AND l.id = ? LIMIT 1`,
-          [userId, quizRow.lesson_id],
-        );
-        if (enroll) {
-          await pool.query(
-            `INSERT INTO lesson_progress (enrollment_id, lesson_id, is_completed, completed_at)
-             VALUES (?, ?, 1, NOW())
-             ON DUPLICATE KEY UPDATE
-               is_completed = 1, completed_at = COALESCE(completed_at, NOW()), updated_at = NOW()`,
-            [enroll.id, quizRow.lesson_id],
-          );
-          const [[cnt]] = await pool.query(
-            `SELECT
-               (SELECT COUNT(*) FROM lessons WHERE course_id = ?) AS total,
-               (SELECT COUNT(*) FROM lesson_progress WHERE enrollment_id = ? AND is_completed = 1) AS completed`,
-            [enroll.course_id, enroll.id],
-          );
-          const pct = cnt.total > 0 ? Math.round((cnt.completed / cnt.total) * 100) : 0;
-          await pool.query(
-            `UPDATE enrollments SET progress_percent = ?${pct === 100 ? ', completed_at = NOW()' : ''} WHERE id = ?`,
-            [pct, enroll.id],
-          );
-        }
+        if (!(await unmetRequirement(userId, quizRow.lesson_id))) await completeLesson(userId, quizRow.lesson_id);
       } catch (markErr) {
         console.error('[quiz/submitAttempt markComplete]', markErr);
       }

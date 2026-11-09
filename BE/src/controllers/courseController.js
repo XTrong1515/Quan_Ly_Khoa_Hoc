@@ -173,9 +173,10 @@ async function detail(req, res) {
       // SUM() trả DECIMAL → mysql2 trả chuỗi
       instructor = row ? { ...row, studentCount: Number(row.studentCount) } : null;
     }
+    const isOwner = userId !== null && course.instructor_id === userId;
     delete course.instructor_id;
 
-    return res.json({ course, lessons: lessonRows, reviews, isEnrolled, instructor });
+    return res.json({ course, lessons: lessonRows, reviews, isEnrolled, isOwner, instructor });
   } catch (err) {
     console.error('[courses/detail]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });

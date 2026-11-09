@@ -107,7 +107,7 @@ export default function CourseDetailPage() {
     );
   }
 
-  const { course, lessons = [], reviews = [], isEnrolled = false, instructor } = data;
+  const { course, lessons = [], reviews = [], isEnrolled = false, isOwner = false, instructor } = data;
   const instructorName = instructor?.name ?? course.instructor;
   const isFree       = parseFloat(course.price) === 0;
   const inCart       = items.some((i) => i.courseId === course.id);
@@ -371,6 +371,10 @@ export default function CourseDetailPage() {
                   <Button size="lg" className="w-full justify-center mb-2" onClick={handleGoLearn}>
                     <Play className="w-4 h-4" aria-hidden="true" /> Vào học
                   </Button>
+                ) : isOwner ? (
+                  <Link to="/instructor/courses" className="block mb-2">
+                    <Button size="lg" variant="ghost" className="w-full justify-center">Quản lý khóa học của bạn →</Button>
+                  </Link>
                 ) : isFree ? (
                   <Button
                     size="lg"
@@ -406,7 +410,7 @@ export default function CourseDetailPage() {
                   </>
                 )}
 
-                {role !== 'guest' && !isEnrolled && (
+                {role !== 'guest' && !isEnrolled && !isOwner && (
                   <button
                     onClick={handleWishlist}
                     disabled={wishlistToggle.isPending}

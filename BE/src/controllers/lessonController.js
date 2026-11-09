@@ -24,7 +24,7 @@ async function preview(req, res) {
               c.title AS courseTitle, c.slug AS courseSlug
        FROM lessons l
        JOIN courses c ON c.id = l.course_id
-       WHERE l.id = ?`,
+       WHERE l.id = ? AND c.status = 'PUBLISHED'`,
       [lessonId],
     );
 

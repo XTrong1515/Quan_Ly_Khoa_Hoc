@@ -27,8 +27,14 @@ async function register(req, res) {
   const pwError = passwordError(password);
   if (pwError) return res.status(400).json({ message: pwError });
 
+  // Luôn lưu một dạng: nếu giữ khoảng trắng thì lúc đăng nhập (đã trim) sẽ không tìm thấy tài khoản
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return res.status(400).json({ message: 'Email không hợp lệ' });
+  }
+
   try {
-    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
     if (existing.length > 0) {
       return res.status(409).json({ message: 'Email đã được sử dụng' });
     }
@@ -36,22 +42,23 @@ async function register(req, res) {
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
     const [result] = await pool.query(
       'INSERT INTO users (email, password_hash, full_name) VALUES (?, ?, ?)',
-      [email.toLowerCase(), password_hash, name.trim()],
+      [normalizedEmail, password_hash, name.trim()],
     );
 
     const userId = result.insertId;
-    const payload = { id: userId, email, role: 'USER' };
+    const payload = { id: userId, email: normalizedEmail, role: 'USER' };
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh({ id: userId });
 
     await saveRefreshToken(userId, refreshToken);
 
     return res.status(201).json({
-      user: { id: userId, name: name.trim(), email, role: 'USER' },
+      user: { id: userId, name: name.trim(), email: normalizedEmail, role: 'USER' },
       accessToken,
       refreshToken,
     });
   } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'Email đã được sử dụng' });
     console.error('[register]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
@@ -68,7 +75,7 @@ async function login(req, res) {
   try {
     const [rows] = await pool.query(
       'SELECT id, email, password_hash, full_name, avatar_url, role, status FROM users WHERE email = ?',
-      [email.toLowerCase()],
+      [email.trim().toLowerCase()],
     );
 
     if (rows.length === 0) {
@@ -223,11 +230,12 @@ async function resetPassword(req, res) {
       return res.status(400).json({ message: 'Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn' });
     }
 
-    const { id: resetId, user_id: userId } = rows[0];
+    const { user_id: userId } = rows[0];
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
     await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash, userId]);
-    await pool.query('UPDATE password_resets SET used = TRUE WHERE id = ?', [resetId]);
+    // Vô hiệu MỌI link đặt lại của user, không chỉ link vừa dùng (link cũ trong hộp thư không còn đổi được mật khẩu)
+    await pool.query('UPDATE password_resets SET used = TRUE WHERE user_id = ?', [userId]);
     // Thu hồi toàn bộ refresh token của user sau khi đổi mật khẩu
     await pool.query('UPDATE refresh_tokens SET revoked = TRUE WHERE user_id = ?', [userId]);
 

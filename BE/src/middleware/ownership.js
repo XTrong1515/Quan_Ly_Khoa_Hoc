@@ -45,7 +45,22 @@ function requireOwnership(entity, param = 'id') {
   };
 }
 
-/** Body là mảng [{ id, ... }] các bài học — mọi bài học phải thuộc khóa học của người gọi. */
+const LOCKED_MESSAGE = {
+  PENDING_REVIEW: 'Khóa học đang chờ duyệt — rút lại yêu cầu duyệt nếu cần chỉnh sửa nội dung',
+  ARCHIVED: 'Khóa học đã lưu trữ — không thể chỉnh sửa nội dung',
+};
+
+/**
+ * Chạy sau requireOwnership: đang chờ duyệt thì nội dung (bài học, quiz, bài tập, media) phải đứng yên,
+ * nếu không thứ admin duyệt khác với thứ được xuất bản. Chỉ gắn ở khu vực giảng viên.
+ */
+function requireEditableContent(req, res, next) {
+  const message = LOCKED_MESSAGE[req.course.status];
+  if (message) return res.status(409).json({ message });
+  next();
+}
+
+/** Body là mảng [{ id, ... }] các bài học — mọi bài học phải thuộc khóa học của người gọi và đang sửa được. */
 async function requireLessonsOwnership(req, res, next) {
   const ids = Array.isArray(req.body) ? req.body.map((item) => parseInt(item?.id, 10)) : [];
   if (!ids.length || ids.some((id) => !Number.isInteger(id))) {
@@ -53,13 +68,15 @@ async function requireLessonsOwnership(req, res, next) {
   }
   if (req.user.role === 'ADMIN') return next();
   try {
-    const [[{ owned }]] = await pool.query(
-      `SELECT COUNT(DISTINCT l.id) AS owned
+    const [rows] = await pool.query(
+      `SELECT l.id, c.status
        FROM lessons l JOIN courses c ON c.id = l.course_id
        WHERE l.id IN (?) AND c.instructor_id = ?`,
       [ids, req.user.id],
     );
-    if (owned !== new Set(ids).size) return res.status(404).json(NOT_FOUND);
+    if (rows.length !== new Set(ids).size) return res.status(404).json(NOT_FOUND);
+    const locked = rows.find((r) => LOCKED_MESSAGE[r.status]);
+    if (locked) return res.status(409).json({ message: LOCKED_MESSAGE[locked.status] });
     next();
   } catch (err) {
     console.error('[ownership/lessons]', err);
@@ -67,4 +84,4 @@ async function requireLessonsOwnership(req, res, next) {
   }
 }
 
-module.exports = { requireOwnership, requireLessonsOwnership };
+module.exports = { requireOwnership, requireLessonsOwnership, requireEditableContent };

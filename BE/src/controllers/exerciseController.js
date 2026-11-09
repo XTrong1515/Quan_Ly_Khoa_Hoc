@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 const { getRunner } = require('../services/code-runner');
 const { FUNCTION_NAME_RE, display } = require('../services/code-runner/compare');
-const { completeLesson } = require('./lessonProgressController');
+const { completeLesson, unmetRequirement } = require('./lessonProgressController');
 
 /*
  * Bài tập lập trình JS (1 bài tập / bài học).
@@ -137,9 +137,11 @@ async function submitForLearner(req, res) {
       [req.user.id, exercise.id, req.body.code, run.status, run.passed, run.total, run.timeMs, getRunner().name],
     );
 
-    // Đạt 100% → hoàn thành bài học (chỉ khi là học viên đã đăng ký)
+    // Đạt 100% → hoàn thành bài học (chỉ khi là học viên đã đăng ký và bài học không còn quiz chưa đạt)
     let progress = null;
-    if (run.status === 'ACCEPTED' && req.enrollmentId) progress = await completeLesson(req.user.id, lessonId);
+    if (run.status === 'ACCEPTED' && req.enrollmentId && !(await unmetRequirement(req.user.id, lessonId))) {
+      progress = await completeLesson(req.user.id, lessonId);
+    }
 
     return res.json({
       ...shapeForLearner(run, exercise.tests),

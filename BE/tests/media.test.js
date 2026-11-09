@@ -189,7 +189,8 @@ describe('Dọn file trên storage', () => {
   });
 
   it('xóa bài học → xóa luôn file đính kèm', async () => {
-    const res = await request(app).delete(`/api/instructor/lessons/${lesson.id}`).set(authHeader(teacher));
+    // Khóa này đã có học viên nên giảng viên bị chặn xóa bài (xem business-flows.test.js) — admin thì được
+    const res = await request(app).delete(`/api/admin/lessons/${lesson.id}`).set(authHeader(admin));
     expect(res.status).toBe(200);
     expect(storage.deleteObject).toHaveBeenCalledWith(expect.stringContaining('doc.pdf'));
   });

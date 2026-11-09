@@ -23,10 +23,17 @@ function genOrderCode() {
   return `ORD-${date}-${suffix}`;
 }
 
-function buildVNPayUrl(orderCode, amountVND, ipAddr) {
-  const now  = new Date();
-  const pad  = (n) => String(n).padStart(2, '0');
-  const createDate = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+const VNPAY_LINK_TTL_MS = 15 * 60 * 1000;
+
+/** yyyyMMddHHmmss theo giờ Việt Nam — VNPay yêu cầu GMT+7, server có thể chạy múi giờ khác. */
+function vnpDate(ms) {
+  return new Date(ms + 7 * 60 * 60 * 1000).toISOString().replace(/\D/g, '').slice(0, 14);
+}
+
+function buildVNPayUrl(orderCode, amountVND, ipAddr, orderExpiresAt) {
+  const now = Date.now();
+  // Link hết hạn sớm, và không bao giờ sống lâu hơn đơn → hạn chế trường hợp trả tiền cho đơn vừa bị hủy
+  const linkExpiresAt = Math.min(now + VNPAY_LINK_TTL_MS, new Date(orderExpiresAt).getTime());
 
   const raw = {
     vnp_Version:   '2.1.0',
@@ -40,7 +47,8 @@ function buildVNPayUrl(orderCode, amountVND, ipAddr) {
     vnp_Amount:    String(Math.round(amountVND) * 100),
     vnp_ReturnUrl: RETURN_URL,
     vnp_IpAddr:    ipAddr,
-    vnp_CreateDate: createDate,
+    vnp_CreateDate: vnpDate(now),
+    vnp_ExpireDate: vnpDate(linkExpiresAt),
   };
 
   // Sort keys alphabetically — required by VNPay spec
@@ -63,9 +71,9 @@ function resolveIpAddr(req) {
   return ipAddr;
 }
 
-function resolvePaymentUrl(orderCode, amountVND, ipAddr) {
+function resolvePaymentUrl(orderCode, amountVND, ipAddr, orderExpiresAt) {
   if (TMN_CODE && HASH_SECRET) {
-    return buildVNPayUrl(orderCode, amountVND, ipAddr);
+    return buildVNPayUrl(orderCode, amountVND, ipAddr, orderExpiresAt);
   }
   // Dev fallback: bypass VNPay, simulate success redirect
   const mockParams = new URLSearchParams({
@@ -90,8 +98,83 @@ function verifyVNPaySignature(params) {
   // URL-encode before hashing — matches Java URLEncoder / PHP urlencode (VNPay spec)
   const signData  = Object.keys(filtered).map((k) => `${vnpEncode(k)}=${vnpEncode(filtered[k])}`).join('&');
   const hmac      = crypto.createHmac('sha512', HASH_SECRET);
-  const computed  = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-  return computed === secureHash;
+  const computed  = Buffer.from(hmac.update(Buffer.from(signData, 'utf-8')).digest('hex'));
+  const received  = Buffer.from(String(secureHash).toLowerCase());
+  return computed.length === received.length && crypto.timingSafeEqual(computed, received);
+}
+
+const vnpayAmountMatches = (order, params) => Number(params.vnp_Amount) === Math.round(Number(order.total_amount)) * 100;
+
+// vnp_TransactionStatus chỉ vắng trong dev mock; dữ liệu thật đã được chữ ký bảo vệ
+const vnpaySucceeded = (params) => params.vnp_ResponseCode === '00'
+  && (params.vnp_TransactionStatus === undefined || params.vnp_TransactionStatus === '00');
+
+/** VNPay báo đã thu tiền nhưng đơn đã hủy → không tự mở khóa học, báo admin đối soát (chỉ 1 lần cho mỗi đơn). */
+async function flagPaidAfterCancel(order, transactionId) {
+  const [r] = await pool.query(
+    "UPDATE orders SET transaction_id = ? WHERE id = ? AND status = 'CANCELLED' AND transaction_id IS NULL",
+    [transactionId ?? 'UNKNOWN', order.id],
+  );
+  if (!r.affectedRows) return;
+  console.error(`[orders/payment] Đơn ${order.order_code} đã hủy nhưng VNPay báo thu tiền (GD ${transactionId})`);
+  const [admins] = await pool.query("SELECT id FROM users WHERE role = 'ADMIN' AND status = 'ACTIVE'");
+  await Promise.all(admins.map(({ id }) => createNotification(id, {
+    type:  'payment_after_cancel',
+    title: 'Cần đối soát: đơn đã hủy nhưng VNPay báo thu tiền',
+    body:  `Đơn #${order.order_code} — mã GD ${transactionId ?? 'không rõ'}. Kiểm tra và hoàn tiền cho học viên.`,
+    link:  '/admin/orders',
+  })));
+}
+
+/** Áp kết quả thanh toán lên đơn. Dùng chung cho return URL và IPN — gọi lặp lại không xử lý trùng. */
+async function applyPaymentResult(order, { success, transactionId }) {
+  if (order.status === 'CANCELLED' && success) return flagPaidAfterCancel(order, transactionId);
+  if (order.status !== 'PENDING') return undefined;
+
+  if (!success) {
+    await pool.query(
+      "UPDATE orders SET status = 'FAILED', transaction_id = ? WHERE id = ? AND status = 'PENDING'",
+      [transactionId ?? null, order.id],
+    );
+    return undefined;
+  }
+
+  // markOrderPaid chỉ chuyển đơn còn PENDING → return URL và IPN đến cùng lúc không xử lý trùng
+  const { changed } = await markOrderPaid(order.id, { transactionId: transactionId ?? null });
+  if (changed) {
+    // Fire-and-forget notification — outside transaction so it never blocks payment
+    setImmediate(() => {
+      createNotification(order.user_id, {
+        type:  'order_paid',
+        title: 'Thanh toán thành công',
+        body:  `Đơn hàng #${order.order_code} đã được xác nhận. Bắt đầu học ngay!`,
+        link:  '/me',
+      });
+    });
+  }
+  return undefined;
+}
+
+/** Các khóa có mua được không. Trả { courses } hoặc { reject: { status, message } }. */
+async function checkPurchasable(db, userId, ids) {
+  const [courses] = await db.query(
+    "SELECT id, title, price, instructor_id FROM courses WHERE id IN (?) AND status = 'PUBLISHED'",
+    [ids],
+  );
+  if (courses.length !== ids.length) {
+    return { reject: { status: 400, message: 'Một hoặc nhiều khóa học không còn được bán' } };
+  }
+  if (courses.some((c) => c.instructor_id === userId)) {
+    return { reject: { status: 400, message: 'Bạn không thể mua khóa học do chính mình giảng dạy' } };
+  }
+  const [enrolled] = await db.query(
+    'SELECT course_id FROM enrollments WHERE user_id = ? AND course_id IN (?)',
+    [userId, ids],
+  );
+  if (enrolled.length > 0) {
+    return { reject: { status: 400, message: 'Bạn đã đăng ký một hoặc nhiều khóa học này rồi' } };
+  }
+  return { courses };
 }
 
 /* ── POST /api/orders ─────────────────────────────────────────── */
@@ -103,62 +186,130 @@ async function createOrder(req, res) {
     return res.status(400).json({ message: 'courseIds không được rỗng' });
   }
 
-  const ids = courseIds.map(Number).filter((n) => n > 0);
-  if (ids.length !== courseIds.length) {
+  const ids = [...new Set(courseIds.map(Number))];
+  if (ids.some((n) => !Number.isInteger(n) || n <= 0)) {
     return res.status(400).json({ message: 'courseIds không hợp lệ' });
   }
 
+  let conn;
   try {
-    const placeholders = ids.map(() => '?').join(',');
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+    // Khóa dòng user → 2 request đặt đơn đồng thời xử lý lần lượt, không sinh đơn trùng
+    await conn.query('SELECT id FROM users WHERE id = ? FOR UPDATE', [userId]);
 
-    const [courses] = await pool.query(
-      `SELECT id, title, price FROM courses WHERE id IN (${placeholders}) AND status = 'PUBLISHED'`,
-      ids,
-    );
-    if (courses.length !== ids.length) {
-      return res.status(400).json({ message: 'Một hoặc nhiều khóa học không tồn tại' });
+    const { courses, reject } = await checkPurchasable(conn, userId, ids);
+    if (reject) {
+      await conn.rollback();
+      return res.status(reject.status).json({ message: reject.message });
     }
 
-    const [enrolled] = await pool.query(
-      `SELECT course_id FROM enrollments WHERE user_id = ? AND course_id IN (${placeholders})`,
-      [userId, ...ids],
+    // Không cho 2 đơn chờ cùng chứa 1 khóa: trả cả 2 sẽ bị thu tiền 2 lần cho 1 khóa học
+    const [pending] = await conn.query(
+      `SELECT o.id, o.order_code, o.total_amount, o.expires_at, GROUP_CONCAT(oi.course_id) AS courseIds
+       FROM orders o JOIN order_items oi ON oi.order_id = o.id
+       WHERE o.user_id = ? AND o.status = 'PENDING' AND o.expires_at > NOW()
+       GROUP BY o.id`,
+      [userId],
     );
-    if (enrolled.length > 0) {
-      return res.status(400).json({ message: 'Bạn đã đăng ký một hoặc nhiều khóa học này rồi' });
+    const overlapping = pending
+      .map((o) => ({ ...o, courses: o.courseIds.split(',').map(Number) }))
+      .filter((o) => o.courses.some((id) => ids.includes(id)));
+
+    const same = overlapping.find((o) => o.courses.length === ids.length && o.courses.every((id) => ids.includes(id)));
+    if (same) {
+      await conn.commit();
+      return res.json({
+        orderId: same.id,
+        orderCode: same.order_code,
+        paymentUrl: resolvePaymentUrl(same.order_code, same.total_amount, resolveIpAddr(req), same.expires_at),
+        expiresAt: same.expires_at,
+        reused: true,
+      });
+    }
+    if (overlapping.length) {
+      await conn.rollback();
+      return res.status(409).json({
+        message: 'Bạn đang có đơn chờ thanh toán chứa khóa học này. Hãy thanh toán hoặc hủy đơn đó trước.',
+        pendingOrderId: overlapping[0].id,
+      });
     }
 
     const totalAmount = courses.reduce((sum, c) => sum + parseFloat(c.price), 0);
     const orderCode   = genOrderCode();
 
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
+    const [orderResult] = await conn.query(
+      `INSERT INTO orders (user_id, order_code, total_amount, status, expires_at)
+       VALUES (?, ?, ?, 'PENDING', DATE_ADD(NOW(), INTERVAL 24 HOUR))`,
+      [userId, orderCode, totalAmount],
+    );
+    const orderId = orderResult.insertId;
 
-      const [orderResult] = await conn.query(
-        `INSERT INTO orders (user_id, order_code, total_amount, status, expires_at)
-         VALUES (?, ?, ?, 'PENDING', DATE_ADD(NOW(), INTERVAL 24 HOUR))`,
-        [userId, orderCode, totalAmount],
-      );
-      const orderId = orderResult.insertId;
+    const itemValues = courses.map((c) => [orderId, c.id, c.title, c.price]);
+    await conn.query('INSERT INTO order_items (order_id, course_id, course_title, price) VALUES ?', [itemValues]);
 
-      const itemValues = courses.map((c) => [orderId, c.id, c.title, c.price]);
-      await conn.query('INSERT INTO order_items (order_id, course_id, course_title, price) VALUES ?', [itemValues]);
+    const [[{ expires_at: expiresAt }]] = await conn.query('SELECT expires_at FROM orders WHERE id = ?', [orderId]);
 
-      const [[{ expires_at: expiresAt }]] = await conn.query('SELECT expires_at FROM orders WHERE id = ?', [orderId]);
+    await conn.commit();
 
-      await conn.commit();
-
-      const paymentUrl = resolvePaymentUrl(orderCode, totalAmount, resolveIpAddr(req));
-
-      return res.status(201).json({ orderId, orderCode, paymentUrl, expiresAt });
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
+    // Toàn khóa 0đ: VNPay không nhận giao dịch 0đ → hoàn tất luôn, vẫn đi qua markOrderPaid như mọi đơn
+    if (totalAmount === 0) {
+      await markOrderPaid(orderId, { transactionId: 'FREE' });
+      return res.status(201).json({ orderId, orderCode, paymentUrl: null, expiresAt, free: true });
     }
+
+    const paymentUrl = resolvePaymentUrl(orderCode, totalAmount, resolveIpAddr(req), expiresAt);
+    return res.status(201).json({ orderId, orderCode, paymentUrl, expiresAt });
   } catch (err) {
+    if (conn) await conn.rollback().catch(() => {});
     console.error('[orders/create]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  } finally {
+    if (conn) conn.release();
+  }
+}
+
+/* ── GET /api/orders/vnpay-ipn ─────────────────────────────────── */
+// VNPay gọi thẳng server-to-server → đơn vẫn được xác nhận khi học viên đóng trình duyệt sau khi trả tiền.
+// Không có phiên đăng nhập, chữ ký HMAC là bằng chứng duy nhất. Luôn trả HTTP 200 kèm RspCode theo đặc tả VNPay.
+async function vnpayIpn(req, res) {
+  const params = req.query;
+  const reply  = (RspCode, Message) => res.status(200).json({ RspCode, Message });
+
+  try {
+    if (!verifyVNPaySignature(params)) return reply('97', 'Invalid signature');
+
+    const [[order]] = await pool.query(
+      'SELECT id, user_id, order_code, status, total_amount FROM orders WHERE order_code = ?',
+      [params.vnp_TxnRef],
+    );
+    if (!order) return reply('01', 'Order not found');
+    if (!vnpayAmountMatches(order, params)) return reply('04', 'Invalid amount');
+
+    await applyPaymentResult(order, { success: vnpaySucceeded(params), transactionId: params.vnp_TransactionNo });
+    return order.status === 'PENDING' ? reply('00', 'Confirm Success') : reply('02', 'Order already confirmed');
+  } catch (err) {
+    console.error('[orders/ipn]', err);
+    return reply('99', 'Unknown error');
+  }
+}
+
+/* ── POST /api/orders/:id/cancel ──────────────────────────────── */
+async function cancelMyOrder(req, res) {
+  const orderId = parseInt(req.params.id, 10);
+  const userId  = req.user.id;
+  try {
+    const [r] = await pool.query(
+      "UPDATE orders SET status = 'CANCELLED' WHERE id = ? AND user_id = ? AND status = 'PENDING'",
+      [orderId, userId],
+    );
+    if (r.affectedRows) return res.json({ ok: true });
+    const [[order]] = await pool.query('SELECT id FROM orders WHERE id = ? AND user_id = ?', [orderId, userId]);
+    return order
+      ? res.status(409).json({ message: 'Chỉ hủy được đơn đang chờ thanh toán' })
+      : res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+  } catch (err) {
+    console.error('[orders/cancel]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
 }
@@ -169,7 +320,6 @@ async function verifyPayment(req, res) {
   const userId  = req.user.id;
 
   const orderCode     = params.vnp_TxnRef;
-  const responseCode  = params.vnp_ResponseCode;
   const transactionId = params.vnp_TransactionNo;
   // Thanh toán giả lập CHỈ khi chưa cấu hình VNPay và không chạy production.
   // (Trước đây chỉ cần gửi dev_mock=1 là bỏ qua kiểm tra chữ ký → tự đánh dấu PAID không cần trả tiền.)
@@ -189,40 +339,18 @@ async function verifyPayment(req, res) {
     }
 
     const [orders] = await pool.query(
-      'SELECT id, user_id, status, total_amount FROM orders WHERE order_code = ?',
+      'SELECT id, user_id, order_code, status, total_amount FROM orders WHERE order_code = ?',
       [orderCode],
     );
     if (orders.length === 0) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
     const order = orders[0];
     if (order.user_id !== userId) return res.status(403).json({ message: 'Không có quyền' });
-
-    // Already processed (idempotent)
-    if (order.status !== 'PENDING') {
-      return res.json({ success: order.status === 'PAID', status: order.status, orderCode });
+    if (vnpayConfigured && !vnpayAmountMatches(order, params)) {
+      return res.status(400).json({ message: 'Số tiền thanh toán không khớp đơn hàng' });
     }
 
-    const success = responseCode === '00';
-    if (success) {
-      // markOrderPaid chỉ chuyển đơn còn PENDING → 2 callback đồng thời không xử lý trùng
-      const { changed } = await markOrderPaid(order.id, { transactionId: transactionId ?? null });
-      if (changed) {
-        // Fire-and-forget notification — outside transaction so it never blocks payment
-        setImmediate(() => {
-          createNotification(userId, {
-            type:  'order_paid',
-            title: 'Thanh toán thành công',
-            body:  `Đơn hàng #${orderCode} đã được xác nhận. Bắt đầu học ngay!`,
-            link:  '/me',
-          });
-        });
-      }
-    } else {
-      await pool.query(
-        `UPDATE orders SET status = 'FAILED', transaction_id = ? WHERE id = ? AND status = 'PENDING'`,
-        [transactionId ?? null, order.id],
-      );
-    }
+    await applyPaymentResult(order, { success: vnpaySucceeded(params), transactionId });
 
     const [[current]] = await pool.query('SELECT status FROM orders WHERE id = ?', [order.id]);
     return res.json({ success: current.status === 'PAID', status: current.status, orderCode, orderId: order.id });
@@ -254,7 +382,15 @@ async function payOrder(req, res) {
       return res.status(410).json({ message: 'Đơn hàng đã hết hạn thanh toán (quá 24h) và đã bị hủy' });
     }
 
-    const paymentUrl = resolvePaymentUrl(order.order_code, order.total_amount, resolveIpAddr(req));
+    // Đơn có thể đã nằm đó tới 24h: khóa có thể đã ngừng bán, hoặc học viên đã sở hữu qua đơn khác
+    const [items] = await pool.query('SELECT course_id FROM order_items WHERE order_id = ?', [orderId]);
+    const { reject } = await checkPurchasable(pool, userId, items.map((i) => i.course_id));
+    if (reject) {
+      await pool.query("UPDATE orders SET status = 'CANCELLED' WHERE id = ? AND status = 'PENDING'", [orderId]);
+      return res.status(409).json({ message: `${reject.message}. Đơn hàng đã được hủy, vui lòng đặt đơn mới.` });
+    }
+
+    const paymentUrl = resolvePaymentUrl(order.order_code, order.total_amount, resolveIpAddr(req), order.expires_at);
     return res.json({ paymentUrl });
   } catch (err) {
     console.error('[orders/pay]', err);
@@ -367,4 +503,4 @@ async function myTransactions(req, res) {
   }
 }
 
-module.exports = { createOrder, verifyPayment, payOrder, myOrders, getOrder, myTransactions };
+module.exports = { createOrder, verifyPayment, vnpayIpn, payOrder, cancelMyOrder, myOrders, getOrder, myTransactions };

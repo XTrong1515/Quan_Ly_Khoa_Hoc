@@ -67,7 +67,7 @@ async function enrollFree(req, res) {
 
   try {
     const [courseRows] = await pool.query(
-      "SELECT id, price FROM courses WHERE id = ? AND status = 'PUBLISHED'",
+      "SELECT id, price, instructor_id FROM courses WHERE id = ? AND status = 'PUBLISHED'",
       [courseId],
     );
     if (!courseRows.length) {
@@ -76,20 +76,22 @@ async function enrollFree(req, res) {
     if (parseFloat(courseRows[0].price) > 0) {
       return res.status(400).json({ message: 'Khóa học này không miễn phí. Vui lòng thanh toán để đăng ký.' });
     }
-
-    // Idempotent — return success if already enrolled
-    const [existing] = await pool.query(
-      'SELECT id FROM enrollments WHERE user_id = ? AND course_id = ? LIMIT 1',
-      [userId, courseId],
-    );
-    if (existing.length) {
-      return res.json({ enrollmentId: existing[0].id, alreadyEnrolled: true });
+    if (courseRows[0].instructor_id === userId) {
+      return res.status(400).json({ message: 'Bạn là giảng viên của khóa học này' });
     }
 
+    // INSERT IGNORE: bấm đúp / 2 request đồng thời không gây lỗi và không tăng số học viên 2 lần
     const [result] = await pool.query(
-      'INSERT INTO enrollments (user_id, course_id) VALUES (?, ?)',
+      'INSERT IGNORE INTO enrollments (user_id, course_id) VALUES (?, ?)',
       [userId, courseId],
     );
+    if (!result.affectedRows) {
+      const [[existing]] = await pool.query(
+        'SELECT id FROM enrollments WHERE user_id = ? AND course_id = ? LIMIT 1',
+        [userId, courseId],
+      );
+      return res.json({ enrollmentId: existing.id, alreadyEnrolled: true });
+    }
     await pool.query('UPDATE courses SET student_count = student_count + 1 WHERE id = ?', [courseId]);
 
     return res.status(201).json({ enrollmentId: result.insertId });
