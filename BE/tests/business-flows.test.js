@@ -297,6 +297,21 @@ describe('Nộp quiz', () => {
     expect((await submit(student, quizId, [{ questionId: q.id, optionIds: [a, b] }])).body.passed).toBe(true);
   });
 
+  it('chưa đạt → chỉ biết điểm, không lộ đúng/sai từng câu; đạt rồi mới xem đáp án', async () => {
+    const other = await createLesson((await pool.query('SELECT course_id FROM lessons WHERE id = ?', [lesson.id]))[0][0].course_id);
+    const { quizId, questions: [q] } = await createQuiz(other.id, [{ options: [true, false] }]);
+    const [right, wrong] = q.optionIds;
+
+    const failed = await submit(student, quizId, [{ questionId: q.id, optionIds: [wrong] }]);
+    expect(failed.body).toMatchObject({ passed: false, score: 0, total: 1, correct: 0 });
+    expect(failed.body.results).toBeUndefined();
+    expect(JSON.stringify(failed.body)).not.toContain('correctOptionIds');
+
+    const passed = await submit(student, quizId, [{ questionId: q.id, optionIds: [right] }]);
+    expect(passed.body.passed).toBe(true);
+    expect(passed.body.results[0].correctOptionIds).toEqual([right]);
+  });
+
   it('soạn câu hỏi: bắt buộc có đáp án đúng; câu một đáp án chỉ 1 đáp án đúng', async () => {
     const [[{ id: quizId }]] = await pool.query('SELECT id FROM quizzes WHERE lesson_id = ?', [lesson.id]);
     const add = (body) => request(app).post(`/api/instructor/quizzes/${quizId}/questions`).set(H(teacher)).send(body);

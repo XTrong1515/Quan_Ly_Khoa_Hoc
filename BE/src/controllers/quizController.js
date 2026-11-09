@@ -317,7 +317,8 @@ async function submitAttempt(req, res) {
       }
     }
 
-    return res.json({ score, passed, total, correct: correctCount, results });
+    // Chưa đạt thì không trả đúng/sai từng câu: quiz làm lại không giới hạn, lộ ra là dò được đáp án
+    return res.json({ score, passed, total, correct: correctCount, ...(passed && { results }) });
   } catch (err) {
     console.error('[quiz/submitAttempt]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
