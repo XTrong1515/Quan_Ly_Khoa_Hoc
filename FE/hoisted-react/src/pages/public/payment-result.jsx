@@ -10,7 +10,7 @@ import { formatVND } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 /* Centered result screen with grid backdrop and glowing status icon */
-function ResultScreen({ tone, icon: Icon, eyebrow, title, children, actions }) {
+function ResultScreen({ tone, icon: Icon, title, children, actions }) {
   const toneClass = {
     success: 'bg-success/10 text-success shadow-[0_0_50px_rgb(52_211_153/0.25)]',
     danger:  'bg-danger/10 text-danger shadow-[0_0_50px_rgb(244_63_94/0.2)]',
@@ -31,7 +31,6 @@ function ResultScreen({ tone, icon: Icon, eyebrow, title, children, actions }) {
         <div className={cn('w-20 h-20 rounded-2xl grid place-items-center mx-auto mb-6', toneClass)}>
           <Icon className="w-9 h-9" aria-hidden="true" />
         </div>
-        <p className="eyebrow mb-2">{eyebrow}</p>
         <h1 className="display text-[30px] mb-4">{title}</h1>
         <div className="mb-8">{children}</div>
         <div className="flex flex-wrap gap-3 justify-center">{actions}</div>
@@ -115,7 +114,6 @@ export default function PaymentResultPage() {
         <ResultScreen
           tone="success"
           icon={PartyPopper}
-          eyebrow="// thanh toán thành công"
           title="Chúc mừng, khóa học đã mở!"
           actions={
             <>
@@ -161,7 +159,6 @@ export default function PaymentResultPage() {
         <ResultScreen
           tone="danger"
           icon={XCircle}
-          eyebrow="// thanh toán thất bại"
           title="Thanh toán không thành công"
           actions={
             <>
@@ -185,7 +182,6 @@ export default function PaymentResultPage() {
       <ResultScreen
         tone="neutral"
         icon={XCircle}
-        eyebrow="// lỗi xác thực"
         title="Chưa xác nhận được thanh toán"
         actions={
           <>

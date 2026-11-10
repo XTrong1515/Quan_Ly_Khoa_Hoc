@@ -18,15 +18,18 @@ export default {
         ink:     'rgb(var(--ink) / <alpha-value>)',
         'ink-2': 'rgb(var(--ink-2) / <alpha-value>)',
         'ink-3': 'rgb(var(--ink-3) / <alpha-value>)',
-        line:    'rgb(var(--line) / <alpha-value>)',
+        // --line là bộ ba RGB, --line-a là độ đậm hairline. Trước đây alpha nằm trong --line nên rgb() sai cú pháp
+        // và mọi đường viền rơi về currentColor (viền trắng / đen đậm).
+        line:    'rgb(var(--line) / calc(var(--line-a) * <alpha-value>))',
         accent:  'rgb(var(--accent) / <alpha-value>)',
         'accent-ink': 'rgb(var(--accent-ink) / <alpha-value>)',
         // raw brand
         js:      '#F7DF1E',
         indigo:  '#6366F1',
-        success: '#34D399',
-        danger:  '#F43F5E',
-        warn:    '#F59E0B',
+        // màu trạng thái đổi theo giao diện để chữ đạt tương phản AA trên nền sáng
+        success: 'rgb(var(--success) / <alpha-value>)',
+        danger:  'rgb(var(--danger) / <alpha-value>)',
+        warn:    'rgb(var(--warn) / <alpha-value>)',
       },
       borderRadius: { xl2: '14px' },
       letterSpacing: { tight2: '-0.025em' },

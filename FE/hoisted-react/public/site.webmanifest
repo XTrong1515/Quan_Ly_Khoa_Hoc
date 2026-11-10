@@ -1,0 +1,13 @@
+{
+  "name": "Hoisted — Học JavaScript từ bản chất",
+  "short_name": "Hoisted",
+  "lang": "vi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0F19",
+  "theme_color": "#0B0F19",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

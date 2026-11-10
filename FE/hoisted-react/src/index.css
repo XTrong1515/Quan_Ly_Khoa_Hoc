@@ -15,10 +15,14 @@ html.dark {
   --bg-1:  15 21 37;
   --bg-2:  22 28 47;
   --bg-3:  30 38 61;
-  --line:  255 255 255 / 0.07;
+  --line:  255 255 255;
+  --line-a: 0.09;
   --ink:   244 245 249;
   --ink-2: 182 188 208;
-  --ink-3: 107 115 146;
+  --ink-3: 139 146 175;     /* ≥ 4.5:1 trên bg, bg-1, bg-2 */
+  --success: 52 211 153;
+  --danger:  244 63 94;
+  --warn:    245 158 11;
   --accent: 247 223 30;     /* JS yellow */
   --accent-ink: 11 15 25;
   color-scheme: dark;
@@ -30,10 +34,14 @@ html:not(.dark) {
   --bg-1:  255 255 255;
   --bg-2:  241 245 249;
   --bg-3:  255 255 255;
-  --line:  15 23 42 / 0.08;
+  --line:  15 23 42;
+  --line-a: 0.1;
   --ink:   11 15 25;
   --ink-2: 71 85 105;
-  --ink-3: 148 163 184;
+  --ink-3: 91 107 130;      /* ≥ 4.5:1 trên bg, bg-1, bg-2 */
+  --success: 4 120 87;
+  --danger:  214 25 66;
+  --warn:    180 83 9;
   --accent: 79 70 229;      /* indigo in light */
   --accent-ink: 255 255 255;
   color-scheme: light;
@@ -48,6 +56,12 @@ html:not(.dark) {
     letter-spacing: -0.005em;
   }
   ::selection { @apply bg-accent/30 text-ink; }
+  /* Bàn phím luôn thấy vị trí focus; ô nhập đã có viền accent riêng */
+  :focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+  input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+  html { scrollbar-color: rgb(var(--ink-3) / 0.5) transparent; }
+  h1, h2, h3 { text-wrap: balance; }
+  a, button { -webkit-tap-highlight-color: transparent; }
 }
 
 /* ── Component classes (small, semantic) ────────────────────── */

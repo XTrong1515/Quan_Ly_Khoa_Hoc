@@ -31,6 +31,8 @@ function usePlatformStats() {
 }
 
 const EMPTY = []; // tham chiếu cố định cho useMemo khi chưa có dữ liệu
+const MIN_QUOTE_LENGTH = 30;
+const MIN_REVIEWS_FOR_RATING = 5;
 
 /* ── Static content ─────────────────────────────────────────────── */
 
@@ -112,17 +114,12 @@ function formatCount(n) {
 
 /* ── Building blocks ────────────────────────────────────────────── */
 
-function SectionHeader({ index, eyebrow, title, desc, action, align = 'left', id }) {
+function SectionHeader({ title, desc, action, align = 'left', id }) {
   return (
     <div className={cn('mb-8', align === 'center' ? 'text-center' : 'flex flex-wrap items-end justify-between gap-4')}>
       <div className={align === 'center' ? 'mx-auto max-w-xl' : ''}>
-        <p className="eyebrow mb-2 flex items-center gap-2 justify-start">
-          <span className={cn('text-accent', align === 'center' && 'mx-auto')}>
-            {index} <span className="text-ink-3">/ {eyebrow}</span>
-          </span>
-        </p>
         <h2 id={id} className="display text-[26px] sm:text-[32px]">{title}</h2>
-        {desc && <p className="text-sm text-ink-2 leading-relaxed mt-2 max-w-lg">{desc}</p>}
+        {desc && <p className={cn('text-[15px] text-ink-2 leading-relaxed mt-2.5 max-w-lg', align === 'center' && 'mx-auto')}>{desc}</p>}
       </div>
       {action}
     </div>
@@ -143,14 +140,14 @@ function CodeWindow() {
       {/* Code */}
       <pre className="p-5 text-slate-300 overflow-x-auto" aria-hidden="true">
         <code>
-          <span className="text-slate-500">{'// hoisting: dùng trước, khai báo sau'}</span>{'\n'}
+          <span className="text-slate-400">{'// hoisting: dùng trước, khai báo sau'}</span>{'\n'}
           <span className="text-sky-300">console</span>
           <span className="text-slate-400">.</span>
           <span className="text-sky-300">log</span>
           <span className="text-slate-400">(</span>
           <span className="text-sky-300">greet</span>
           <span className="text-slate-400">());</span>
-          <span className="text-slate-500">{'  // "Hello, dev!" ✓'}</span>{'\n\n'}
+          <span className="text-slate-400">{'  // "Hello, dev!" ✓'}</span>{'\n\n'}
           <span className="text-rose-400">function</span>{' '}
           <span className="text-sky-300">greet</span>
           <span className="text-slate-400">()</span>{' '}
@@ -159,7 +156,7 @@ function CodeWindow() {
           <span className="text-emerald-300">'Hello, dev!'</span>
           <span className="text-slate-400">;</span>{'\n'}
           <span className="text-slate-400">{'}'}</span>{'\n\n'}
-          <span className="text-slate-500">{'// hiểu bản chất — không học vẹt'}</span>{'\n'}
+          <span className="text-slate-400">{'// hiểu bản chất — không học vẹt'}</span>{'\n'}
           <span className="text-violet-400">const</span>{' '}
           <span className="text-slate-300">you</span>{' '}
           <span className="text-slate-400">=</span>{' '}
@@ -210,7 +207,10 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState(0);
 
   // Không dùng dữ liệu mẫu: API lỗi thì hiện trạng thái rỗng, không hiện khóa học / số liệu giả
-  const categories = data?.categories ?? EMPTY;
+  // Danh mục chưa có khóa nào thì không mời bấm vào trang rỗng
+  const categories = (data?.categories ?? EMPTY).filter((c) => Number(c.count) > 0);
+  // Chỉ trích những nhận xét có nội dung ("hay", "ok" không giúp người đọc quyết định)
+  const quotes     = (data?.reviews ?? EMPTY).filter((r) => (r.comment ?? '').trim().length >= MIN_QUOTE_LENGTH);
   const reviewers  = (data?.reviews ?? EMPTY).slice(0, 4);
   const allCourses = data?.featured ?? EMPTY;
   const newestCourses = data?.newest ?? [...allCourses].sort((a, b) => b.id - a.id).slice(0, 4);
@@ -234,20 +234,18 @@ export default function HomePage() {
     return [...map.values()].sort((a, b) => b.students - a.students).slice(0, 6);
   }, [allCourses]);
 
-  // totalUsers đếm mọi tài khoản → không gọi là "đang học", không thêm "+"
+  // Điểm trung bình chỉ đáng tin khi đủ lượt — 5/5 từ 2 người không phải là "xuất sắc"
+  const ratingIsMeaningful = Number(stats?.totalReviews) >= MIN_REVIEWS_FOR_RATING;
+  const totalLessons = allCourses.reduce((sum, c) => sum + (Number(c.lessons) || 0), 0);
+
+  // Chỉ hiện số liệu có thật và khác 0; totalUsers đếm mọi tài khoản → không gọi là "đang học", không thêm "+"
   const heroStats = [
-    { n: stats ? formatCount(stats.totalUsers) : '—', l: 'Tài khoản đã đăng ký' },
-    // Điểm TB chỉ có nghĩa khi có lượt đánh giá thật — ghi kèm số lượt để 5/5 từ 2 người không bị đọc thành "xuất sắc"
-    {
-      n: stats?.totalReviews ? `${stats.avgRating}/5` : '—',
-      l: stats?.totalReviews ? `Điểm đánh giá từ ${formatCount(stats.totalReviews)} lượt` : 'Chưa có đánh giá',
-    },
-    { n: stats ? formatCount(stats.totalPublishedCourses) : '—', l: 'Khóa học đã xuất bản' },
-    // "0 khóa miễn phí" không nói lên gì → khi không có khóa miễn phí thì hiện số tài khoản mới trong tuần
-    stats?.freeCourses === 0
-      ? { n: formatCount(stats.newUsersThisWeek), l: 'Tài khoản mới trong 7 ngày qua' }
-      : { n: stats ? formatCount(stats.freeCourses) : '—', l: 'Khóa học miễn phí' },
-  ];
+    stats?.totalPublishedCourses > 0 && { n: formatCount(stats.totalPublishedCourses), l: 'Khóa học đã xuất bản' },
+    totalLessons > 0 && { n: formatCount(totalLessons), l: 'Bài học trong các khóa nổi bật' },
+    stats?.totalUsers > 0 && { n: formatCount(stats.totalUsers), l: 'Tài khoản đã đăng ký' },
+    stats?.freeCourses > 0 && { n: formatCount(stats.freeCourses), l: 'Khóa học miễn phí' },
+    ratingIsMeaningful && { n: `${stats.avgRating}/5`, l: `Điểm đánh giá từ ${formatCount(stats.totalReviews)} lượt` },
+  ].filter(Boolean).slice(0, 4);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -263,11 +261,13 @@ export default function HomePage() {
         '@type': 'Organization',
         name: 'Hoisted',
         url: origin,
-        description: 'Nền tảng học JavaScript, React và Node.js chuyên sâu bằng tiếng Việt.',
+        logo: `${origin}/apple-touch-icon.png`,
+        description: 'Nền tảng học JavaScript từ bản chất bằng tiếng Việt, có bài tập code chấm tự động.',
       },
       {
         '@type': 'WebSite',
-        name: 'Hoisted — Học JS từ gốc',
+        name: 'Hoisted',
+        inLanguage: 'vi',
         url: origin,
         potentialAction: {
           '@type': 'SearchAction',
@@ -299,7 +299,7 @@ export default function HomePage() {
   return (
     <>
       <Seo
-        title="Hoisted — Học JavaScript chuyên sâu từ gốc đến production"
+        title="Hoisted — Học JavaScript từ bản chất, có bài tập chấm tự động"
         description="Học JavaScript từ bản chất bằng tiếng Việt: execution context, closure, event loop, async. Video bài giảng, bài tập code chấm tự động ngay trên trình duyệt và trợ lý AI gợi ý khóa học."
         jsonLd={jsonLd}
       />
@@ -322,15 +322,6 @@ export default function HomePage() {
             {/* Copy */}
             <div>
               <Reveal>
-                <div className="inline-flex items-center gap-2 h-7 pl-1.5 pr-3 rounded-full border border-accent/25 bg-accent/10 mb-6">
-                  <span className="chip !h-5 !px-2 !text-[10px] whitespace-nowrap shrink-0">
-                    <Terminal className="w-3 h-3" aria-hidden="true" /> Bài tập
-                  </span>
-                  <span className="text-xs text-ink-2 font-medium">Viết code, chấm bằng test ngay trên trình duyệt</span>
-                </div>
-              </Reveal>
-
-              <Reveal delay={60}>
                 <h1 id="hero-heading" className="display text-[38px] sm:text-[48px] lg:text-[56px] leading-[1.06] mb-5">
                   Code như người
                   <br />
@@ -409,7 +400,7 @@ export default function HomePage() {
                         </div>
                       )}
                       <div className="text-xs leading-tight">
-                        {stats.totalReviews > 0 && (
+                        {ratingIsMeaningful && (
                           <div className="flex items-center gap-0.5"
                             aria-label={`${stats.avgRating} trên 5 sao từ ${formatCount(stats.totalReviews)} lượt đánh giá`}>
                             {[1, 2, 3, 4, 5].map((i) => (
@@ -420,7 +411,7 @@ export default function HomePage() {
                             <span className="ml-1 text-ink-3">· {formatCount(stats.totalReviews)} lượt</span>
                           </div>
                         )}
-                        <span className="text-ink-3">{heroStats[0].n} tài khoản đã đăng ký</span>
+                        <span className="text-ink-3">{formatCount(stats.totalUsers)} tài khoản đã đăng ký</span>
                       </div>
                     </div>
                   )}
@@ -480,25 +471,22 @@ export default function HomePage() {
       </section>
 
       {/* ════ STATS ══════════════════════════════════════════════ */}
-      <section aria-label="Số liệu nền tảng" className="px-5 sm:px-8 lg:px-16 py-10 border-t border-line bg-bg-2">
-        <dl className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
-          {heroStats.map(({ n, l }, i) => (
-            <Reveal key={l} delay={i * 60} className={cn('lg:px-8', i > 0 && 'lg:border-l lg:border-line')}>
-              <dt className="sr-only">{l}</dt>
-              <dd className="font-display font-bold text-[30px] sm:text-[36px] tabular-nums tracking-tight leading-none">
-                {n}
-              </dd>
-              <dd className="text-[13px] text-ink-3 mt-2">{l}</dd>
-            </Reveal>
-          ))}
-        </dl>
-      </section>
+      {heroStats.length >= 2 && (
+        <section aria-label="Số liệu nền tảng" className="px-5 sm:px-8 lg:px-16 py-7 border-t border-line bg-bg-2">
+          <dl className="flex flex-wrap gap-x-12 gap-y-5">
+            {heroStats.map(({ n, l }) => (
+              <div key={l} className="flex items-baseline gap-2.5">
+                <dd className="font-mono font-bold text-[22px] tabular-nums leading-none text-ink">{n}</dd>
+                <dt className="text-[13.5px] text-ink-2">{l}</dt>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
 
       {/* ════ BENTO — vì sao Hoisted ═════════════════════════════ */}
       <section aria-labelledby="why-heading" className="px-5 sm:px-8 lg:px-16 py-14 border-t border-line">
         <SectionHeader
-          index="01"
-          eyebrow="Triết lý đào tạo"
           title="Học sâu. Không học vẹt."
           desc="Mọi bài học đều đi từ cách JavaScript thật sự hoạt động bên dưới — không phải chỉ cú pháp bề mặt."
           id="why-heading"
@@ -559,8 +547,6 @@ export default function HomePage() {
       {categories.length > 0 && (
       <section aria-labelledby="categories-heading" className="px-5 sm:px-8 lg:px-16 py-14 border-t border-line bg-bg-2">
         <SectionHeader
-          index="02"
-          eyebrow="Chủ đề"
           title="Khám phá theo chủ đề"
           id="categories-heading"
           action={
@@ -595,8 +581,6 @@ export default function HomePage() {
       {/* ════ COURSES ════════════════════════════════════════════ */}
       <section aria-labelledby="courses-heading" className="px-5 sm:px-8 lg:px-16 py-14 border-t border-line">
         <SectionHeader
-          index="03"
-          eyebrow="Khóa học"
           title="Bắt đầu từ một khóa học"
           id="courses-heading"
           action={
@@ -654,8 +638,6 @@ export default function HomePage() {
         />
         <div className="relative">
           <SectionHeader
-            index="04"
-            eyebrow="Lộ trình"
             title="Bạn đang ở đâu trên con đường?"
             desc="Mỗi khóa học ghi rõ cấp độ. Chọn đúng điểm bắt đầu để không học lại thứ đã biết."
             align="center"
@@ -713,8 +695,6 @@ export default function HomePage() {
       {instructors.length > 0 && (
         <section aria-labelledby="instructors-heading" className="px-5 sm:px-8 lg:px-16 py-14 border-t border-line">
           <SectionHeader
-            index="05"
-            eyebrow="Instructor"
             title="Giảng viên các khóa nổi bật"
             id="instructors-heading"
             action={
@@ -751,18 +731,16 @@ export default function HomePage() {
       )}
 
       {/* ════ TESTIMONIALS ═══════════════════════════════════════ */}
-      {data?.reviews?.length > 0 && (
+      {quotes.length > 0 && (
         <section aria-labelledby="reviews-heading" className="px-5 sm:px-8 lg:px-16 py-16 border-t border-line bg-bg-2">
           <SectionHeader
-            index="06"
-            eyebrow="Học viên"
             title="Học viên nói gì"
             align="center"
             id="reviews-heading"
           />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {data.reviews.map((r, i) => (
-              <Reveal key={r.id} delay={i * 90}>
+          <div className="flex flex-wrap justify-center gap-4">
+            {quotes.map((r, i) => (
+              <Reveal key={r.id} delay={i * 90} className="w-full md:w-[calc((100%-2rem)/3)]">
                 <figure className="card p-7 h-full flex flex-col gap-4 relative hover:border-accent/25 transition-colors">
                   <Quote className="absolute top-6 right-6 w-8 h-8 text-accent/15" aria-hidden="true" />
                   <div className="flex items-center gap-0.5" aria-label={`${r.rating} trên 5 sao`}>
@@ -771,7 +749,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   <blockquote className="text-[14.5px] text-ink-2 leading-[1.8] flex-1">
-                    "{r.comment}"
+                    “{r.comment.trim()}”
                   </blockquote>
                   <figcaption className="pt-4 border-t border-line">
                     <div className="flex items-center gap-3">
@@ -808,8 +786,6 @@ export default function HomePage() {
       <section aria-labelledby="faq-heading" className="px-5 sm:px-8 lg:px-16 py-16 border-t border-line">
         <div className="max-w-3xl mx-auto">
           <SectionHeader
-            index="07"
-            eyebrow="FAQ"
             title="Bạn còn băn khoăn?"
             align="center"
             id="faq-heading"
@@ -846,11 +822,6 @@ export default function HomePage() {
               }}
             />
             <div className="relative px-6 sm:px-14 py-14 sm:py-16 text-center">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-line bg-bg-2/80 backdrop-blur px-4 h-9 font-mono text-[12.5px] text-ink-2 mb-7">
-                <span className="text-accent">$</span>
-                <span>npx hoisted@latest bắt-đầu</span>
-                <span className="inline-block w-[7px] h-[14px] bg-ink-2 animate-caret" aria-hidden="true" />
-              </div>
               <h2 id="cta-heading" className="display text-[30px] sm:text-[42px] mb-4 max-w-2xl mx-auto">
                 Sẵn sàng trở thành developer{' '}
                 <span className="text-accent">hiểu bản chất</span>?

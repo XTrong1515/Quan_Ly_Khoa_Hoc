@@ -77,6 +77,26 @@ app.post('/api/site-reviews',   authMiddleware, createSiteReview);
 
 app.get('/health', (_, res) => res.json({ ok: true, ts: new Date() }));
 
+// Sitemap cho công cụ tìm kiếm — chỉ trang công khai và khóa đã xuất bản (robots.txt của FE trỏ về đây)
+app.get('/sitemap.xml', async (_req, res) => {
+  const pool = require('./config/db');
+  const site = (process.env.FE_ORIGIN || 'http://localhost:5173').replace(/\/$/, '');
+  const [courses] = await pool.query("SELECT slug, updated_at FROM courses WHERE status = 'PUBLISHED' ORDER BY id");
+  const entry = (path, lastmod, priority) => `  <url><loc>${site}${path}</loc>${
+    lastmod ? `<lastmod>${new Date(lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}<priority>${priority}</priority></url>`;
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    entry('/', null, '1.0'),
+    entry('/courses', null, '0.9'),
+    entry('/become-instructor', null, '0.5'),
+    ...courses.map((c) => entry(`/courses/${encodeURIComponent(c.slug)}`, c.updated_at, '0.8')),
+    '</urlset>',
+  ].join('\n');
+  res.set({ 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+  return res.send(xml);
+});
+
 // eslint-disable-next-line no-unused-vars -- Express nhận diện error middleware qua đúng 4 tham số
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);

@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Nav } from './components/layout/nav.jsx';
 import { Footer } from './components/layout/footer.jsx';
 import { AdminLayout, InstructorLayout } from './components/layout/admin-layout.jsx';
@@ -20,6 +20,7 @@ const CartPage = lazy(() => import('./pages/public/cart.jsx'));
 const PaymentPendingPage = lazy(() => import('./pages/public/payment-pending.jsx'));
 const PaymentResultPage = lazy(() => import('./pages/public/payment-result.jsx'));
 const BecomeInstructorPage = lazy(() => import('./pages/public/become-instructor.jsx'));
+const NotFoundPage = lazy(() => import('./pages/public/not-found.jsx'));
 
 // User
 const LessonPlayerPage = lazy(() => import('./pages/user/lesson-player.jsx'));
@@ -47,12 +48,80 @@ const InstructorCoursesPage = lazy(() => import('./pages/instructor/courses.jsx'
 const InstructorRevenuePage = lazy(() => import('./pages/instructor/revenue.jsx'));
 const InstructorProfilePage = lazy(() => import('./pages/instructor/profile.jsx'));
 
+/* ── SEO theo đường dẫn ───────────────────────────────────────── */
+// Trang riêng tư / theo tài khoản không nên xuất hiện trên công cụ tìm kiếm (khớp PRIVATE_PATHS trong vite.config.js)
+const NOINDEX_PREFIXES = [
+  '/admin', '/instructor', '/me', '/learn', '/cart', '/payment', '/assistant',
+  '/login', '/register', '/forgot-password', '/reset-password',
+];
+const PUBLIC_PATHS = [/^\/$/, /^\/courses$/, /^\/courses\/[^/]+$/, /^\/become-instructor$/];
+
+/** Đặt canonical + robots mỗi lần đổi trang, và đưa trang về đầu (trừ khi chỉ đổi query / hash). */
+function RouteMeta() {
+  const { pathname } = useLocation();
+
+  // Ảnh chia sẻ mặc định trong index.html là đường dẫn tương đối — mạng xã hội cần URL tuyệt đối
+  useEffect(() => {
+    for (const selector of ['meta[property="og:image"]', 'meta[name="twitter:image"]']) {
+      const el = document.head.querySelector(selector);
+      const value = el?.getAttribute('content');
+      if (value?.startsWith('/')) el.setAttribute('content', window.location.origin + value);
+    }
+  }, []);
+
+  useEffect(() => {
+    const indexable = PUBLIC_PATHS.some((re) => re.test(pathname))
+      && !NOINDEX_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+    let robots = document.head.querySelector('meta[name="robots"]');
+    if (!robots) {
+      robots = document.createElement('meta');
+      robots.setAttribute('name', 'robots');
+      document.head.appendChild(robots);
+    }
+    robots.setAttribute('content', indexable ? 'index, follow' : 'noindex, nofollow');
+
+    // Canonical bỏ query (?page, ?sort, ?category…) để các biến thể lọc không bị tính là trang trùng lặp
+    const url = `${window.location.origin}${pathname === '/' ? '/' : pathname.replace(/\/$/, '')}`;
+    let canonical = document.head.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', url);
+    let ogUrl = document.head.querySelector('meta[property="og:url"]');
+    if (!ogUrl) {
+      ogUrl = document.createElement('meta');
+      ogUrl.setAttribute('property', 'og:url');
+      document.head.appendChild(ogUrl);
+    }
+    ogUrl.setAttribute('content', url);
+
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
+function SkipLink() {
+  return (
+    <a
+      href="#main"
+      className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:h-10 focus:px-4 focus:inline-flex focus:items-center focus:rounded-lg focus:bg-accent focus:text-accent-ink focus:font-semibold focus:text-sm"
+    >
+      Bỏ qua điều hướng, tới nội dung chính
+    </a>
+  );
+}
+
 /* ── Layout shells ────────────────────────────────────────────── */
 function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col">
+      <SkipLink />
       <Nav />
-      <div className="flex-1"><Suspense fallback={<PageFallback />}><Outlet /></Suspense></div>
+      <main id="main" className="flex-1"><Suspense fallback={<PageFallback />}><Outlet /></Suspense></main>
       <Footer />
       <ChatWidget />
     </div>
@@ -61,7 +130,7 @@ function PublicLayout() {
 
 /* Lesson player is full-bleed — no main nav/footer */
 function BareLayout() {
-  return <Suspense fallback={<PageFallback />}><Outlet /></Suspense>;
+  return <main id="main"><Suspense fallback={<PageFallback />}><Outlet /></Suspense></main>;
 }
 
 /* ── Route guards ─────────────────────────────────────────────── */
@@ -85,6 +154,8 @@ function RequireInstructor({ children }) {
 /* ── Router tree ──────────────────────────────────────────────── */
 export function Router() {
   return (
+    <>
+    <RouteMeta />
     <Routes>
       <Route element={<PublicLayout />}>
         <Route path="/"                   element={<HomePage />} />
@@ -134,7 +205,10 @@ export function Router() {
         <Route path="/instructor/profile" element={<InstructorProfilePage />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route element={<PublicLayout />}>
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
     </Routes>
+    </>
   );
 }

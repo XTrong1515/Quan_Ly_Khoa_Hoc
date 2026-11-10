@@ -287,7 +287,7 @@ function NotificationsBell() {
           <Bell className="w-4 h-4" />
         </IconBtn>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-danger text-white font-mono font-bold text-[9.5px] grid place-items-center border-2 border-bg pointer-events-none">
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#E11D48] text-white font-mono font-bold text-[9.5px] grid place-items-center border-2 border-bg pointer-events-none">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

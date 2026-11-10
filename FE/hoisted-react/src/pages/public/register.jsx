@@ -134,7 +134,7 @@ export default function RegisterPage() {
               <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" aria-hidden="true" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" aria-hidden="true" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" aria-hidden="true" />
-              <span className="ml-2 text-[10.5px] text-slate-500">tài-khoản-mới — hoisted</span>
+              <span className="ml-2 text-[10.5px] text-slate-400">tài-khoản-mới — hoisted</span>
             </div>
             <div className="px-5 py-4 text-slate-300" aria-hidden="true">
               <p><span className="text-js">$</span> npx create-hoisted-account</p>
@@ -173,7 +173,7 @@ export default function RegisterPage() {
           )}
         </div>
 
-        <p className="relative flex items-center gap-2 font-mono text-[11.5px] text-slate-500">
+        <p className="relative flex items-center gap-2 font-mono text-[11.5px] text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
           Mật khẩu được lưu dạng băm (bcrypt) · không gửi email quảng cáo
         </p>

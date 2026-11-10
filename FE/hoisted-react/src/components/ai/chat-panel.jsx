@@ -93,7 +93,7 @@ function Message({ m }) {
           </div>
         ) : m.streaming && (
           <span className="inline-flex gap-1 py-2" aria-label="Đang trả lời">
-            {[0, 1, 2].map((i) => <span key={i} className="w-1.5 h-1.5 rounded-full bg-ink-3 animate-bounce" style={{ animationDelay: `${i * 120}ms` }} />)}
+            {[0, 1, 2].map((i) => <span key={i} className="w-1.5 h-1.5 rounded-full bg-ink-3 animate-pulse motion-reduce:animate-none" style={{ animationDelay: `${i * 120}ms` }} />)}
           </span>
         )}
         {m.error && <p className="mt-1 text-[12.5px] text-danger">{m.error}</p>}

@@ -70,7 +70,7 @@ function Stepper({ current }) {
 }
 
 /* Centered status screen shared by paid / expired states */
-function StatusScreen({ tone, icon: Icon, eyebrow, title, children, actions }) {
+function StatusScreen({ tone, icon: Icon, title, children, actions }) {
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
@@ -82,7 +82,6 @@ function StatusScreen({ tone, icon: Icon, eyebrow, title, children, actions }) {
         )}>
           <Icon className="w-9 h-9" aria-hidden="true" />
         </div>
-        <p className="eyebrow mb-2">{eyebrow}</p>
         <h1 className="display text-[28px] mb-3">{title}</h1>
         <div className="text-ink-2 text-[14px] leading-relaxed mb-8">{children}</div>
         <div className="flex flex-wrap gap-3 justify-center">{actions}</div>
@@ -149,7 +148,6 @@ export default function PaymentPendingPage() {
       <StatusScreen
         tone="danger"
         icon={AlertTriangle}
-        eyebrow={missing ? '// không tìm thấy' : '// lỗi kết nối'}
         title={missing ? 'Không tìm thấy đơn hàng' : 'Không tải được đơn hàng'}
         actions={<Link to="/me/orders"><Button variant="ghost">← Đơn hàng của tôi</Button></Link>}
       >
@@ -172,7 +170,6 @@ export default function PaymentPendingPage() {
         <StatusScreen
           tone="success"
           icon={CheckCircle2}
-          eyebrow="// đã thanh toán"
           title="Thanh toán thành công"
           actions={
             <>
@@ -200,7 +197,6 @@ export default function PaymentPendingPage() {
         <StatusScreen
           tone="danger"
           icon={AlertTriangle}
-          eyebrow={failed ? '// thanh toán thất bại' : '// đơn hàng đã hủy'}
           title={failed ? 'Thanh toán không thành công' : 'Đơn hàng đã hủy'}
           actions={
             <>

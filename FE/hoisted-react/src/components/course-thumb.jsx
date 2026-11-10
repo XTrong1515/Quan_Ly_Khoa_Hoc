@@ -41,7 +41,8 @@ export function CourseThumb({ course, className }) {
       className,
     )}>
       <div className="absolute inset-0 grid place-items-center font-mono font-extrabold text-[64px] leading-none text-black/30 tracking-tighter">
-        {course.glyph}
+        {/* Khóa chưa đặt ký hiệu → lấy chữ cái đầu của tên, không để ô màu trống */}
+        {course.glyph || (course.title ?? '').trim().slice(0, 2).toUpperCase()}
       </div>
       <div className="absolute left-3 right-3 bottom-2.5 flex justify-between items-end font-mono font-semibold text-[11px] text-black/65">
         {/* Một số payload (giỏ hàng…) không có số bài / thời lượng → không in "undefined lessons" hay "0.0h" */}

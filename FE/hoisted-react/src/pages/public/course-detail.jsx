@@ -57,12 +57,25 @@ export default function CourseDetailPage() {
   const jsonLd = useMemo(() => {
     const course = data?.course;
     if (!course) return null;
+    const url = `${origin}/courses/${course.slug ?? course.id}`;
+    const breadcrumb = {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Trang chủ', item: `${origin}/` },
+        { '@type': 'ListItem', position: 2, name: 'Khóa học', item: `${origin}/courses` },
+        { '@type': 'ListItem', position: 3, name: course.title, item: url },
+      ],
+    };
     return {
       '@context': 'https://schema.org',
+      '@graph': [breadcrumb, {
       '@type': 'Course',
       name: course.title,
       description: course.short_description || course.title,
-      url: `${origin}/courses/${course.slug ?? course.id}`,
+      url,
+      inLanguage: 'vi',
+      ...(course.thumbnail_url && { image: course.thumbnail_url }),
+      ...(data.instructor?.name && { instructor: { '@type': 'Person', name: data.instructor.name } }),
       provider: { '@type': 'Organization', name: 'Hoisted', url: origin },
       ...(course.rating > 0 && course.review_count > 0 && {
         aggregateRating: {
@@ -76,9 +89,11 @@ export default function CourseDetailPage() {
         price: Number(course.price) || 0,
         priceCurrency: 'VND',
         availability: 'https://schema.org/InStock',
+        url,
       },
+      }],
     };
-  }, [data?.course, origin]);
+  }, [data, origin]);
 
   if (isLoading) return <CourseDetailSkeleton />;
   // Chỉ báo 404 khi máy chủ thật sự trả 404 — lỗi mạng / 5xx thì cho thử lại
@@ -160,6 +175,7 @@ export default function CourseDetailPage() {
       <Seo
         title={`${course.title} — Hoisted`}
         description={(course.short_description || course.title).slice(0, 158)}
+        image={course.thumbnail_url || undefined}
         jsonLd={jsonLd}
       />
 
@@ -190,7 +206,9 @@ export default function CourseDetailPage() {
             <nav className="flex items-center gap-1.5 font-mono text-[12px] text-ink-3 mb-5" aria-label="Breadcrumb">
               <Link to="/courses" className="hover:text-accent transition-colors">Khóa học</Link>
               <ChevronRight className="w-3 h-3" aria-hidden="true" />
-              <span className="text-ink-2">{course.category}</span>
+              {course.categorySlug
+                ? <Link to={`/courses?category=${course.categorySlug}`} className="text-ink-2 hover:text-accent transition-colors">{course.category}</Link>
+                : <span className="text-ink-2">{course.category}</span>}
             </nav>
 
             <div className="flex flex-wrap gap-2 mb-4">
@@ -350,7 +368,7 @@ export default function CourseDetailPage() {
               <div className="relative">
                 <CourseThumb course={course} className="rounded-none" />
                 {discount > 0 && (
-                  <span className="absolute top-3 right-3 h-6 px-2.5 rounded-full bg-danger text-white font-mono text-[11.5px] font-bold grid place-items-center shadow-lg">
+                  <span className="absolute top-3 right-3 h-6 px-2.5 rounded-full bg-[#0B0F19] text-white font-mono text-[11.5px] font-bold grid place-items-center">
                     -{discount}%
                   </span>
                 )}

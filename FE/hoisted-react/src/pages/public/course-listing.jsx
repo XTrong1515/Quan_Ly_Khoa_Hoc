@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
@@ -66,8 +66,7 @@ export default function CourseListingPage() {
   const { data, isLoading, isFetching, isError, refetch } = useCourses(queryParams);
   const { data: categories = [] }       = useCategories();
 
-  // Sync URL params
-  useEffect(() => {
+  const stateParams = () => {
     const p = new URLSearchParams();
     if (search)    p.set('search', search);
     if (sort !== 'newest') p.set('sort', sort);
@@ -75,8 +74,45 @@ export default function CourseListingPage() {
     category.forEach((c) => p.append('category', c));
     level.forEach((l) => p.append('level', l));
     if (minRating) p.set('minRating', minRating);
-    setSearchParams(p, { replace: true });
+    return p;
+  };
+
+  // State → URL
+  useEffect(() => {
+    setSearchParams(stateParams(), { replace: true });
   }, [search, sort, page, category, level, minRating]); // eslint-disable-line
+
+  // URL → state: ô tìm kiếm trên thanh điều hướng và link ở footer đổi URL khi đang ở sẵn trang này
+  // (trước đây bộ lọc không đổi theo, rồi còn ghi đè URL về giá trị cũ)
+  const urlKey = searchParams.toString();
+  useEffect(() => {
+    if (urlKey === stateParams().toString()) return;
+    const nextSearch = searchParams.get('search') ?? searchParams.get('q') ?? '';
+    setSearch(nextSearch);
+    setSearchInput(nextSearch);
+    setCategory(searchParams.getAll('category'));
+    setLevel(searchParams.getAll('level').map((l) => l.toUpperCase()));
+    setMinRating(searchParams.get('minRating') ?? '');
+    setSort(searchParams.get('sort') ?? 'newest');
+    setPage(Number(searchParams.get('page') ?? 1));
+  }, [urlKey]); // eslint-disable-line
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const listJsonLd = useMemo(() => {
+    const items = data?.courses ?? [];
+    if (!items.length) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Khóa học trên Hoisted',
+      itemListElement: items.map((c, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: c.title,
+        url: `${origin}/courses/${c.slug ?? c.id}`,
+      })),
+    };
+  }, [data?.courses, origin]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -167,6 +203,7 @@ export default function CourseListingPage() {
       <Seo
         title="Tất cả khóa học JavaScript, React, Node.js — Hoisted"
         description="Thư viện khóa học lập trình của Hoisted: JavaScript core, React, Node.js, TypeScript. Lọc theo chủ đề, cấp độ và đánh giá; xem thử các bài học mở sẵn trước khi mua."
+        jsonLd={listJsonLd}
       />
 
       {/* ── Catalog hero ─────────────────────────────────────────── */}
@@ -199,8 +236,8 @@ export default function CourseListingPage() {
               </p>
             </div>
 
-            {/* Command-bar search */}
-            <form onSubmit={handleSearchSubmit} role="search" className="w-full lg:w-[420px]">
+            {/* Từ md trở lên đã có ô tìm kiếm trên thanh điều hướng → chỉ hiện ô này trên điện thoại, tránh 2 ô cùng việc */}
+            <form onSubmit={handleSearchSubmit} role="search" className="w-full md:hidden">
               <div className="relative flex items-center rounded-2xl border border-line bg-bg-1/80 backdrop-blur p-1.5 shadow-lg shadow-black/5 focus-within:border-accent/50 transition-colors">
                 <Search className="ml-3 w-4 h-4 text-ink-3 pointer-events-none flex-shrink-0" aria-hidden="true" />
                 <label htmlFor="catalog-search" className="sr-only">Tìm khóa học</label>
@@ -287,6 +324,7 @@ export default function CourseListingPage() {
 
           {/* ── Results ────────────────────────────────────────────── */}
           <div className="flex-1 min-w-0">
+            <h2 className="sr-only">Danh sách khóa học</h2>
             {/* Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
               <p className="flex items-center gap-2 font-mono text-[12.5px] text-ink-3" aria-live="polite">
