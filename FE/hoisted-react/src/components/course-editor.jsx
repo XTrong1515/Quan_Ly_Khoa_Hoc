@@ -263,7 +263,6 @@ Video, tài liệu, quiz, bài tập, thảo luận và tiến độ của học
 /* ── Lesson inline form ─────────────────────────────────────────── */
 function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved }) {
   const [title,     setTitle]     = useState(initial?.title          ?? '');
-  const [videoUrl,  setVideoUrl]  = useState(initial?.video_url      ?? '');
   const [duration,  setDuration]  = useState(initial?.duration_minutes ?? 0);
   const [sectionId, setSectionId] = useState(initial?.section_id     ?? '');
   const [isPreview, setIsPreview] = useState(!!initial?.is_preview);
@@ -274,7 +273,7 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
     if (!title.trim()) { toast.error('Nhập tên bài học trước khi lưu'); return; }
     setSaving(true);
     try {
-      const payload = { title, videoUrl, durationMinutes: +duration, sectionId: sectionId || null, isPreview, content };
+      const payload = { title, durationMinutes: +duration, sectionId: sectionId || null, isPreview, content };
       if (initial) {
         await api.put(`${apiBase}/lessons/${initial.id}`, payload);
         toast.success('Đã cập nhật bài học');
@@ -295,11 +294,6 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
         <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tên bài học *</label>
         <input value={title} onChange={e => setTitle(e.target.value)}
           className={inputCls()} placeholder="Tên bài học" />
-      </div>
-      <div className="w-[220px]">
-        <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Video URL</label>
-        <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
-          className={inputCls()} placeholder="https://youtu.be/..." />
       </div>
       <div className="w-[70px]">
         <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Phút</label>
@@ -343,7 +337,7 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
 const MEDIA_CFG = {
   video: {
     label: 'Video bài giảng', accept: 'video/mp4,video/webm', maxMB: 1024,
-    hint: 'MP4 / WebM — lưu private, tự mã hóa HLS AES-128 sau khi tải lên. Ưu tiên hơn Video URL.',
+    hint: 'MP4 / WebM — lưu private, tự mã hóa HLS AES-128 sau khi tải lên. Đây là cách duy nhất để gắn video vào bài học.',
   },
   attachment: {
     label: 'Tài liệu PDF', accept: 'application/pdf', maxMB: 50,

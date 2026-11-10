@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Star, Clock, BookOpen, Users, ChevronDown, ChevronRight, Play,
   ShoppingCart, Zap, Check, X, Lock, Trash2, Gift, Heart, MonitorPlay,
 } from 'lucide-react';
-const ReactPlayer = lazy(() => import('react-player')); // chỉ cần khi mở xem thử
+import { Mp4Player } from '@/components/video/hls-player.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { RichContent } from '@/components/rich-content.jsx';
 import { Chip } from '@/components/ui/chip.jsx';
@@ -720,7 +720,7 @@ function PreviewModal({ lesson, onClose }) {
     queryFn: () => api.get(`/api/lessons/${lesson.id}/preview`).then(r => r.data),
     staleTime: 60_000,
   });
-  const videoUrl = data?.lesson?.video_url;
+  const videoUrl = data?.lesson?.videoUrl;
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -754,14 +754,7 @@ function PreviewModal({ lesson, onClose }) {
           {isLoading ? (
             <div className="w-full h-full grid place-items-center font-mono text-[13px] text-ink-3">Đang tải video…</div>
           ) : videoUrl ? (
-            <Suspense fallback={null}>
-              <ReactPlayer
-                url={videoUrl}
-                width="100%" height="100%"
-                controls playing
-                config={{ file: { attributes: { controlsList: 'nodownload', disablePictureInPicture: true } } }}
-              />
-            </Suspense>
+            <Mp4Player src={videoUrl} autoPlay />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-3">
               <div className="w-14 h-14 rounded-full border-2 border-line grid place-items-center">

@@ -7,9 +7,45 @@ import { api, BASE_URL } from '@/lib/api';
  *   → KHÔNG gắn header (sai chữ ký + không lộ token sang domain khác).
  * - Lỗi mạng nghiêm trọng (link đoạn hết hạn / token hết hạn) → refresh token nếu cần, tải lại playlist
  *   và phát tiếp tại chỗ cũ; tối đa 1 lần / 10 s, quá thì báo onError.
- * - Trình duyệt không hỗ trợ MSE → onUnsupported (trang cha phát bản MP4 dự phòng).
- * API ref giống ReactPlayer phần đang dùng: seekTo(seconds).
+ * - Trình duyệt không hỗ trợ MSE → onUnsupported (trang cha báo không phát được; không còn MP4 dự phòng).
+ * API ref: seekTo(seconds).
  */
+
+// Thuộc tính chung của mọi trình phát: không nút tải về, không phát lên thiết bị khác, không picture-in-picture
+const PROTECTED_VIDEO = {
+  className: 'w-full h-full bg-black',
+  controls: true,
+  playsInline: true,
+  controlsList: 'nodownload noremoteplayback',
+  disablePictureInPicture: true,
+  onContextMenu: (e) => e.preventDefault(),
+};
+
+/**
+ * Phát file MP4 qua link presigned ngắn hạn — dùng khi video chưa mã hóa HLS xong và cho bài xem thử.
+ * Link hết hạn giữa chừng → onError để trang cha xin link mới.
+ */
+export const Mp4Player = forwardRef(function Mp4Player(
+  { src, autoPlay = false, onReady, onProgress, onEnded, onError }, ref,
+) {
+  const videoRef = useRef(null);
+  useImperativeHandle(ref, () => ({
+    seekTo: (seconds) => { if (videoRef.current) videoRef.current.currentTime = seconds; },
+  }), []);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      autoPlay={autoPlay}
+      {...PROTECTED_VIDEO}
+      onLoadedMetadata={onReady}
+      onTimeUpdate={(e) => onProgress?.({ playedSeconds: e.currentTarget.currentTime })}
+      onEnded={onEnded}
+      onError={onError}
+    />
+  );
+});
 function currentToken() {
   try {
     return JSON.parse(localStorage.getItem('hoisted.auth') ?? '{}')?.state?.token ?? null;
@@ -69,11 +105,7 @@ export const HlsPlayer = forwardRef(function HlsPlayer(
   return (
     <video
       ref={videoRef}
-      className="w-full h-full bg-black"
-      controls
-      playsInline
-      controlsList="nodownload noremoteplayback"
-      disablePictureInPicture
+      {...PROTECTED_VIDEO}
       onLoadedMetadata={onReady}
       onTimeUpdate={(e) => onProgress?.({ playedSeconds: e.currentTarget.currentTime })}
       onEnded={onEnded}

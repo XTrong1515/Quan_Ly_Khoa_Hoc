@@ -421,7 +421,7 @@ async function adminListLessons(req, res) {
     );
     const [lessons] = await pool.query(
       `SELECT l.id, l.title, l.duration_minutes, l.order_index, l.is_preview,
-              l.video_url, l.attachment_url, l.section_id,
+              l.attachment_url, l.section_id,
               l.video_key, l.attachment_key, l.attachment_name, l.content, l.hls_status, l.hls_error,
               cs.title AS sectionTitle
        FROM lessons l
@@ -438,7 +438,8 @@ async function adminListLessons(req, res) {
 
 async function adminCreateLesson(req, res) {
   const courseId = parseInt(req.params.courseId, 10);
-  const { title, videoUrl, content, durationMinutes = 0, sectionId, isPreview = false, attachmentUrl } = req.body;
+  // Video chỉ nhận qua upload lên storage (mediaController) — không còn nhận link ngoài như YouTube
+  const { title, content, durationMinutes = 0, sectionId, isPreview = false, attachmentUrl } = req.body;
   if (!title) return res.status(400).json({ message: 'Tên bài học là bắt buộc' });
 
   try {
@@ -446,9 +447,9 @@ async function adminCreateLesson(req, res) {
       'SELECT COALESCE(MAX(order_index), 0) + 1 AS next FROM lessons WHERE course_id = ?', [courseId],
     );
     const [result] = await pool.query(
-      `INSERT INTO lessons (course_id, section_id, title, video_url, content, duration_minutes, order_index, is_preview, attachment_url)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-      [courseId, sectionId ?? null, title, videoUrl ?? null, content ?? null,
+      `INSERT INTO lessons (course_id, section_id, title, content, duration_minutes, order_index, is_preview, attachment_url)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [courseId, sectionId ?? null, title, content ?? null,
        durationMinutes, maxRows[0].next, isPreview ? 1 : 0, attachmentUrl ?? null],
     );
     await _updateCourseTotals(courseId);
@@ -463,7 +464,7 @@ async function adminCreateLesson(req, res) {
 async function adminUpdateLesson(req, res) {
   const lessonId = parseInt(req.params.id, 10);
   const fields = [
-    ['title','title'],['video_url','videoUrl'],['content','content'],
+    ['title','title'],['content','content'],
     ['duration_minutes','durationMinutes'],['section_id','sectionId'],['attachment_url','attachmentUrl'],
   ];
   const updates = []; const params = [];

@@ -28,8 +28,8 @@ beforeAll(async () => {
   course       = await createCourse({ instructor: teacher, status: 'PUBLISHED' });
   lesson       = await createLesson(course.id);
   previewLesson = await createLesson(course.id);
-  await pool.query('UPDATE lessons SET is_preview = 1, video_url = ? WHERE id = ?', ['https://youtu.be/free', previewLesson.id]);
-  await pool.query('UPDATE lessons SET video_url = ? WHERE id = ?', ['https://youtu.be/paid-secret', lesson.id]);
+  await pool.query('UPDATE lessons SET is_preview = 1, video_key = ? WHERE id = ?', [`courses/${course.id}/lessons/${previewLesson.id}/video/free.mp4`, previewLesson.id]);
+  await pool.query('UPDATE lessons SET video_key = ? WHERE id = ?', [`courses/${course.id}/lessons/${lesson.id}/video/paid-secret.mp4`, lesson.id]);
   await enroll(student, course.id);
 });
 
@@ -48,7 +48,9 @@ describe('Trang khóa học công khai không lộ link video', () => {
   it('bài xem thử lấy link qua /preview; bài trả phí bị chặn', async () => {
     const ok = await request(app).get(`/api/lessons/${previewLesson.id}/preview`);
     expect(ok.status).toBe(200);
-    expect(ok.body.lesson.video_url).toBe('https://youtu.be/free');
+    expect(ok.body.lesson.videoUrl).toContain('free.mp4');
+    expect(new URL(ok.body.lesson.videoUrl).searchParams.get('X-Amz-Signature')).toBeTruthy();
+    expect(ok.body.lesson.video_key).toBeUndefined();
     expect((await request(app).get(`/api/lessons/${lesson.id}/preview`)).status).toBe(403);
   });
 });
@@ -146,6 +148,28 @@ describe('Xem video / tài liệu — chỉ người có quyền nhận link ng�
     expect(new URL(videoUrl).searchParams.get('X-Amz-Expires')).toBe('1800');
     expect(new Date(videoExpiresAt).getTime()).toBeGreaterThan(Date.now());
     expect(res.body.lesson.hasAttachment).toBe(true);
+  });
+
+  it('video đã mã hóa HLS xong → chỉ có playlist HLS, không cấp link MP4 tải được nguyên file', async () => {
+    await pool.query("UPDATE lessons SET hls_status = 'READY' WHERE id = ?", [lesson.id]);
+    try {
+      const res = await request(app).get(`/api/lessons/${lesson.id}`).set(authHeader(student));
+      expect(res.body.lesson).toMatchObject({ hasVideo: true, videoUrl: null, hlsUrl: `/api/lessons/${lesson.id}/hls/index.m3u8` });
+      expect(JSON.stringify(res.body)).not.toContain('X-Amz-Signature');
+    } finally {
+      await pool.query("UPDATE lessons SET hls_status = 'NONE' WHERE id = ?", [lesson.id]);
+    }
+  });
+
+  it('link video ngoài (YouTube) không còn được phát, cũng không lưu được qua API', async () => {
+    const external = await createLesson(course.id);
+    await pool.query('UPDATE lessons SET video_url = ? WHERE id = ?', ['https://youtu.be/legacy', external.id]);
+    const res = await request(app).get(`/api/lessons/${external.id}`).set(authHeader(student));
+    expect(res.body.lesson).toMatchObject({ hasVideo: false, videoUrl: null, videoSource: null });
+    expect(JSON.stringify(res.body)).not.toContain('youtu');
+
+    await request(app).put(`/api/admin/lessons/${external.id}`).set(authHeader(admin)).send({ title: 'x', videoUrl: 'https://youtu.be/new' });
+    expect((await pool.query('SELECT video_url FROM lessons WHERE id = ?', [external.id]))[0][0].video_url).toBe('https://youtu.be/legacy');
   });
 
   it('chưa mua → 403, không nhận được link', async () => {

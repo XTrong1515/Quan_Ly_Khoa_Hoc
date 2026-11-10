@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import ReactPlayer from 'react-player';
 import {
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   CheckCircle, Check, Play, Paperclip, ListChecks,
@@ -12,7 +11,7 @@ import {
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { RichContent } from '@/components/rich-content.jsx';
-import { HlsPlayer } from '@/components/video/hls-player.jsx';
+import { HlsPlayer, Mp4Player } from '@/components/video/hls-player.jsx';
 import { api, apiMessage, BASE_URL } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
@@ -148,7 +147,7 @@ export default function LessonPlayerPage() {
   // Mỗi loại nội dung là một khung xem; video luôn được ưu tiên hiện trước, quiz không còn che mất video
   const hasQuiz = !!quizData?.quiz?.questions?.length;
   const views = [
-    !!data?.lesson?.videoUrl && ['video', 'Video', MonitorPlay],
+    !!data?.lesson?.hasVideo && ['video', 'Video', MonitorPlay],
     hasExercise && ['exercise', 'Bài tập', Code2],
     hasQuiz && ['quiz', 'Quiz', ListChecks],
   ].filter(Boolean);
@@ -393,9 +392,17 @@ export default function LessonPlayerPage() {
               </Suspense>
             ) : (
               <>
-                {lesson.videoUrl ? (
+                {lesson.hasVideo ? (
                   <div className="w-full h-full relative" onContextMenu={(e) => e.preventDefault()}>
-                    {lesson.hlsUrl && !hlsUnsupported ? (
+                    {lesson.hlsUrl && hlsUnsupported ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-3 px-6 text-center">
+                        <AlertTriangle className="w-8 h-8 text-white/40" aria-hidden="true" />
+                        <p className="text-[14px] text-white/80 max-w-sm leading-relaxed">
+                          Trình duyệt này chưa phát được video đã mã hóa. Hãy mở bằng Chrome, Edge, Firefox
+                          hoặc Safari bản mới.
+                        </p>
+                      </div>
+                    ) : lesson.hlsUrl ? (
                       <HlsPlayer
                         ref={playerRef}
                         src={`${BASE_URL}${lesson.hlsUrl}`}
@@ -406,12 +413,10 @@ export default function LessonPlayerPage() {
                         onEnded={handleEnded}
                       />
                     ) : (
-                      <ReactPlayer
+                      // Video vừa tải lên, đang mã hóa HLS → tạm phát MP4 qua link có hạn
+                      <Mp4Player
                         ref={playerRef}
-                        url={lesson.videoUrl}
-                        width="100%" height="100%"
-                        controls
-                        config={{ file: { attributes: { controlsList: 'nodownload noremoteplayback', disablePictureInPicture: true } } }}
+                        src={lesson.videoUrl}
                         onReady={handleReady}
                         onError={handleVideoError}
                         onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}

@@ -2,16 +2,21 @@ const pool = require('../config/db');
 const storage = require('../utils/storage');
 const hls = require('../services/video/hls');
 
-/** URL phát video: file trên storage → presigned GET ngắn hạn; nếu không thì link ngoài (YouTube...). */
-async function resolveVideo(lesson) {
-  if (lesson.video_key) {
-    return {
-      videoUrl: await storage.presignDownload(lesson.video_key),
-      videoSource: 'storage',
-      videoExpiresAt: new Date(Date.now() + storage.VIDEO_URL_TTL * 1000).toISOString(),
-    };
-  }
-  return { videoUrl: lesson.video_url, videoSource: lesson.video_url ? 'external' : null, videoExpiresAt: null };
+/**
+ * Video chỉ đến từ object storage riêng tư. Link ngoài (YouTube…) không còn được phát: không kiểm soát được
+ * ai xem, không có watermark, không chặn được tải về. Cột lessons.video_url được giữ trong DB nhưng bị bỏ qua.
+ *
+ * withMp4: có cấp link MP4 ngắn hạn hay không. Link MP4 tải được nguyên file, nên chỉ cấp khi HLS mã hóa
+ * chưa xong (PROCESSING / FAILED / NONE) hoặc cho bài xem thử miễn phí.
+ */
+async function resolveVideo(lesson, { withMp4 = true } = {}) {
+  if (!lesson.video_key) return { videoUrl: null, videoSource: null, videoExpiresAt: null };
+  if (!withMp4) return { videoUrl: null, videoSource: 'storage', videoExpiresAt: null };
+  return {
+    videoUrl: await storage.presignDownload(lesson.video_key),
+    videoSource: 'storage',
+    videoExpiresAt: new Date(Date.now() + storage.VIDEO_URL_TTL * 1000).toISOString(),
+  };
 }
 
 /* ── GET /api/lessons/:id/preview ────────────────────────────── */
@@ -20,7 +25,7 @@ async function preview(req, res) {
 
   try {
     const [rows] = await pool.query(
-      `SELECT l.id, l.title, l.duration_minutes, l.video_url, l.video_key, l.is_preview,
+      `SELECT l.id, l.title, l.duration_minutes, l.video_key, l.is_preview,
               c.title AS courseTitle, c.slug AS courseSlug
        FROM lessons l
        JOIN courses c ON c.id = l.course_id
@@ -33,7 +38,7 @@ async function preview(req, res) {
 
     const { video_key: _key, ...lesson } = rows[0];
     const video = await resolveVideo(rows[0]);
-    return res.json({ lesson: { ...lesson, video_url: video.videoUrl, videoExpiresAt: video.videoExpiresAt } });
+    return res.json({ lesson: { ...lesson, videoUrl: video.videoUrl, videoExpiresAt: video.videoExpiresAt } });
   } catch (err) {
     console.error('[lessons/preview]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
@@ -50,7 +55,7 @@ async function detail(req, res) {
 
   try {
     const [lessonRows] = await pool.query(
-      `SELECT l.id, l.title, l.video_url, l.video_key, l.hls_status, l.content, l.duration_minutes,
+      `SELECT l.id, l.title, l.video_key, l.hls_status, l.content, l.duration_minutes,
               l.attachment_url, l.attachment_key, l.attachment_name, l.is_preview,
               c.title AS courseTitle, c.slug AS courseSlug
        FROM lessons l
@@ -119,8 +124,10 @@ async function detail(req, res) {
       lesson: {
         id: lesson.id,
         title: lesson.title,
-        ...(await resolveVideo(lesson)),
-        // HLS đã mã hóa xong → FE phát qua hls.js; videoUrl (MP4 có hạn) là bản dự phòng cho trình duyệt không hỗ trợ
+        hasVideo: !!lesson.video_key,
+        // HLS đã mã hóa xong → chỉ phát qua hls.js, KHÔNG kèm link MP4 (trước đây vẫn trả MP4 "dự phòng",
+        // mở tab Network là tải được nguyên file). Chưa xong → phát MP4 có hạn trong lúc chờ.
+        ...(await resolveVideo(lesson, { withMp4: lesson.hls_status !== 'READY' })),
         hlsUrl: lesson.hls_status === 'READY' ? `/api/lessons/${lesson.id}/hls/index.m3u8` : null,
         hlsStatus: lesson.hls_status,
         content: lesson.content,
