@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect, useLayoutEffect, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  CheckCircle, Check, Play, Paperclip, ListChecks,
-  Send, Edit2, Trash2, CornerDownRight, ChevronsUpDown,
+  ChevronDown, ChevronLeft, ChevronRight, ArrowRight,
+  CheckCircle, Check, Paperclip, ListChecks,
+  Send, Edit2, Trash2, CornerDownRight,
   PanelRightClose, PanelRightOpen, Heart,
   AlertTriangle, X, Code2, MonitorPlay,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
+import { Progress } from '@/components/ui/progress.jsx';
 import { RichContent } from '@/components/rich-content.jsx';
 import { HlsPlayer, Mp4Player } from '@/components/video/hls-player.jsx';
 import { api, apiMessage, BASE_URL } from '@/lib/api';
@@ -17,8 +18,10 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
 import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
 
-const TABS = ['Tổng quan', 'Tài liệu', 'Thảo luận'];
 const DESKTOP_MIN_WIDTH = 1024;
+// Chiều cao dành cho phần dưới video (tiêu đề bài + thanh tab + vài dòng nội dung) → video không chiếm trọn
+// màn hình, người học luôn thấy bài học còn nội dung bên dưới
+const BELOW_VIDEO_PX = 236;
 
 // Khung làm bài tập (kèm editor) chỉ tải khi bài học có bài tập
 const ExerciseWorkspace = lazy(() =>
@@ -83,13 +86,13 @@ export default function LessonPlayerPage() {
   const queryClient   = useQueryClient();
   const { user }      = useAuth();
   const playerRef     = useRef(null);
+  const mainRef       = useRef(null);  // cột nội dung cuộn được
+  const curriculumRef = useRef(null);
   const secondsRef    = useRef(0);   // current playback position for auto-save
   const resumeAtRef   = useRef(null); // vị trí phát tiếp sau khi xin lại link video hết hạn
   const lastRefreshRef = useRef(0);
   const didSeekRef    = useRef(false);
   const [hlsUnsupported, setHlsUnsupported] = useState(false); // không có MSE → phát MP4 dự phòng
-  const [tab, setTab]                   = useState('Tổng quan');
-  const [sheetSnap, setSheetSnap]       = useState(0); // 0=collapsed 1=peek 2=expanded
   // Trên điện thoại danh sách bài học là lớp phủ → mặc định đóng để không che nội dung
   const [sidebarOpen, setSidebarOpen]   = useState(() => window.innerWidth >= DESKTOP_MIN_WIDTH);
   const [sidebarWidth, setSidebarWidth] = useState(320);
@@ -106,11 +109,6 @@ export default function LessonPlayerPage() {
     setSidebarWidth(Math.max(220, Math.min(480, resizeDrag.current.startW + delta)));
   }
   function onResizeUp() { resizeDrag.current.active = false; }
-
-  const handleTabClick = (t) => {
-    setTab(t);
-    setSheetSnap(2);
-  };
 
   const numericCourseId = parseInt(courseId, 10);
   const { data: wishlistIds = [] } = useWishlistIds();
@@ -144,14 +142,36 @@ export default function LessonPlayerPage() {
     staleTime: 0,
   });
 
-  // Mỗi loại nội dung là một khung xem; video luôn được ưu tiên hiện trước, quiz không còn che mất video
+  // Bài có quiz / bài tập: đạt mới tính hoàn thành (BE trả 409 nếu bấm thẳng)
   const hasQuiz = !!quizData?.quiz?.questions?.length;
+  const quizUnpassed = hasQuiz && !quizData.quiz.latestAttempt?.passed;
+  const exerciseUnsolved = !!(exerciseData?.exercise && !exerciseData.exercise.solved);
+  const completionLocked = quizUnpassed || exerciseUnsolved;
+  const isStaffView = !!data?.staffView;
+  // Giảng viên / admin xem thử không có lượt làm quiz nên không bị chặn chuyển bài
+  const quizLocked = quizUnpassed && !isStaffView;
+
+  // Mỗi loại nội dung là một khung xem; video luôn được ưu tiên hiện trước. done: false = phần bắt buộc chưa xong
   const views = [
-    !!data?.lesson?.hasVideo && ['video', 'Video', MonitorPlay],
-    hasExercise && ['exercise', 'Bài tập', Code2],
-    hasQuiz && ['quiz', 'Quiz', ListChecks],
+    !!data?.lesson?.hasVideo && { id: 'video', label: 'Video', Icon: MonitorPlay },
+    hasExercise && { id: 'exercise', label: 'Bài tập', Icon: Code2, done: !exerciseUnsolved },
+    hasQuiz && { id: 'quiz', label: 'Quiz', Icon: ListChecks, done: !quizUnpassed },
   ].filter(Boolean);
-  const mainView = views.some(([v]) => v === view) ? view : (views[0]?.[0] ?? 'video');
+  const mainView = views.find(v => v.id === view)?.id ?? views[0]?.id ?? null;
+
+  // Đổi bài / đổi khung xem → về đầu cột nội dung
+  useEffect(() => { mainRef.current?.scrollTo({ top: 0 }); }, [lessonId, mainView]);
+
+  // Bài đang học luôn nằm trong vùng nhìn thấy của danh sách bài (khóa học dài)
+  useEffect(() => {
+    const list = curriculumRef.current;
+    const current = list?.querySelector('[aria-current="page"]');
+    if (!list || !current) return;
+    const top = current.offsetTop;
+    if (top < list.scrollTop || top > list.scrollTop + list.clientHeight - 40) {
+      list.scrollTop = Math.max(0, top - list.clientHeight / 3);
+    }
+  }, [lessonId, isLoading, sidebarOpen]);
 
   // Redirect to course detail when user is not enrolled
   useEffect(() => {
@@ -165,7 +185,6 @@ export default function LessonPlayerPage() {
 
   const enrollmentRef = useRef(null);
   enrollmentRef.current = data?.enrollmentId ?? null;
-  const isStaffView = !!data?.staffView;
 
   /* ── Auto-save progress every 10 s ── */
   useEffect(() => {
@@ -235,13 +254,6 @@ export default function LessonPlayerPage() {
     refetchLesson();
   };
 
-  // Bài có quiz / bài tập: đạt mới tính hoàn thành (BE trả 409 nếu bấm thẳng)
-  const quizUnpassed = hasQuiz && !quizData.quiz.latestAttempt?.passed;
-  const exerciseUnsolved = !!(exerciseData?.exercise && !exerciseData.exercise.solved);
-  const completionLocked = quizUnpassed || exerciseUnsolved;
-  // Giảng viên / admin xem thử không có lượt làm quiz nên không bị chặn chuyển bài
-  const quizLocked = quizUnpassed && !isStaffView;
-
   const handleEnded = () => {
     if (data?.enrollmentId && !data?.progress?.isCompleted && !completionLocked) completeMutation.mutate();
     if (quizLocked) setView('quiz');
@@ -255,6 +267,17 @@ export default function LessonPlayerPage() {
     }
     navigate(`/learn/${courseId}/${id}`);
     if (window.innerWidth < DESKTOP_MIN_WIDTH) setSidebarOpen(false);
+  };
+
+  const goNext = () => {
+    if (!nextLesson) return;
+    if (quizLocked) { setQuizBlockedModal(true); return; }
+    navigate(`/learn/${courseId}/${nextLesson.id}`);
+  };
+
+  const openView = (v) => {
+    setView(v);
+    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleQuizPassed = () => {
@@ -285,42 +308,66 @@ export default function LessonPlayerPage() {
   }
 
   const { lesson, sections, progress } = data;
+  const currentLessonId = parseInt(lessonId, 10);
+  const currentSection = sections.find(s => s.lessons.some(l => l.id === currentLessonId));
+  const doneCount = allLessons.filter(l => l.isCompleted).length;
+  const coursePct = allLessons.length ? Math.round((doneCount / allLessons.length) * 100) : 0;
 
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
       {/* ── Top bar ── */}
-      <header className="flex items-center gap-3 px-4 py-2.5 border-b border-line bg-bg shrink-0 min-h-[50px]">
+      <header className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[50px] border-b border-line bg-bg shrink-0">
         <Link to={`/courses/${lesson.courseSlug}`}
-          className="font-mono text-[12px] text-ink-3 hover:text-ink transition-colors flex items-center gap-1 min-w-0 flex-1 sm:flex-none sm:shrink-0 sm:max-w-[200px] truncate">
+          className="font-mono text-[12px] text-ink-3 hover:text-ink transition-colors flex items-center gap-1 min-w-0 flex-1 lg:flex-none lg:max-w-[220px]">
           <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">{lesson.courseTitle}</span>
         </Link>
 
-        <p className="hidden sm:block flex-1 text-center font-semibold text-[13px] text-ink truncate px-2">
+        <p className="hidden lg:block flex-1 min-w-0 text-center font-semibold text-[13px] text-ink truncate px-2">
           {lesson.title}
         </p>
+
+        {/* Bộ chuyển khung xem — luôn ở cùng một chỗ, kèm trạng thái phần bắt buộc */}
+        {views.length > 1 && (
+          <div role="tablist" aria-label="Nội dung bài học" className="flex shrink-0 rounded-lg border border-line bg-bg-1 p-0.5">
+            {views.map(({ id, label, Icon, done }) => {
+              const active = mainView === id;
+              return (
+                <button key={id} type="button" role="tab" aria-selected={active} onClick={() => setView(id)}
+                  title={label}
+                  className={cn(
+                    'flex items-center gap-1.5 h-7 px-2 md:px-2.5 rounded-md text-[12px] font-medium transition-colors',
+                    active ? 'bg-accent text-bg' : 'text-ink-2 hover:text-ink hover:bg-bg-2',
+                  )}>
+                  <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span className="sr-only md:not-sr-only">{label}</span>
+                  {done === true && <Check className={cn('w-3 h-3 shrink-0', !active && 'text-success')} aria-hidden="true" />}
+                  {done === false && <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', active ? 'bg-bg' : 'bg-warn')} aria-hidden="true" />}
+                  {done !== undefined && <span className="sr-only">{done ? ' — đã xong' : ' — chưa xong'}</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex items-center gap-1 shrink-0">
           <Button size="sm" variant="ghost" disabled={!prevLesson} aria-label="Bài trước" title="Bài trước"
             onClick={() => prevLesson && navigate(`/learn/${courseId}/${prevLesson.id}`)}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button size="sm" variant="ghost" aria-label="Bài sau" title="Bài sau"
-            disabled={!nextLesson}
-            onClick={() => {
-              if (quizLocked) { setQuizBlockedModal(true); return; }
-              navigate(`/learn/${courseId}/${nextLesson.id}`);
-            }}>
+          <Button size="sm" variant="ghost" aria-label="Bài sau" title="Bài sau" disabled={!nextLesson} onClick={goNext}>
             <ChevronRight className="w-4 h-4" />
           </Button>
 
           {/* Wishlist toggle */}
           <button
+            type="button"
             onClick={() => wishlistToggle.mutate({ courseId: numericCourseId, isWishlisted })}
             disabled={wishlistToggle.isPending}
             title={isWishlisted ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
+            aria-label={isWishlisted ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
             className={cn(
-              'w-8 h-8 rounded border grid place-items-center transition-colors ml-1',
+              'hidden sm:grid w-8 h-8 rounded border place-items-center transition-colors ml-1',
               isWishlisted
                 ? 'border-danger/40 text-danger bg-danger/5 hover:bg-danger/10'
                 : 'border-line text-ink-3 hover:text-ink hover:bg-bg-2',
@@ -329,10 +376,12 @@ export default function LessonPlayerPage() {
             <Heart className={cn('w-4 h-4', isWishlisted && 'fill-danger')} />
           </button>
 
-          {/* Sidebar toggle — square button */}
           <button
+            type="button"
             onClick={() => setSidebarOpen(v => !v)}
             title={sidebarOpen ? 'Ẩn danh sách bài học' : 'Hiện danh sách bài học'}
+            aria-label={sidebarOpen ? 'Ẩn danh sách bài học' : 'Hiện danh sách bài học'}
+            aria-expanded={sidebarOpen}
             className="w-8 h-8 rounded border border-line grid place-items-center text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors ml-1"
           >
             {sidebarOpen
@@ -344,153 +393,98 @@ export default function LessonPlayerPage() {
 
       {/* ── Body ── */}
       <div className="relative flex flex-1 min-h-0">
-        {/* Left: video full-height + bottom sheet overlay */}
-        <div className="flex flex-col flex-1 min-w-0 min-h-0 relative overflow-hidden">
-          {/* Main content: video, bài tập hoặc quiz — có từ 2 loại thì hiện bộ chuyển */}
-          <div className="flex-1 min-h-0 relative" style={{ background: mainView === 'video' ? 'black' : undefined }}>
-            {views.length > 1 && (
-              <div className="absolute top-3 left-3 z-20 flex rounded-lg border border-line bg-bg/90 backdrop-blur p-0.5 shadow">
-                {views.map(([v, label, Icon]) => (
-                  <button key={v} onClick={() => setView(v)} aria-pressed={mainView === v}
-                    className={cn('relative flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors',
-                      mainView === v ? 'bg-accent text-bg' : 'text-ink-2 hover:text-ink')}>
-                    <Icon className="w-3.5 h-3.5" /> {label}
-                    {v === 'quiz' && quizUnpassed && mainView !== 'quiz' && (
-                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent" aria-hidden="true" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-            {mainView === 'quiz' ? (
-              <div className="w-full h-full overflow-y-auto bg-bg">
-                <div className={cn('max-w-2xl mx-auto px-6 py-8', views.length > 1 && 'pt-16')}>
-                  <div className="flex items-center gap-2 mb-6">
-                    <span className={`w-2 h-2 rounded-full ${quizUnpassed ? 'bg-accent animate-pulse' : 'bg-success'}`} />
-                    <p className="font-mono text-[12px] text-ink-3 uppercase tracking-widest">
-                      {isStaffView
-                        ? 'Xem trước quiz — kết quả không được lưu'
-                        : quizLocked
-                          ? `Quiz bắt buộc — đạt ${quizData.quiz.passScore}% để mở bài tiếp theo`
-                          : 'Quiz đã hoàn thành ✓'}
+        {/* Cột nội dung: khung chính (video / bài tập / quiz) ở trên, thông tin + nội dung bài ngay bên dưới */}
+        <div ref={mainRef} data-lesson-scroll className="flex-1 min-w-0 overflow-y-auto">
+          {mainView === 'video' && (
+            <div className="bg-black">
+              <div className="relative mx-auto w-full aspect-video"
+                style={{ maxWidth: `max(320px, calc((100vh - ${BELOW_VIDEO_PX}px) * 16 / 9))` }}
+                onContextMenu={(e) => e.preventDefault()}>
+                {lesson.hlsUrl && hlsUnsupported ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 px-6 text-center">
+                    <AlertTriangle className="w-8 h-8 text-white/40" aria-hidden="true" />
+                    <p className="text-[14px] text-white/80 max-w-sm leading-relaxed">
+                      Trình duyệt này chưa phát được video đã mã hóa. Hãy mở bằng Chrome, Edge, Firefox
+                      hoặc Safari bản mới.
                     </p>
                   </div>
-                  <QuizPanel key={quizData.quiz.id} quiz={quizData.quiz} onPassed={handleQuizPassed} />
-                </div>
-              </div>
-            ) : mainView === 'exercise' ? (
-              <Suspense fallback={<p className="p-6 font-mono text-[12px] text-ink-3">Đang tải bài tập…</p>}>
-                <div className={cn('h-full', views.length > 1 && 'pt-12')}>
-                  <ExerciseWorkspace
-                    lessonId={lessonId}
-                    onSolved={() => {
-                      queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] });
-                      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
-                    }}
+                ) : lesson.hlsUrl ? (
+                  <HlsPlayer
+                    ref={playerRef}
+                    src={`${BASE_URL}${lesson.hlsUrl}`}
+                    onReady={handleReady}
+                    onError={() => toast.error('Video bị gián đoạn. Tải lại trang để phát tiếp gần chỗ bạn đang xem.')}
+                    onUnsupported={() => setHlsUnsupported(true)}
+                    onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
+                    onEnded={handleEnded}
                   />
-                </div>
-              </Suspense>
-            ) : (
-              <>
-                {lesson.hasVideo ? (
-                  <div className="w-full h-full relative" onContextMenu={(e) => e.preventDefault()}>
-                    {lesson.hlsUrl && hlsUnsupported ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-3 px-6 text-center">
-                        <AlertTriangle className="w-8 h-8 text-white/40" aria-hidden="true" />
-                        <p className="text-[14px] text-white/80 max-w-sm leading-relaxed">
-                          Trình duyệt này chưa phát được video đã mã hóa. Hãy mở bằng Chrome, Edge, Firefox
-                          hoặc Safari bản mới.
-                        </p>
-                      </div>
-                    ) : lesson.hlsUrl ? (
-                      <HlsPlayer
-                        ref={playerRef}
-                        src={`${BASE_URL}${lesson.hlsUrl}`}
-                        onReady={handleReady}
-                        onError={() => toast.error('Video bị gián đoạn. Tải lại trang để phát tiếp gần chỗ bạn đang xem.')}
-                        onUnsupported={() => setHlsUnsupported(true)}
-                        onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
-                        onEnded={handleEnded}
-                      />
-                    ) : (
-                      // Video vừa tải lên, đang mã hóa HLS → tạm phát MP4 qua link có hạn
-                      <Mp4Player
-                        ref={playerRef}
-                        src={lesson.videoUrl}
-                        onReady={handleReady}
-                        onError={handleVideoError}
-                        onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
-                        onEnded={handleEnded}
-                      />
-                    )}
-                    <VideoWatermark text={user?.email ? `${user.email} · #${user.id}` : null} />
-                  </div>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                    <div className="w-16 h-16 rounded-full border-2 border-white/20 grid place-items-center">
-                      <Play className="w-8 h-8 text-white/30" />
-                    </div>
-                    <p className="font-mono text-[13px] text-white/40">Bài học này không có video — xem nội dung bên dưới</p>
-                  </div>
+                  // Video vừa tải lên, đang mã hóa HLS → tạm phát MP4 qua link có hạn
+                  <Mp4Player
+                    ref={playerRef}
+                    src={lesson.videoUrl}
+                    onReady={handleReady}
+                    onError={handleVideoError}
+                    onProgress={({ playedSeconds }) => { secondsRef.current = playedSeconds; }}
+                    onEnded={handleEnded}
+                  />
                 )}
-
-                {/* Toggle bottom sheet — square button, bottom-right of video */}
-                <button
-                  onClick={() => setSheetSnap(s => s > 0 ? 0 : 1)}
-                  title={sheetSnap > 0 ? 'Ẩn nội dung bài học' : 'Hiện nội dung bài học'}
-                  className="absolute bottom-3 right-3 w-8 h-8 rounded border border-white/20 bg-black/50 backdrop-blur-sm grid place-items-center text-white/70 hover:text-white hover:bg-black/70 hover:border-white/40 transition-all z-10"
-                >
-                  {sheetSnap > 0
-                    ? <ChevronDown className="w-4 h-4" />
-                    : <ChevronUp   className="w-4 h-4" />}
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* ── Bottom Sheet ── */}
-          <BottomSheet snapIndex={sheetSnap} onSnapChange={setSheetSnap}>
-            {/* DIV 1 — Tab bar */}
-            <div className="flex border-b border-line px-4 bg-bg shrink-0">
-              {TABS.map(t => (
-                <button key={t} onClick={() => handleTabClick(t)}
-                  className={cn(
-                    'px-3 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                    tab === t
-                      ? 'border-accent text-ink'
-                      : 'border-transparent text-ink-3 hover:text-ink-2',
-                  )}>
-                  {t}
-                </button>
-              ))}
+                <VideoWatermark text={user?.email ? `${user.email} · #${user.id}` : null} />
+              </div>
             </div>
+          )}
 
-            {/* DIV 2 — Tab content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {tab === 'Tổng quan' && (
-                lesson.content
-                  ? <RichContent content={lesson.content} className="max-w-3xl" />
-                  : <p className="font-mono text-[13px] text-ink-3">// Bài học này chưa có nội dung văn bản</p>
-              )}
-
-              {tab === 'Tài liệu' && (
-                lesson.hasAttachment
-                  ? (
-                    <button onClick={handleDownload}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 border border-line rounded-lg text-[13.5px] font-medium hover:bg-bg-2 transition-colors text-ink">
-                      <Paperclip className="w-4 h-4 text-accent" />
-                      Tải tài liệu đính kèm
-                    </button>
-                  )
-                  : <p className="font-mono text-[13px] text-ink-3">// Bài học không có tài liệu đính kèm</p>
-              )}
-
-              {tab === 'Thảo luận' && (
-                <DiscussionPanel lessonId={lessonId} canModerate={isStaffView} />
-              )}
+          {mainView === 'exercise' && (
+            // Desktop: khung làm bài lấp đầy màn hình, chừa dải tiêu đề bài học ở đáy để biết còn nội dung bên dưới
+            <div className="border-b border-line lg:h-[calc(100vh-50px-76px)] lg:min-h-[520px]">
+              <Suspense fallback={<p className="p-6 font-mono text-[12px] text-ink-3">Đang tải bài tập…</p>}>
+                <ExerciseWorkspace
+                  lessonId={lessonId}
+                  onSolved={() => {
+                    queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] });
+                    queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+                  }}
+                />
+              </Suspense>
             </div>
-          </BottomSheet>
+          )}
+
+          {mainView === 'quiz' && (
+            <div className="border-b border-line px-4 sm:px-6 pt-5">
+              <QuizPanel
+                key={quizData.quiz.id}
+                quiz={quizData.quiz}
+                mode={isStaffView ? 'staff' : quizUnpassed ? 'locked' : 'passed'}
+                onPassed={handleQuizPassed}
+              />
+            </div>
+          )}
+
+          <LessonDetails
+            key={lessonId}
+            lesson={lesson}
+            lessonId={lessonId}
+            sectionTitle={currentSection?.title}
+            position={currentIdx + 1}
+            total={allLessons.length}
+            isCompleted={progress.isCompleted}
+            isStaffView={isStaffView}
+            completionLocked={completionLocked}
+            quizUnpassed={quizUnpassed}
+            completing={completeMutation.isPending}
+            onComplete={() => completeMutation.mutate()}
+            onOpenView={openView}
+            onDownload={handleDownload}
+            nextLesson={nextLesson}
+            onNext={goNext}
+          />
         </div>
+
+        {/* Điện thoại / tablet: danh sách bài là lớp phủ → chạm ra ngoài để đóng */}
+        {sidebarOpen && (
+          <button type="button" aria-label="Đóng danh sách bài học" onClick={() => setSidebarOpen(false)}
+            className="lg:hidden absolute inset-0 z-20 bg-black/50" />
+        )}
 
         {/* Drag divider — resize sidebar width */}
         {sidebarOpen && (
@@ -505,40 +499,29 @@ export default function LessonPlayerPage() {
 
         {/* Right: curriculum sidebar — toggleable + resizable */}
         <aside
+          aria-label="Nội dung khóa học"
           style={{ width: sidebarOpen ? sidebarWidth : 0 }}
           className={cn(
-            'border-l border-line flex flex-col overflow-hidden shrink-0 transition-[width] duration-200 min-w-0',
-            'max-lg:absolute max-lg:inset-y-0 max-lg:right-0 max-lg:z-30 max-lg:bg-bg max-lg:max-w-[85vw] max-lg:shadow-2xl',
+            'border-l border-line flex flex-col overflow-hidden shrink-0 transition-[width] duration-200 min-w-0 bg-bg',
+            'max-lg:absolute max-lg:inset-y-0 max-lg:right-0 max-lg:z-30 max-lg:max-w-[85vw] max-lg:shadow-2xl',
+            !sidebarOpen && 'invisible',
           )}>
-          {/* Mark complete button */}
-          <div className="p-3 border-b border-line shrink-0">
-            {isStaffView ? (
-              <p className="font-mono text-[11px] text-accent bg-accent/10 rounded-lg px-3 py-2 text-center">
-                Chế độ xem của giảng viên / admin — không ghi tiến độ
-              </p>
-            ) : (
-            <Button
-              size="sm"
-              className="w-full justify-center"
-              variant={progress.isCompleted ? 'ghost' : 'primary'}
-              disabled={progress.isCompleted || completionLocked || completeMutation.isPending}
-              onClick={() => completeMutation.mutate()}>
-              {progress.isCompleted
-                ? <><Check className="w-3.5 h-3.5" /> Đã hoàn thành</>
-                : completionLocked
-                  ? (quizUnpassed ? 'Đạt quiz để hoàn thành' : 'Nộp đạt bài tập để hoàn thành')
-                  : <><CheckCircle className="w-3.5 h-3.5" /> Đánh dấu hoàn thành</>}
-            </Button>
-            )}
+          <div className="px-4 py-3 border-b border-line shrink-0">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-semibold text-[13px] text-ink whitespace-nowrap">Nội dung khóa học</h2>
+              <span className="font-mono text-[11.5px] text-ink-3 tabular-nums whitespace-nowrap">
+                {doneCount}/{allLessons.length} bài · {coursePct}%
+              </span>
+            </div>
+            <Progress value={coursePct} className="mt-2" />
           </div>
 
-          {/* Curriculum accordion */}
-          <div className="flex-1 overflow-y-auto">
+          <div ref={curriculumRef} className="relative flex-1 overflow-y-auto">
             {sections.map(section => (
               <SidebarSection
                 key={section.id ?? 'none'}
                 section={section}
-                currentLessonId={parseInt(lessonId, 10)}
+                currentLessonId={currentLessonId}
                 onSelect={handleSelectLesson}
               />
             ))}
@@ -552,7 +535,7 @@ export default function LessonPlayerPage() {
           title="Cần hoàn thành quiz trước"
           onClose={() => setQuizBlockedModal(false)}
           actions={
-            <Button onClick={() => { setQuizBlockedModal(false); setView('quiz'); }}>
+            <Button onClick={() => { setQuizBlockedModal(false); openView('quiz'); }}>
               Quay lại làm quiz
             </Button>
           }
@@ -568,66 +551,186 @@ export default function LessonPlayerPage() {
   );
 }
 
+/* ── Thông tin + nội dung bài học (luôn hiển thị ngay dưới khung chính) ── */
+function LessonDetails({
+  lesson, lessonId, sectionTitle, position, total, isCompleted, isStaffView, completionLocked, quizUnpassed,
+  completing, onComplete, onOpenView, onDownload, nextLesson, onNext,
+}) {
+  const [tab, setTab] = useState('overview');
+  // Cùng query key với DiscussionPanel → chỉ để hiện số bình luận trên tab
+  const { data: discussionData } = useQuery({
+    queryKey: ['discussions', lessonId],
+    queryFn: () => api.get(`/api/lessons/${lessonId}/discussions`).then(r => r.data),
+    staleTime: 30_000,
+  });
+  const commentCount = discussionData?.total ?? 0;
+  const tabs = [
+    ['overview', 'Tổng quan'],
+    ['discussion', commentCount ? `Thảo luận (${commentCount})` : 'Thảo luận'],
+  ];
+
+  let completion;
+  if (isStaffView) {
+    completion = (
+      <span className="text-[12px] text-accent bg-accent/10 rounded-md px-2.5 py-1.5">
+        Chế độ xem của giảng viên / admin — không ghi tiến độ
+      </span>
+    );
+  } else if (isCompleted) {
+    completion = (
+      <>
+        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-success">
+          <CheckCircle className="w-4 h-4" aria-hidden="true" /> Đã hoàn thành
+        </span>
+        {nextLesson && (
+          <Button size="sm" onClick={onNext}>
+            Bài tiếp theo <ArrowRight className="w-3.5 h-3.5" />
+          </Button>
+        )}
+      </>
+    );
+  } else if (completionLocked) {
+    completion = (
+      <Button size="sm" onClick={() => onOpenView(quizUnpassed ? 'quiz' : 'exercise')}>
+        {quizUnpassed
+          ? <><ListChecks className="w-3.5 h-3.5" /> Làm quiz để hoàn thành</>
+          : <><Code2 className="w-3.5 h-3.5" /> Giải bài tập để hoàn thành</>}
+      </Button>
+    );
+  } else {
+    completion = (
+      <Button size="sm" disabled={completing} onClick={onComplete}>
+        <CheckCircle className="w-3.5 h-3.5" /> {completing ? 'Đang lưu…' : 'Đánh dấu hoàn thành'}
+      </Button>
+    );
+  }
+
+  return (
+    <section aria-labelledby="lesson-title">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 sm:px-6 py-3.5 border-b border-line">
+        <div className="min-w-0 flex-1 basis-[260px]">
+          <h1 id="lesson-title" className="font-display font-semibold text-[18px] leading-snug text-ink text-balance">
+            {lesson.title}
+          </h1>
+          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[12.5px] text-ink-3">
+            {sectionTitle && <><span>{sectionTitle}</span><span aria-hidden="true">·</span></>}
+            <span className="tabular-nums">Bài {position}/{total}</span>
+            {lesson.durationMinutes > 0 && (
+              <><span aria-hidden="true">·</span><span className="tabular-nums">{lesson.durationMinutes} phút</span></>
+            )}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {lesson.hasAttachment && (
+            <Button size="sm" variant="ghost" onClick={onDownload} title="Mở tài liệu đính kèm" className="max-w-[240px]">
+              <Paperclip className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{lesson.attachmentName || 'Tài liệu đính kèm'}</span>
+            </Button>
+          )}
+          {completion}
+        </div>
+      </div>
+
+      <div role="tablist" aria-label="Thông tin bài học"
+        className="sticky top-0 z-10 flex gap-1 px-4 sm:px-6 border-b border-line bg-bg">
+        {tabs.map(([id, label]) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+            className={cn(
+              'px-3 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+              tab === id ? 'border-accent text-ink' : 'border-transparent text-ink-3 hover:text-ink-2',
+            )}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="px-4 sm:px-6 py-5 pb-10">
+        {tab === 'overview' ? (
+          lesson.content
+            ? <RichContent content={lesson.content} className="max-w-3xl" />
+            : <p className="font-mono text-[13px] text-ink-3">// Bài học này chưa có nội dung văn bản</p>
+        ) : (
+          <div className="max-w-3xl">
+            <DiscussionPanel lessonId={lessonId} canModerate={isStaffView} />
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /* ── Sidebar section accordion ───────────────────────────────── */
 function SidebarSection({ section, currentLessonId, onSelect }) {
-  const [open, setOpen] = useState(
-    section.lessons.some(l => l.id === currentLessonId),
-  );
+  const hasCurrent = section.lessons.some(l => l.id === currentLessonId);
+  const [open, setOpen] = useState(hasCurrent);
+  // Chuyển sang bài thuộc phần khác → tự mở phần đó
+  useEffect(() => { if (hasCurrent) setOpen(true); }, [hasCurrent]);
+  const done = section.lessons.filter(l => l.isCompleted).length;
 
   return (
     <div className="border-b border-line">
       <button
+        type="button"
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-bg-2 hover:bg-bg-3 transition text-left gap-2">
-        <span className="font-semibold text-[12.5px] text-ink line-clamp-2">{section.title}</span>
-        <ChevronDown className={cn(
-          'w-4 h-4 text-ink-3 shrink-0 transition-transform',
-          open && 'rotate-180',
-        )} />
+        aria-expanded={open}
+        className="w-full flex items-center gap-2 px-4 py-2.5 bg-bg-1 hover:bg-bg-2 transition-colors text-left">
+        <span className="flex-1 min-w-0 font-semibold text-[12.5px] text-ink line-clamp-2">{section.title}</span>
+        <span className="font-mono text-[11px] text-ink-3 tabular-nums shrink-0">{done}/{section.lessons.length}</span>
+        <ChevronDown className={cn('w-4 h-4 text-ink-3 shrink-0 transition-transform', open && 'rotate-180')} />
       </button>
 
       {open && (
-        <div>
+        <ul>
           {section.lessons.map(l => {
             const isCurrent = l.id === currentLessonId;
             return (
-              <button
-                key={l.id}
-                onClick={() => onSelect(l.id)}
-                className={cn(
-                  'w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition hover:bg-bg-2',
-                  isCurrent && 'bg-bg-2 border-l-2 border-accent',
-                )}>
-                {l.isCompleted ? (
-                  <Check className="w-3.5 h-3.5 text-success shrink-0" />
-                ) : (
-                  <div className={cn(
-                    'w-3.5 h-3.5 rounded-full border shrink-0',
-                    isCurrent ? 'border-accent' : 'border-line',
-                  )} />
-                )}
-                <span className={cn(
-                  'flex-1 text-[12.5px] leading-snug text-left',
-                  isCurrent ? 'text-ink font-medium' : 'text-ink-2',
-                )}>
-                  {l.title}
-                </span>
-                {l.durationMinutes > 0 && (
-                  <span className="font-mono text-[11px] text-ink-3 shrink-0">
-                    {l.durationMinutes}m
+              <li key={l.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(l.id)}
+                  aria-current={isCurrent ? 'page' : undefined}
+                  className={cn(
+                    'w-full flex items-start gap-2.5 px-4 py-2 text-left transition-colors',
+                    isCurrent ? 'bg-accent/10' : 'hover:bg-bg-2',
+                  )}>
+                  {l.isCompleted ? (
+                    <Check className="w-3.5 h-3.5 mt-[2px] text-success shrink-0" aria-label="Đã hoàn thành" />
+                  ) : isCurrent ? (
+                    <span className="w-3.5 h-3.5 mt-[2px] rounded-full border-2 border-accent grid place-items-center shrink-0" aria-hidden="true">
+                      <span className="w-1 h-1 rounded-full bg-accent" />
+                    </span>
+                  ) : (
+                    <span className="w-3.5 h-3.5 mt-[2px] rounded-full border border-ink-3 shrink-0" aria-hidden="true" />
+                  )}
+                  <span className={cn(
+                    'flex-1 min-w-0 text-[12.5px] leading-snug',
+                    isCurrent ? 'text-ink font-semibold' : 'text-ink-2',
+                  )}>
+                    {l.title}
                   </span>
-                )}
-              </button>
+                  {l.durationMinutes > 0 && (
+                    <span className="font-mono text-[11px] text-ink-3 tabular-nums shrink-0">
+                      {l.durationMinutes}m
+                    </span>
+                  )}
+                </button>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
     </div>
   );
 }
 
 /* ── Quiz Panel ───────────────────────────────────────────────── */
-function QuizPanel({ quiz, onPassed }) {
+const QUIZ_MODE = {
+  staff:  { text: 'Xem trước — kết quả không được lưu', cls: 'bg-accent/10 text-accent' },
+  locked: { text: 'Bắt buộc để mở bài tiếp theo',       cls: 'bg-warn/15 text-warn' },
+  passed: { text: 'Đã đạt',                              cls: 'bg-success/15 text-success' },
+};
+
+function QuizPanel({ quiz, mode = 'locked', onPassed }) {
   const [answers,          setAnswers]         = useState({});
   const [result,           setResult]          = useState(null);
   const [submitting,       setSubmitting]       = useState(false);
@@ -655,6 +758,7 @@ function QuizPanel({ quiz, onPassed }) {
 
   const latestAttempt = quiz.latestAttempt;
   const showResult = result ?? (latestAttempt && !retrying ? latestAttempt : null);
+  const modeInfo = QUIZ_MODE[mode] ?? QUIZ_MODE.locked;
 
   // answers[questionId] luôn là mảng optionId; câu nhiều đáp án bật / tắt từng lựa chọn
   const handleSelect = (question, optionId) =>
@@ -686,85 +790,115 @@ function QuizPanel({ quiz, onPassed }) {
     } finally { setSubmitting(false); }
   };
 
+  const header = (
+    <div className="max-w-5xl flex flex-wrap items-start justify-between gap-x-4 gap-y-2 mb-4">
+      <div className="min-w-0">
+        <h2 className="font-display font-semibold text-[17px] leading-snug text-ink">{quiz.title || 'Quiz'}</h2>
+        <p className="mt-0.5 text-[12.5px] text-ink-3">
+          {quiz.questions.length} câu · cần đạt {quiz.passScore}% để hoàn thành bài học
+        </p>
+      </div>
+      <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-medium', modeInfo.cls)}>
+        {modeInfo.text}
+      </span>
+    </div>
+  );
+
   /* ── Result view ── */
   if (showResult) {
     const passed = showResult.passed ?? (showResult.score >= quiz.passScore);
     return (
-      <div className="space-y-4">
+      <div className="pb-5">
+        {header}
         <div className={cn(
-          'p-5 rounded-xl border text-center',
-          passed ? 'border-success/40 bg-success/10' : 'border-line bg-bg-2',
+          'max-w-5xl flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border px-5 py-4',
+          passed ? 'border-success/40 bg-success/10' : 'border-line bg-bg-1',
         )}>
-          <p className={cn('text-3xl font-bold mb-1', passed ? 'text-success' : 'text-ink')}>
+          <p className={cn('font-display text-[32px] font-bold leading-none tabular-nums', passed ? 'text-success' : 'text-ink')}>
             {showResult.score}%
           </p>
-          <p className={cn('text-[13px] font-medium', passed ? 'text-success' : 'text-ink-2')}>
-            {passed ? 'Đã qua quiz ✓' : `Chưa đạt — cần ${quiz.passScore}% để qua`}
-          </p>
-          {showResult.total != null && (
-            <p className="font-mono text-[11px] text-ink-3 mt-1">
-              {showResult.correct} / {showResult.total} câu đúng
+          <div className="flex-1 min-w-[180px]">
+            <p className={cn('flex items-center gap-1.5 text-[14px] font-semibold', passed ? 'text-success' : 'text-ink')}>
+              {passed && <Check className="w-4 h-4" aria-hidden="true" />}
+              {passed ? 'Đã qua quiz' : `Chưa đạt — cần ${quiz.passScore}% để qua`}
             </p>
-          )}
+            {showResult.total != null && (
+              <p className="mt-0.5 font-mono text-[12px] text-ink-3 tabular-nums">
+                {showResult.correct} / {showResult.total} câu đúng
+              </p>
+            )}
+          </div>
+          <Button size="sm" variant="ghost"
+            disabled={!passed && waitSeconds > 0}
+            onClick={() => { setResult(null); setRetrying(true); setAnswers({}); }}>
+            {passed ? 'Làm lại quiz' : waitSeconds > 0 ? `Làm lại sau ${waitSeconds} giây` : 'Làm lại để đạt'}
+          </Button>
         </div>
-
-        <Button size="sm" variant="ghost"
-          disabled={!passed && waitSeconds > 0}
-          onClick={() => { setResult(null); setRetrying(true); setAnswers({}); }}
-          className="w-full justify-center">
-          {passed ? 'Làm lại quiz' : waitSeconds > 0 ? `Làm lại sau ${waitSeconds} giây` : 'Làm lại để đạt'}
-        </Button>
       </div>
     );
   }
 
+  const answeredCount = quiz.questions.filter(q => answers[q.id]?.length).length;
+
   /* ── Question form ── */
   return (
-    <div className="space-y-5">
-      {quiz.title && (
-        <p className="font-semibold text-[14px] text-ink flex items-center gap-2">
-          <ListChecks className="w-4 h-4 text-accent shrink-0" />
-          {quiz.title}
-        </p>
-      )}
-      <p className="font-mono text-[11px] text-ink-3">
-        // {quiz.questions.length} câu · đạt {quiz.passScore}% để hoàn thành bài học
-      </p>
+    <div>
+      {header}
 
-      {quiz.questions.map((q, qi) => (
-        <div key={q.id} className="space-y-2">
-          <p className="text-[13.5px] font-medium text-ink">
-            <span className="font-mono text-ink-3 mr-1.5">{qi + 1}.</span>
-            {q.question}
+      <ol className="max-w-5xl space-y-5">
+        {quiz.questions.map((q, qi) => {
+          const multiple = q.type === 'multiple';
+          const labelId = `quiz-q-${q.id}`;
+          return (
+            <li key={q.id}>
+              <p id={labelId} className="text-[14px] font-medium text-ink leading-snug">
+                <span className="font-mono text-ink-3 mr-1.5">{qi + 1}.</span>
+                {q.question}
+                {multiple && <span className="ml-2 text-[12px] font-normal text-accent">(chọn tất cả đáp án đúng)</span>}
+              </p>
+              <div role={multiple ? 'group' : 'radiogroup'} aria-labelledby={labelId}
+                className="mt-2 grid gap-2 sm:grid-cols-2">
+                {q.options.map(o => {
+                  const selected = !!answers[q.id]?.includes(o.id);
+                  return (
+                    <button key={o.id} type="button" role={multiple ? 'checkbox' : 'radio'} aria-checked={selected}
+                      onClick={() => handleSelect(q, o.id)}
+                      className={cn(
+                        'flex items-start gap-2.5 w-full text-left px-3 py-2 rounded-lg border text-[13px] leading-snug transition-colors',
+                        selected
+                          ? 'border-accent bg-accent/10 text-ink'
+                          : 'border-line bg-bg hover:border-accent/50 hover:bg-bg-1 text-ink-2',
+                      )}>
+                      <span aria-hidden="true" className={cn(
+                        'mt-[2px] w-3.5 h-3.5 shrink-0 border grid place-items-center',
+                        multiple ? 'rounded-[3px]' : 'rounded-full',
+                        selected ? 'border-accent bg-accent' : 'border-ink-3',
+                      )}>
+                        {selected && (multiple
+                          ? <Check className="w-2.5 h-2.5 text-bg" strokeWidth={3} />
+                          : <span className="w-1.5 h-1.5 rounded-full bg-bg" />)}
+                      </span>
+                      <span className="min-w-0 break-words">{o.text}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+
+      {/* Thanh nộp bài dính đáy khi cuộn — luôn thấy số câu đã trả lời */}
+      <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 mt-5 px-4 sm:px-6 py-3 border-t border-line bg-bg">
+        <div className="max-w-5xl flex items-center justify-between gap-3">
+          <p className="text-[12.5px] text-ink-3 tabular-nums">
+            Đã trả lời <span className="text-ink font-semibold">{answeredCount}/{quiz.questions.length}</span> câu
           </p>
-          {q.type === 'multiple' && (
-            <p className="font-mono text-[11px] text-accent">// chọn tất cả đáp án đúng</p>
-          )}
-          <div className="space-y-1.5">
-            {q.options.map(o => {
-              const selected = !!answers[q.id]?.includes(o.id);
-              return (
-                <button key={o.id} onClick={() => handleSelect(q, o.id)} aria-pressed={selected}
-                  className={cn(
-                    'w-full text-left px-3.5 py-2.5 rounded-lg border text-[13px] transition-colors',
-                    selected
-                      ? 'border-accent bg-accent/10 text-ink font-medium'
-                      : 'border-line bg-bg hover:border-accent/50 text-ink-2',
-                  )}>
-                  {o.text}
-                </button>
-              );
-            })}
-          </div>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? 'Đang chấm…' : 'Nộp quiz'}
+          </Button>
         </div>
-      ))}
-
-      <Button
-        onClick={handleSubmit}
-        disabled={submitting}
-        className="w-full justify-center">
-        {submitting ? 'Đang chấm…' : 'Nộp quiz'}
-      </Button>
+      </div>
 
       {/* Unanswered questions modal */}
       {unansweredModal && (() => {
@@ -1023,104 +1157,20 @@ function CommentForm({ placeholder, initialValue = '', onSubmit, onCancel, submi
   );
 }
 
-/* ── Bottom Sheet ─────────────────────────────────────────────── */
-// Snap points used only for programmatic control (tab clicks, video end).
-// Free drag: sheet stays exactly where released — no snap-back.
-function BottomSheet({ children, snapIndex, onSnapChange }) {
-  const sheetRef        = useRef(null);
-  const drag            = useRef({ active: false, startY: 0, startTy: 0, currentTy: 0 });
-  const skipNextSnapAnim = useRef(false);
-
-  function snapTy(idx) {
-    const h = sheetRef.current?.offsetHeight ?? 600;
-    if (idx === 0) return h - 28;
-    if (idx === 1) return h - 72;
-    return Math.round(h * 0.28);
-  }
-
-  // Set initial position without animation
-  useLayoutEffect(() => {
-    if (!sheetRef.current) return;
-    const ty = snapTy(snapIndex);
-    sheetRef.current.style.transition = 'none';
-    sheetRef.current.style.transform  = `translateY(${ty}px)`;
-    drag.current.currentTy = ty;
-  }, []); // eslint-disable-line
-
-  // Animate to snap position on programmatic snapIndex changes (tab clicks, etc.)
-  useLayoutEffect(() => {
-    if (!sheetRef.current) return;
-    if (skipNextSnapAnim.current) { skipNextSnapAnim.current = false; return; }
-    const ty = snapTy(snapIndex);
-    sheetRef.current.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-    sheetRef.current.style.transform  = `translateY(${ty}px)`;
-    drag.current.currentTy = ty;
-  }, [snapIndex]);
-
-  function onPointerDown(e) {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { active: true, startY: e.clientY, startTy: drag.current.currentTy, currentTy: drag.current.currentTy };
-    if (sheetRef.current) sheetRef.current.style.transition = 'none';
-  }
-
-  function onPointerMove(e) {
-    if (!drag.current.active) return;
-    const h  = sheetRef.current?.offsetHeight ?? 600;
-    const ty = Math.max(0, Math.min(h - 28, drag.current.startTy + e.clientY - drag.current.startY));
-    drag.current.currentTy = ty;
-    if (sheetRef.current) sheetRef.current.style.transform = `translateY(${ty}px)`;
-  }
-
-  function onPointerUp() {
-    if (!drag.current.active) return;
-    drag.current.active = false;
-
-    // Stay at exact dragged position — no snap-back
-    const h  = sheetRef.current?.offsetHeight ?? 600;
-    const ty = drag.current.currentTy;
-
-    // Update parent's logical snap state (without triggering animation)
-    let next;
-    if (ty >= h - 50)     next = 0; // nearly collapsed
-    else if (ty >= h * 0.65) next = 1; // peek zone
-    else                   next = 2; // expanded
-
-    if (next !== snapIndex) {
-      skipNextSnapAnim.current = true;
-      onSnapChange(next);
-    }
-  }
-
-  return (
-    <div
-      ref={sheetRef}
-      className="absolute inset-0 bg-bg rounded-t-xl border-t border-line shadow-[0_-4px_24px_rgba(0,0,0,0.1)] flex flex-col will-change-transform"
-    >
-      {/* Drag handle */}
-      <div
-        className="shrink-0 flex flex-col items-center justify-center h-7 gap-0.5 cursor-ns-resize touch-none select-none"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      >
-        <div className="w-8 h-1 rounded-full bg-line" />
-        <ChevronsUpDown className="w-3 h-3 text-ink-3 opacity-50" />
-      </div>
-
-      {children}
-    </div>
-  );
-}
-
 /* ── Skeleton ─────────────────────────────────────────────────── */
 function PlayerSkeleton() {
   return (
     <div className="h-screen flex flex-col bg-bg animate-pulse">
       <div className="h-[50px] bg-bg-2 border-b border-line shrink-0" />
       <div className="flex flex-1 min-h-0">
-        <div className="flex-1 bg-bg-3" />
-        <div className="w-[30%] max-w-[360px] border-l border-line bg-bg-2" />
+        <div className="flex-1 min-w-0">
+          <div className="w-full aspect-video max-h-[calc(100vh-286px)] bg-bg-3" />
+          <div className="px-6 py-4 space-y-2">
+            <div className="h-5 w-1/2 rounded bg-bg-2" />
+            <div className="h-3 w-1/4 rounded bg-bg-2" />
+          </div>
+        </div>
+        <div className="hidden lg:block w-[320px] border-l border-line bg-bg-1" />
       </div>
     </div>
   );

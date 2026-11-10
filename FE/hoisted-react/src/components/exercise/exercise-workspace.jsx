@@ -5,6 +5,7 @@ import { Play, Send, RotateCcw, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { api, apiMessage } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import { ExerciseResults } from './exercise-results.jsx';
 
 const CodeEditor = lazy(() => import('./code-editor.jsx'));
@@ -15,7 +16,7 @@ const draftKey = (exerciseId) => `hoisted.exercise.${exerciseId}`;
 const readDraft = (id) => { try { return localStorage.getItem(draftKey(id)); } catch { return null; } };
 const writeDraft = (id, code) => { try { localStorage.setItem(draftKey(id), code); } catch { /* bỏ qua */ } };
 
-const MARKDOWN_CLS = 'text-[13.5px] text-ink-2 leading-[1.7] [&_p]:mb-3 [&_h1]:text-ink [&_h2]:text-ink [&_h3]:text-ink [&_h1]:font-display [&_h2]:font-display [&_h1]:font-bold [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_code]:font-mono [&_code]:text-[12.5px] [&_code]:bg-bg-2 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-bg-2 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre_code]:bg-transparent [&_pre_code]:p-0';
+const MARKDOWN_CLS = 'text-[13.5px] text-ink-2 leading-[1.7] [&_p]:mb-3 [&_h1]:text-ink [&_h2]:text-ink [&_h3]:text-ink [&_h1]:font-display [&_h2]:font-display [&_h1]:font-bold [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_code]:font-mono [&_code]:text-[12.5px] [&_code]:bg-bg-2 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-bg-2 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:text-[12.5px] [&_pre_code]:bg-transparent [&_pre_code]:p-0';
 
 /** Khung làm bài tập lập trình của học viên: đề bài | editor | kết quả chấm. */
 export function ExerciseWorkspace({ lessonId, onSolved }) {
@@ -78,11 +79,12 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
   if (!exercise) return null;
 
   return (
-    <div className="h-full grid lg:grid-cols-[minmax(280px,38%)_1fr] bg-bg min-h-0">
+    // Desktop: 2 cột cao bằng khung cha (mỗi cột tự cuộn). Điện thoại: xếp dọc theo dòng chảy trang, editor cao cố định
+    <div className="flex flex-col lg:grid lg:h-full lg:grid-cols-[minmax(320px,40%)_1fr] bg-bg lg:min-h-0">
       {/* Đề bài */}
-      <section className="min-h-0 overflow-y-auto border-r border-line p-5">
+      <section className="lg:min-h-0 lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-line p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
-          <h2 className="font-display font-bold text-[18px] text-ink">{exercise.title}</h2>
+          <h2 className="font-display font-semibold text-[17px] leading-snug text-ink">{exercise.title}</h2>
           {exercise.solved && (
             <span className="flex items-center gap-1 font-mono text-[10.5px] px-2 py-0.5 rounded-full bg-success/15 text-success shrink-0">
               <Trophy className="w-3 h-3" /> Đã giải
@@ -91,10 +93,10 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
         </div>
         <div className={MARKDOWN_CLS}><ReactMarkdown>{exercise.descriptionMd}</ReactMarkdown></div>
 
-        <p className="mt-5 mb-2 font-mono text-[10px] text-ink-3 uppercase tracking-widest">Ví dụ</p>
+        <h3 className="mt-5 mb-2 text-[13px] font-semibold text-ink">Ví dụ</h3>
         <div className="space-y-2">
           {exercise.publicTests.map((t) => (
-            <div key={t.index} className="font-mono text-[12px] bg-bg-2 rounded-lg px-3 py-2">
+            <div key={t.index} className="font-mono text-[12px] bg-bg-2 rounded-lg px-3 py-2 whitespace-pre-wrap break-words">
               <span className="text-ink-3">{exercise.functionName}(</span>
               <span className="text-ink">{t.input}</span>
               <span className="text-ink-3">) → </span>
@@ -102,13 +104,15 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
             </div>
           ))}
         </div>
-        <p className="mt-3 font-mono text-[11px] text-ink-3">
-          + {exercise.hiddenCount} test ẩn khi nộp bài · giới hạn {exercise.timeLimitMs} ms / test · đã nộp {exercise.attempts} lần
-        </p>
+        <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[12px]">
+          <dt className="text-ink-3">Test ẩn</dt><dd className="text-ink-2 tabular-nums">{exercise.hiddenCount} test, chỉ chấm khi nộp bài</dd>
+          <dt className="text-ink-3">Giới hạn</dt><dd className="text-ink-2 tabular-nums">{exercise.timeLimitMs} ms / test</dd>
+          <dt className="text-ink-3">Đã nộp</dt><dd className="text-ink-2 tabular-nums">{exercise.attempts} lần</dd>
+        </dl>
       </section>
 
       {/* Editor + kết quả */}
-      <section className="min-h-0 flex flex-col">
+      <section className="lg:min-h-0 flex flex-col">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-line bg-bg-1">
           <span className="font-mono text-[11px] text-ink-3">solution.js</span>
           <div className="ml-auto flex items-center gap-2">
@@ -128,13 +132,15 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
           </div>
         </div>
 
-        <div className="flex-1 min-h-[220px] overflow-hidden">
+        {/* Editor lấp đầy phần còn lại; nền editor kéo hết chiều cao thay vì dừng ở dòng code cuối */}
+        <div className={cn('h-[360px] lg:h-auto lg:min-h-[200px] overflow-hidden', result ? 'lg:flex-[3]' : 'lg:flex-1')}>
           <Suspense fallback={<p className="p-4 font-mono text-[12px] text-ink-3">Đang tải editor…</p>}>
-            <CodeEditor value={code} onChange={handleChange} />
+            <CodeEditor value={code} onChange={handleChange} className="h-full" />
           </Suspense>
         </div>
 
-        <div className="max-h-[45%] overflow-y-auto border-t border-line p-3">
+        {/* Kết quả: chỉ chiếm chỗ khi đã chạy / nộp */}
+        <div className={cn('border-t border-line p-3 overflow-y-auto', result && 'lg:flex-[2] lg:min-h-0')}>
           {result
             ? <ExerciseResults result={result} title={label} />
             : <p className="font-mono text-[11.5px] text-ink-3">// "Chạy thử" chạy các ví dụ · "Nộp bài" chấm cả test ẩn</p>}
