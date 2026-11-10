@@ -18,7 +18,8 @@
     "db:setup": "node scripts/db-tools.js setup",
     "db:backup": "node scripts/db-tools.js backup",
     "db:restore": "node scripts/db-tools.js restore",
-    "db:recompute-stats": "node database/recompute_course_stats.js"
+    "db:recompute-stats": "node database/recompute_course_stats.js",
+    "seed:catalog": "node --no-node-snapshot database/seed_catalog.js"
   },
   "keywords": [],
   "author": "",
