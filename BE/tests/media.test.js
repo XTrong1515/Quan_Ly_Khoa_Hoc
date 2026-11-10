@@ -172,6 +172,22 @@ describe('Xem video / tài liệu — chỉ người có quyền nhận link ng�
     expect((await pool.query('SELECT video_url FROM lessons WHERE id = ?', [external.id]))[0][0].video_url).toBe('https://youtu.be/legacy');
   });
 
+  it('storage không kết nối được → playlist HLS trả 503 có thông báo, không phải 500', async () => {
+    await pool.query("UPDATE lessons SET hls_status = 'READY', hls_prefix = ? WHERE id = ?", [`${prefix(lesson, 'hls')}x/`, lesson.id]);
+    const down = Object.assign(new Error(''), { errors: [Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:9000'), { code: 'ECONNREFUSED' })] });
+    const spy = jest.spyOn(storage, 'getObjectText').mockRejectedValueOnce(down);
+    const log = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const res = await request(app).get(`/api/lessons/${lesson.id}/hls/index.m3u8`).set(authHeader(student));
+      expect(res.status).toBe(503);
+      expect(res.body.message).toMatch(/Kho video/);
+    } finally {
+      spy.mockRestore();
+      log.mockRestore();
+      await pool.query("UPDATE lessons SET hls_status = 'NONE', hls_prefix = NULL WHERE id = ?", [lesson.id]);
+    }
+  });
+
   it('chưa mua → 403, không nhận được link', async () => {
     const res = await request(app).get(`/api/lessons/${lesson.id}`).set(authHeader(outsider));
     expect(res.status).toBe(403);

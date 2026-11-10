@@ -188,6 +188,10 @@ async function hlsPlaylist(req, res) {
     res.set({ 'Content-Type': 'application/vnd.apple.mpegurl', 'Cache-Control': 'no-store' });
     return res.send(body);
   } catch (err) {
+    if (storage.isUnavailable(err)) {
+      console.error('[lessons/hls/playlist] Không kết nối được object storage — MinIO đã chạy chưa? (npm run storage)');
+      return res.status(503).json({ message: 'Kho video đang tạm ngừng, vui lòng thử lại sau ít phút' });
+    }
     console.error('[lessons/hls/playlist]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }

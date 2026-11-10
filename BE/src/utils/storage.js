@@ -126,7 +126,14 @@ async function deletePrefix(prefix) {
   }
 }
 
+/** Lỗi do không kết nối được tới storage (MinIO chưa chạy / sai S3_ENDPOINT), không phải lỗi dữ liệu. */
+function isUnavailable(err) {
+  const codes = [err?.code, ...(err?.errors ?? []).map((e) => e.code)];
+  return codes.some((c) => ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'EHOSTUNREACH'].includes(c));
+}
+
 module.exports = {
+  isUnavailable,
   MEDIA_RULES, UPLOAD_URL_TTL, VIDEO_URL_TTL, FILE_URL_TTL,
   isConfigured, lessonPrefix, buildKey, presignUpload, presignDownload, headObject, deleteObject,
   downloadToFile, putObject, getObjectText, deletePrefix,
