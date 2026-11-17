@@ -92,6 +92,7 @@ export default function LessonPlayerPage() {
   const [hlsUnsupported, setHlsUnsupported] = useState(false); // không có MSE → phát MP4 dự phòng
   // Trên điện thoại danh sách bài học là lớp phủ → mặc định đóng để không che nội dung
   const [sidebarOpen, setSidebarOpen]   = useState(() => window.innerWidth >= DESKTOP_MIN_WIDTH);
+  const sidebarToggleRef = useRef(null);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [quizBlockedModal, setQuizBlockedModal] = useState(false);
   const resizeDrag = useRef({ active: false, startX: 0, startW: 0 });
@@ -260,6 +261,18 @@ export default function LessonPlayerPage() {
     if (quizLocked) setView('quiz');
   };
 
+  // Điện thoại / tablet: danh sách bài là lớp phủ → Esc đóng và trả focus về nút mở
+  useEffect(() => {
+    if (!sidebarOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || window.innerWidth >= DESKTOP_MIN_WIDTH) return;
+      setSidebarOpen(false);
+      sidebarToggleRef.current?.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sidebarOpen]);
+
   const handleSelectLesson = (id) => {
     const target = allLessons.findIndex(l => l.id === id);
     if (quizLocked && target > currentIdx && !allLessons[target]?.isCompleted) {
@@ -379,6 +392,7 @@ export default function LessonPlayerPage() {
 
           <button
             type="button"
+            ref={sidebarToggleRef}
             onClick={() => setSidebarOpen(v => !v)}
             title={sidebarOpen ? 'Ẩn danh sách bài học' : 'Hiện danh sách bài học'}
             aria-label={sidebarOpen ? 'Ẩn danh sách bài học' : 'Hiện danh sách bài học'}
@@ -727,7 +741,7 @@ function SidebarSection({ section, currentLessonId, onSelect }) {
 /* ── Quiz Panel ───────────────────────────────────────────────── */
 const QUIZ_MODE = {
   staff:  { text: 'Xem trước — kết quả không được lưu', cls: 'bg-accent/10 text-accent' },
-  locked: { text: 'Bắt buộc để mở bài tiếp theo',       cls: 'bg-warn/15 text-warn' },
+  locked: { text: 'Bắt buộc để hoàn thành bài học',     cls: 'bg-warn/15 text-warn' },
   passed: { text: 'Đã đạt',                              cls: 'bg-success/15 text-success' },
 };
 

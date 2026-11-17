@@ -16,7 +16,7 @@ const profileSchema = z.object({
   name:     z.string().min(2, 'Họ tên cần ít nhất 2 ký tự'),
   username: z
     .string()
-    .regex(/^[a-z0-9_.]{3,30}$/, 'Username: 3–30 ký tự, chỉ dùng a-z, 0-9, . hoặc _')
+    .regex(/^[a-z0-9_.]{3,30}$/, 'Tên đăng nhập: 3–30 ký tự, chỉ dùng a-z, 0-9, . hoặc _')
     .or(z.literal(''))
     .optional(),
   phone: z
@@ -238,7 +238,7 @@ function InfoSection() {
             />
           </Field>
 
-          <Field label="Username" error={errors.username?.message}>
+          <Field label="Tên đăng nhập" error={errors.username?.message}>
             <input
               {...register('username')}
               className="input h-[42px] text-sm font-mono"
@@ -265,7 +265,7 @@ function InfoSection() {
 
         {/* Bio — full width */}
         <div className="mt-4">
-          <Field label="Bio" error={errors.bio?.message}>
+          <Field label="Giới thiệu" error={errors.bio?.message}>
             <textarea
               {...register('bio')}
               className="input py-2.5 h-auto text-sm resize-none"

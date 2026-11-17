@@ -57,7 +57,7 @@ export function CourseBadge({ glyph, thumb, tag }) {
         {glyph || 'JS'}
       </div>
       {tag && (
-        <span className="absolute -top-1.5 -right-1.5 font-mono text-[8px] font-bold px-1 py-0.5 rounded bg-danger text-white uppercase">
+        <span className="absolute -top-1.5 -right-1.5 font-mono text-[9px] font-bold px-1 py-0.5 rounded bg-bg text-danger ring-1 ring-danger/50 uppercase">
           {tag}
         </span>
       )}
@@ -126,7 +126,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
       {/* Curriculum header */}
       <div className="flex items-center justify-between mb-3">
         <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
-          // Curriculum · {courseTitle}
+          // Nội dung bài học · {courseTitle}
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -177,19 +177,20 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                 onDrop={() => handleDrop(section.items, dragSrc.current, idx)}
                 onDragEnd={() => { setDragOver(null); dragSrc.current = null; }}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-2.5 border-b border-line last:border-0 transition-colors group',
+                  'flex flex-wrap sm:flex-nowrap items-center gap-x-2 gap-y-1 sm:gap-3 px-3 sm:px-4 py-2.5 border-b border-line last:border-0 transition-colors group',
                   dragOver === idx ? 'bg-accent/10 border-accent/30' : 'hover:bg-bg-2',
                 )}>
                 <GripVertical className="w-3.5 h-3.5 text-ink-3 cursor-grab active:cursor-grabbing shrink-0" />
                 <span className="font-mono text-[10px] text-ink-3 w-5 shrink-0">
                   {String(l.order_index).padStart(2, '0')}
                 </span>
-                <span className={cn('flex-1 text-[13px] truncate', l.is_preview ? 'text-accent' : 'text-ink')}>
+                {/* min-w-0: thiếu thì ở màn hẹp tên bài bị ép về 0 px bởi các nhãn và nút bên phải */}
+                <span className={cn('flex-1 min-w-0 text-[13px] truncate', l.is_preview ? 'text-accent' : 'text-ink')}>
                   {l.title}
                 </span>
                 {!!l.is_preview && (
                   <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-accent/10 text-accent uppercase shrink-0">
-                    Preview
+                    Xem thử
                   </span>
                 )}
                 {l.video_key && (
@@ -203,25 +204,25 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                   </span>
                 )}
                 <span className="font-mono text-[10px] text-ink-3 shrink-0">{l.duration_minutes}m</span>
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-0.5 shrink-0 max-sm:w-full max-sm:justify-end lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
                   <button onClick={() => moveLesson(l, -1)} disabled={idx === 0} title="Lên trên" aria-label="Chuyển bài học lên trên"
-                    className="p-1 rounded hover:bg-bg-3 text-ink-3 disabled:opacity-30 transition-colors">
+                    className="p-1.5 rounded hover:bg-bg-3 text-ink-3 disabled:opacity-30 transition-colors">
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => moveLesson(l, 1)} disabled={idx === section.items.length - 1} title="Xuống dưới" aria-label="Chuyển bài học xuống dưới"
-                    className="p-1 rounded hover:bg-bg-3 text-ink-3 disabled:opacity-30 transition-colors">
+                    className="p-1.5 rounded hover:bg-bg-3 text-ink-3 disabled:opacity-30 transition-colors">
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => setEditLesson(l)} title="Sửa bài học" aria-label="Sửa bài học"
-                    className="p-1 rounded hover:bg-bg-3 text-ink-3 transition-colors">
+                    className="p-1.5 rounded hover:bg-bg-3 text-ink-3 transition-colors">
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => setQuizLesson(l)} title="Quiz của bài học" aria-label={`Quiz của bài "${l.title}"`}
-                    className="p-1 rounded hover:bg-bg-3 text-ink-3 hover:text-accent transition-colors">
+                    className="p-1.5 rounded hover:bg-bg-3 text-ink-3 hover:text-accent transition-colors">
                     <ListChecks className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => setExerciseLesson(l)} title="Bài tập lập trình" aria-label={`Bài tập lập trình của bài "${l.title}"`}
-                    className="p-1 rounded hover:bg-bg-3 text-ink-3 hover:text-accent transition-colors">
+                    className="p-1.5 rounded hover:bg-bg-3 text-ink-3 hover:text-accent transition-colors">
                     <Code2 className="w-3.5 h-3.5" />
                   </button>
                   <button
@@ -303,7 +304,7 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
       </div>
       {sections.length > 0 && (
         <div className="w-[140px]">
-          <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Section</label>
+          <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Phần</label>
           <select value={sectionId} onChange={e => setSectionId(e.target.value)} className={inputCls()}>
             <option value="">-- Không --</option>
             {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
@@ -739,7 +740,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
 
                 <Field label="Trạng thái *" error={errors.status?.message}>
                   <select {...register('status')} className={inputCls(errors.status)}>
-                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {STATUSES.filter(s => mode !== 'create' || !['PUBLISHED', 'PENDING_REVIEW'].includes(s)).map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </Field>
               </>

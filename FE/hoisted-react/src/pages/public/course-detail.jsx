@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -35,6 +35,8 @@ export default function CourseDetailPage() {
   const { slug }       = useParams();
   const { role }       = useAuth();
   const { add, items } = useCart();
+  // Nút "Thêm vào giỏ" biến mất sau khi bấm → chuyển focus sang "Xem giỏ hàng" thay vì rơi về <body>
+  const cartLinkRef = useRef(null);
   const navigate       = useNavigate();
   const queryClient    = useQueryClient();
   const { data: wishlistIds = [] } = useWishlistIds();
@@ -141,6 +143,7 @@ export default function CourseDetailPage() {
   const handleAddCart = () => {
     add(course.id);
     toast.success(`Đã thêm "${course.title}" vào giỏ`);
+    requestAnimationFrame(() => cartLinkRef.current?.focus());
   };
   const handleBuyNow = () => {
     add(course.id);
@@ -402,7 +405,7 @@ export default function CourseDetailPage() {
                 ) : (
                   <>
                     {inCart ? (
-                      <Link to="/cart" className="block mb-2">
+                      <Link to="/cart" ref={cartLinkRef} className="block mb-2">
                         <Button size="lg" className="w-full justify-center">
                           <ShoppingCart className="w-4 h-4" aria-hidden="true" /> Xem giỏ hàng →
                         </Button>

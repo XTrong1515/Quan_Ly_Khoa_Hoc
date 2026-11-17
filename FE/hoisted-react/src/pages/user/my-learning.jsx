@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { Progress } from '@/components/ui/progress.jsx';
 import { CourseThumb } from '@/components/course-thumb.jsx';
 import { cn } from '@/lib/utils';
+import { formatHours } from '@/lib/format';
 
 function useEnrollments(status) {
   return useQuery({
@@ -166,7 +167,7 @@ function EnrollmentCard({ enrollment: e, isCompleted }) {
       <Link to={`/courses/${e.slug}`} className="relative block">
         <CourseThumb course={course} className="rounded-none" />
         {isCompleted && (
-          <span className="absolute top-3 right-3 flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-success text-[#0B0F19] font-mono text-[11px] font-bold shadow-lg">
+          <span className="absolute top-3 right-3 flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-bg/90 text-success ring-1 ring-success/40 font-mono text-[11px] font-bold shadow-lg">
             <CheckCircle className="w-3 h-3" aria-hidden="true" /> 100%
           </span>
         )}
@@ -193,7 +194,7 @@ function EnrollmentCard({ enrollment: e, isCompleted }) {
         <div className="flex items-center gap-3 text-[11.5px] text-ink-3 font-mono mb-4">
           <span className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-            {+(e.total_duration_minutes / 60).toFixed(1)}h
+            {formatHours(e.total_duration_minutes / 60)}
           </span>
           <span className="flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />

@@ -68,7 +68,10 @@ export const HlsPlayer = forwardRef(function HlsPlayer(
   useEffect(() => {
     let hls = null;
     let cancelled = false;
-    let lastRecovery = 0;
+    // Số lần tự phục hồi liên tiếp chưa tải được đoạn video nào. Trước đây chặn theo thời gian (< 10 s),
+    // nhưng mỗi vòng thử của hls.js dài hơn 10 s → storage chết thì thử lại mãi, màn hình đen không báo lỗi.
+    let recoveries = 0;
+    const MAX_RECOVERIES = 2;
 
     import('hls.js').then(({ default: Hls }) => {
       if (cancelled) return;
@@ -82,10 +85,11 @@ export const HlsPlayer = forwardRef(function HlsPlayer(
             if (token && url.startsWith(`${BASE_URL}/`)) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
           },
         });
+        hls.on(Hls.Events.FRAG_LOADED, () => { recoveries = 0; });
         hls.on(Hls.Events.ERROR, async (_e, data) => {
           if (!data.fatal || cancelled) return;
-          if (Date.now() - lastRecovery < 10_000) { callbacks.current.onError?.(data); return; }
-          lastRecovery = Date.now();
+          if (recoveries >= MAX_RECOVERIES) { callbacks.current.onError?.(data); return; }
+          recoveries += 1;
           if (data.type === Hls.ErrorTypes.MEDIA_ERROR) { hls.recoverMediaError(); return; }
           const at = videoRef.current?.currentTime ?? -1;
           if (data.response?.code === 401) await api.get('/api/auth/me').catch(() => {}); // interceptor refresh token

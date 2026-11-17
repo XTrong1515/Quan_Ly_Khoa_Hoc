@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api, setToken, registerLogout } from '@/lib/api';
 import { queryClient } from '@/lib/query-client';
+import { useCart } from '@/store/cart';
 
 export const useAuth = create(
   persist(
@@ -41,6 +42,8 @@ export const useAuth = create(
         setToken(null);
         // Clear cache before resetting state so no stale user data lingers
         queryClient.clear();
+        // Giỏ hàng lưu ở localStorage: người đăng nhập sau trên cùng máy không thấy giỏ của người trước
+        useCart.getState().clear();
         set({ user: null, role: 'guest', token: null, refreshToken: null });
       },
     }),

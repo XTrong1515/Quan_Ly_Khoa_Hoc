@@ -5,6 +5,7 @@ import { Play, Send, RotateCcw, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { api, apiMessage } from '@/lib/api';
+import { useAuth } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import { ExerciseResults } from './exercise-results.jsx';
 
@@ -12,9 +13,10 @@ const CodeEditor = lazy(() => import('./code-editor.jsx'));
 
 export const exerciseQueryKey = (lessonId) => ['lesson-exercise', String(lessonId)];
 
-const draftKey = (exerciseId) => `hoisted.exercise.${exerciseId}`;
-const readDraft = (id) => { try { return localStorage.getItem(draftKey(id)); } catch { return null; } };
-const writeDraft = (id, code) => { try { localStorage.setItem(draftKey(id), code); } catch { /* bỏ qua */ } };
+// Bản nháp gắn theo người dùng: chung máy thì người đăng nhập sau không thấy (và không nộp nhầm) code của người trước
+const draftKey = (userId, exerciseId) => `hoisted.exercise.${userId ?? 'anon'}.${exerciseId}`;
+const readDraft = (userId, id) => { try { return localStorage.getItem(draftKey(userId, id)); } catch { return null; } };
+const writeDraft = (userId, id, code) => { try { localStorage.setItem(draftKey(userId, id), code); } catch { /* bỏ qua */ } };
 
 const MARKDOWN_CLS = 'text-[13.5px] text-ink-2 leading-[1.7] [&_p]:mb-3 [&_h1]:text-ink [&_h2]:text-ink [&_h3]:text-ink [&_h1]:font-display [&_h2]:font-display [&_h1]:font-bold [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_code]:font-mono [&_code]:text-[12.5px] [&_code]:bg-bg-2 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-bg-2 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:text-[12.5px] [&_pre_code]:bg-transparent [&_pre_code]:p-0';
 
@@ -26,6 +28,7 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
     queryFn: () => api.get(`/api/lessons/${lessonId}/exercise`).then((r) => r.data),
   });
   const exercise = data?.exercise;
+  const userId = useAuth((s) => s.user?.id);
 
   const [code, setCode]     = useState('');
   const [result, setResult] = useState(null);
@@ -36,13 +39,13 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
   useEffect(() => {
     if (!exercise || loadedFor.current === exercise.id) return;
     loadedFor.current = exercise.id;
-    setCode(readDraft(exercise.id) ?? exercise.lastSubmission?.code ?? exercise.starterCode ?? '');
+    setCode(readDraft(userId, exercise.id) ?? exercise.lastSubmission?.code ?? exercise.starterCode ?? '');
     setResult(null);
-  }, [exercise]);
+  }, [exercise, userId]);
 
   const handleChange = (value) => {
     setCode(value);
-    if (exercise) writeDraft(exercise.id, value);
+    if (exercise) writeDraft(userId, exercise.id, value);
   };
 
   const runMutation = useMutation({

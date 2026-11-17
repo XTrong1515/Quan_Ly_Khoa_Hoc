@@ -11,12 +11,10 @@ import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { useAuth } from '@/store/auth';
 import { api, apiMessage } from '@/lib/api';
-import { cn } from '@/lib/utils';
 
 const schema = z.object({
   email: z.string().email('Email không hợp lệ'),
   password: z.string().min(1, 'Nhập mật khẩu'),
-  remember: z.boolean().optional(),
 });
 
 function usePlatformStats() {
@@ -39,14 +37,10 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { remember: false },
   });
-
-  const remember = watch('remember');
 
   const onSubmit = async (data) => {
     try {
@@ -207,17 +201,8 @@ export default function LoginPage() {
             </FormField>
           </div>
 
-          <label className="flex items-center gap-2.5 my-5 text-[12.5px] text-ink-2 cursor-pointer select-none w-fit">
-            <input {...register('remember')} type="checkbox" className="sr-only peer" />
-            <span className={cn(
-              'w-[18px] h-[18px] rounded-md shrink-0 grid place-items-center transition-colors',
-              'peer-focus-visible:ring-2 peer-focus-visible:ring-accent/60',
-              remember ? 'bg-accent text-accent-ink' : 'border-2 border-ink-3 bg-bg-2',
-            )}>
-              {remember && <Check className="w-3 h-3" strokeWidth={3.5} aria-hidden="true" />}
-            </span>
-            Ghi nhớ đăng nhập
-          </label>
+          {/* Phiên luôn được giữ (refresh token 30 ngày) — bỏ ô "Ghi nhớ đăng nhập" vì nó không có tác dụng */}
+          <div className="my-5" />
 
           <Button
             type="submit"
