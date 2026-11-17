@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useId, Children, cloneElement, isValidElement } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -233,6 +233,7 @@ function InfoSection() {
           <Field label="Họ và tên" error={errors.name?.message}>
             <input
               {...register('name')}
+              autoComplete="name"
               className="input h-[42px] text-sm"
               placeholder="Phạm Khang"
             />
@@ -241,6 +242,7 @@ function InfoSection() {
           <Field label="Tên đăng nhập" error={errors.username?.message}>
             <input
               {...register('username')}
+              autoComplete="username"
               className="input h-[42px] text-sm font-mono"
               placeholder="@khang.hoisted"
             />
@@ -250,13 +252,16 @@ function InfoSection() {
             <input
               value={user?.email || ''}
               readOnly
+              autoComplete="email"
               className="input h-[42px] text-sm opacity-50 cursor-not-allowed"
             />
           </Field>
 
-          <Field label="SĐT" error={errors.phone?.message}>
+          <Field label="Số điện thoại" error={errors.phone?.message}>
             <input
               {...register('phone')}
+              type="tel"
+              autoComplete="tel"
               className="input h-[42px] text-sm"
               placeholder="0987 654 321"
             />
@@ -391,15 +396,36 @@ function PasswordSection() {
 
 
 /* ── Shared helpers ──────────────────────────────────────────── */
+const FORM_CONTROLS = new Set(['input', 'textarea', 'select']);
+
+/** Gắn id / aria-* vào ô nhập đầu tiên trong children (ô có thể nằm trong div bọc, vd ô mật khẩu + nút hiện). */
+function attachToControl(children, props, state = { done: false }) {
+  return Children.map(children, (child) => {
+    if (state.done || !isValidElement(child)) return child;
+    if (FORM_CONTROLS.has(child.type)) { state.done = true; return cloneElement(child, props); }
+    if (child.props?.children) return cloneElement(child, undefined, attachToControl(child.props.children, props, state));
+    return child;
+  });
+}
+
+/**
+ * Nhãn gắn với ô nhập (htmlFor + id) và lỗi gắn qua aria-describedby: trình đọc màn hình đọc
+ * "Họ và tên, ô nhập, Họ tên cần ít nhất 2 ký tự" thay vì chỉ đọc placeholder.
+ */
 function Field({ label, hint, error, children }) {
+  const id = useId();
+  const errorId = `${id}-error`;
+  const control = attachToControl(children, {
+    id, 'aria-invalid': error ? true : undefined, 'aria-describedby': error ? errorId : undefined,
+  });
   return (
     <div>
       <div className="flex justify-between mb-1.5">
-        <label className="font-mono text-[12.5px] font-medium text-ink-2">{label}</label>
+        <label htmlFor={id} className="font-mono text-[12.5px] font-medium text-ink-2">{label}</label>
         {hint && <span className="font-mono text-[11.5px] text-ink-3">{hint}</span>}
       </div>
-      {children}
-      {error && <p className="mt-1 text-xs text-danger font-mono">{error}</p>}
+      {control}
+      {error && <p id={errorId} className="mt-1 text-xs text-danger font-mono">{error}</p>}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -8,7 +8,6 @@ import {
 import { Mp4Player } from '@/components/video/hls-player.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Dialog } from '@/components/ui/dialog.jsx';
-import { RichContent } from '@/components/rich-content.jsx';
 import { Chip } from '@/components/ui/chip.jsx';
 import { CourseThumb } from '@/components/course-thumb.jsx';
 import { Seo } from '@/components/seo.jsx';
@@ -19,6 +18,9 @@ import { formatVND, formatPrice, formatHours, hasRating, levelLabel } from '@/li
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useWishlistIds, useWishlistToggle } from '@/hooks/useWishlist';
+
+// react-markdown + DOMPurify chiếm ~1/3 chunk chính (trang này không lazy theo route) → chỉ tải khi hiển thị mô tả
+const RichContent = lazy(() => import('@/components/rich-content.jsx').then((m) => ({ default: m.RichContent })));
 
 function useCourseDetail(slug) {
   return useQuery({
@@ -283,7 +285,10 @@ export default function CourseDetailPage() {
 
             {/* Tab panels */}
             {tab === 'overview' && (
-              <RichContent content={course.description || course.short_description} />
+              // Khung chờ giữ chỗ để mô tả hiện ra không đẩy layout (CLS)
+              <Suspense fallback={<div className="min-h-[160px] animate-pulse motion-reduce:animate-none rounded-lg bg-bg-2/60" aria-hidden="true" />}>
+                <RichContent content={course.description || course.short_description} />
+              </Suspense>
             )}
 
             {tab === 'curriculum' && (
