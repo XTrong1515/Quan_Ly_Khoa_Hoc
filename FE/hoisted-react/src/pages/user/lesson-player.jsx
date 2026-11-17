@@ -216,7 +216,11 @@ export default function LessonPlayerPage() {
     const tabRef = window.open('', '_blank'); // mở ngay trong click → không bị chặn popup
     try {
       const { data: d } = await api.get(`/api/lessons/${lessonId}/attachment`);
-      if (tabRef) tabRef.location.href = d.url; else window.location.assign(d.url);
+      // Tab trống mở bằng window.open('') cùng origin với app: chỉ cho điều hướng tới http(s),
+      // nếu không một link `javascript:` sẽ chạy với quyền của app (đọc được token).
+      const url = new URL(d.url, window.location.href);
+      if (!['http:', 'https:'].includes(url.protocol)) throw new Error('unsafe attachment url');
+      if (tabRef) { tabRef.opener = null; tabRef.location.href = url.href; } else window.location.assign(url.href);
     } catch (err) {
       tabRef?.close();
       toast.error(apiMessage(err, 'Không mở được tài liệu. Thử lại sau giây lát.'));

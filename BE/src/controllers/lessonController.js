@@ -168,7 +168,10 @@ async function attachment(req, res) {
       });
       return res.json({ url, expiresIn: storage.FILE_URL_TTL });
     }
-    if (!attachment_url) return res.status(404).json({ message: 'Bài học không có tài liệu đính kèm' });
+    // Chỉ trả link http(s): dòng cũ lưu trước khi có kiểm tra (vd. `javascript:`) không được tới trình duyệt
+    if (!attachment_url || !/^https?:\/\//i.test(attachment_url)) {
+      return res.status(404).json({ message: 'Bài học không có tài liệu đính kèm' });
+    }
 
     return res.json({ url: attachment_url });
   } catch (err) {

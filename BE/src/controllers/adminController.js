@@ -436,11 +436,33 @@ async function adminListLessons(req, res) {
   }
 }
 
+/**
+ * Link tài liệu ngoài: chỉ http(s). Giảng viên là bên thứ ba — một link `javascript:` được
+ * trả nguyên văn qua GET /api/lessons/:id/attachment sẽ chạy trên origin của FE khi học viên /
+ * admin bấm "Tài liệu" (lấy token trong localStorage). Rỗng / null = gỡ link.
+ * @returns {{ value: string|null } | { error: string }}
+ */
+function normalizeAttachmentUrl(raw) {
+  if (raw === null || raw === undefined) return { value: null };
+  if (typeof raw !== 'string') return { error: 'Link tài liệu không hợp lệ' };
+  const url = raw.trim();
+  if (!url) return { value: null };
+  let parsed;
+  try { parsed = new URL(url); } catch { return { error: 'Link tài liệu phải là URL http(s) đầy đủ' }; }
+  if (!['http:', 'https:'].includes(parsed.protocol) || url.length > 500) {
+    return { error: 'Link tài liệu phải là http(s), tối đa 500 ký tự' };
+  }
+  return { value: url };
+}
+
 async function adminCreateLesson(req, res) {
   const courseId = parseInt(req.params.courseId, 10);
   // Video chỉ nhận qua upload lên storage (mediaController) — không còn nhận link ngoài như YouTube
-  const { title, content, durationMinutes = 0, sectionId, isPreview = false, attachmentUrl } = req.body;
+  const { title, content, durationMinutes = 0, sectionId, isPreview = false } = req.body;
   if (!title) return res.status(400).json({ message: 'Tên bài học là bắt buộc' });
+  const attachment = normalizeAttachmentUrl(req.body.attachmentUrl);
+  if (attachment.error) return res.status(400).json({ message: attachment.error });
+  const attachmentUrl = attachment.value;
 
   try {
     const [maxRows] = await pool.query(
@@ -467,9 +489,15 @@ async function adminUpdateLesson(req, res) {
     ['title','title'],['content','content'],
     ['duration_minutes','durationMinutes'],['section_id','sectionId'],['attachment_url','attachmentUrl'],
   ];
+  const body = { ...req.body };
+  if (body.attachmentUrl !== undefined) {
+    const attachment = normalizeAttachmentUrl(body.attachmentUrl);
+    if (attachment.error) return res.status(400).json({ message: attachment.error });
+    body.attachmentUrl = attachment.value;
+  }
   const updates = []; const params = [];
   for (const [col, key] of fields) {
-    if (req.body[key] !== undefined) { updates.push(`${col} = ?`); params.push(req.body[key]); }
+    if (body[key] !== undefined) { updates.push(`${col} = ?`); params.push(body[key]); }
   }
   if (req.body.isPreview !== undefined) { updates.push('is_preview = ?'); params.push(req.body.isPreview ? 1 : 0); }
 
