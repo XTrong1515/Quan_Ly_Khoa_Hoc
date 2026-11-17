@@ -216,7 +216,17 @@ async function createOrder(req, res) {
       .map((o) => ({ ...o, courses: o.courseIds.split(',').map(Number) }))
       .filter((o) => o.courses.some((id) => ids.includes(id)));
 
+    const totalAmount = courses.reduce((sum, c) => sum + parseFloat(c.price), 0);
     const same = overlapping.find((o) => o.courses.length === ids.length && o.courses.every((id) => ids.includes(id)));
+    // Giá đã đổi từ lúc đặt đơn chờ: giỏ hàng đang hiện giá mới, trả lại đơn cũ sẽ thu theo giá cũ.
+    // Không tự hủy đơn cũ (học viên có thể đang mở trang VNPay của nó) — để học viên hủy rồi đặt lại.
+    if (same && Math.abs(Number(same.total_amount) - totalAmount) > 0.001) {
+      await conn.rollback();
+      return res.status(409).json({
+        message: `Giá khóa học đã thay đổi kể từ khi bạn đặt đơn #${same.order_code}. Hãy hủy đơn đó rồi đặt lại để thanh toán theo giá hiện tại.`,
+        pendingOrderId: same.id,
+      });
+    }
     if (same) {
       await conn.commit();
       return res.json({
@@ -235,7 +245,6 @@ async function createOrder(req, res) {
       });
     }
 
-    const totalAmount = courses.reduce((sum, c) => sum + parseFloat(c.price), 0);
     const orderCode   = genOrderCode();
 
     const [orderResult] = await conn.query(

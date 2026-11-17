@@ -6,7 +6,7 @@ const jwt     = require('jsonwebtoken');
 const request = require('supertest');
 const app     = require('../src/app');
 const {
-  pool, resetDb, createUser, authHeader, DEFAULT_PASSWORD, createCourse, createLesson, enroll,
+  pool, resetDb, createUser, authHeader, DEFAULT_PASSWORD, createCourse, createLesson, enroll, createCategory,
 } = require('./helpers');
 
 beforeAll(resetDb);
@@ -153,6 +153,50 @@ describe('Link tài liệu bài học — chỉ http(s) (chống stored XSS qua 
     const res = await request(app).get(`/api/lessons/${lesson.id}/attachment`).set(authHeader(student));
     expect(res.status).toBe(404);
     expect(JSON.stringify(res.body)).not.toContain('javascript');
+  });
+});
+
+describe('Xuất CSV — chống CSV/formula injection', () => {
+  it('họ tên bắt đầu bằng = + - @ được thêm dấu \' và nháy kép được nhân đôi', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    const evil = await createUser({ name: '=HYPERLINK("https://evil.example","Bấm")' });
+    const res = await request(app).get('/api/admin/users/export').query({ search: evil.email }).set(authHeader(admin));
+    expect(res.status).toBe(200);
+    expect(res.text).toContain(`"'=HYPERLINK(""https://evil.example"",""Bấm"")"`);
+    expect(res.text).not.toMatch(/,=HYPERLINK|,"=HYPERLINK/);
+  });
+});
+
+describe('Admin tạo khóa học', () => {
+  it('không tạo thẳng ở trạng thái Đã xuất bản / Chờ duyệt (khóa mới chưa có bài) hay trạng thái lạ', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    const cat = await createCategory();
+    const create = (status) => request(app).post('/api/admin/courses').set(authHeader(admin))
+      .send({ title: `Khóa ${status}`, slug: `khoa-${status.toLowerCase()}-${Date.now()}`, categoryId: cat.id, price: 0, status });
+    for (const status of ['PUBLISHED', 'PENDING_REVIEW', 'HACKED']) expect((await create(status)).status).toBe(400);
+    expect((await create('DRAFT')).status).toBe(201);
+  });
+});
+
+describe('JWT secret khi chạy production', () => {
+  const load = (env) => {
+    const saved = { ...process.env };
+    Object.assign(process.env, env);
+    try {
+      let mod;
+      jest.isolateModules(() => { mod = require('../src/utils/jwt'); });
+      return mod;
+    } finally {
+      process.env = saved;
+    }
+  };
+
+  it('thiếu, quá ngắn hoặc còn giá trị mẫu "change-me" → dừng khởi động; secret đủ dài → chạy', () => {
+    const strong = 'x'.repeat(40);
+    expect(() => load({ NODE_ENV: 'production', JWT_ACCESS_SECRET: '', JWT_REFRESH_SECRET: strong })).toThrow(/JWT_ACCESS_SECRET/);
+    expect(() => load({ NODE_ENV: 'production', JWT_ACCESS_SECRET: 'short', JWT_REFRESH_SECRET: strong })).toThrow(/32 ký tự/);
+    expect(() => load({ NODE_ENV: 'production', JWT_ACCESS_SECRET: 'change-me-in-production-use-32plus-chars', JWT_REFRESH_SECRET: strong })).toThrow();
+    expect(() => load({ NODE_ENV: 'production', JWT_ACCESS_SECRET: strong, JWT_REFRESH_SECRET: strong })).not.toThrow();
   });
 });
 

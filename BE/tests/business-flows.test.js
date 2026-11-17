@@ -55,6 +55,18 @@ describe('Đặt đơn', () => {
     expect(await countOf('SELECT COUNT(*) AS n FROM orders WHERE user_id = ?', [buyer.id])).toBe(1);
   });
 
+  it('giá đổi sau khi đặt đơn chờ → không trả lại đơn cũ với giá cũ, yêu cầu hủy rồi đặt lại', async () => {
+    const buyer = await createUser();
+    const course = await createCourse({ status: 'PUBLISHED', price: 200000 });
+    const first = await buy(buyer, [course.id]);
+    await pool.query('UPDATE courses SET price = 150000 WHERE id = ?', [course.id]);
+    const again = await buy(buyer, [course.id]);
+    expect(again.status).toBe(409);
+    expect(again.body).toMatchObject({ pendingOrderId: first.body.orderId });
+    expect(again.body.message).toMatch(/Giá khóa học đã thay đổi/);
+    expect(await statusOf(first.body.orderId)).toBe('PENDING'); // không tự hủy đơn học viên có thể đang thanh toán
+  });
+
   it('2 request đồng thời cho cùng khóa → chỉ có 1 đơn', async () => {
     const buyer = await createUser();
     const course = await createCourse({ status: 'PUBLISHED' });
@@ -141,6 +153,26 @@ describe('Admin hủy đơn', () => {
     expect(await studentCount(course.id)).toBe(0);
     expect((await request(app).put(`/api/admin/orders/${order.id}/cancel`).set(H(admin))).status).toBe(409);
     expect(await studentCount(course.id)).toBe(0);
+  });
+
+  it('hủy đơn đã trả: đánh giá của người mua không còn tính vào điểm khóa học; đánh giá bị ẩn thì giữ', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    const course = await createCourse({ status: 'PUBLISHED', price: 200000 });
+    const [cancelled, other, moderated] = [await createUser(), await createUser(), await createUser()];
+    const orders = {};
+    for (const [user, rating] of [[cancelled, 1], [other, 5], [moderated, 2]]) {
+      orders[user.id] = await createOrder(user, [course.id]);
+      await request(app).post('/api/orders/verify').set(H(user)).send({ vnp_TxnRef: orders[user.id].code, vnp_ResponseCode: '00', dev_mock: '1' });
+      expect((await request(app).post(`/api/courses/${course.id}/reviews`).set(H(user)).send({ rating })).status).toBeLessThan(300);
+    }
+    await pool.query("UPDATE reviews SET status = 'HIDDEN' WHERE user_id = ? AND course_id = ?", [moderated.id, course.id]);
+
+    await request(app).put(`/api/admin/orders/${orders[cancelled.id].id}/cancel`).set(H(admin));
+    await request(app).put(`/api/admin/orders/${orders[moderated.id].id}/cancel`).set(H(admin));
+
+    const [[c]] = await pool.query('SELECT rating, review_count FROM courses WHERE id = ?', [course.id]);
+    expect({ rating: Number(c.rating), count: c.review_count }).toEqual({ rating: 5, count: 1 });
+    expect(await countOf('SELECT COUNT(*) AS n FROM reviews WHERE user_id = ? AND course_id = ?', [moderated.id, course.id])).toBe(1);
   });
 });
 
@@ -416,6 +448,21 @@ describe('Đổi role giảng viên', () => {
     expect((await setRole(teacher, 'USER')).status).toBe(409);
   });
 
+  it('số dư âm (đơn bị hủy sau khi đã chi trả) → 409, không để mất dấu công nợ', async () => {
+    const teacher = await createUser({ role: 'INSTRUCTOR' });
+    const buyer = await createUser();
+    const course = await createCourse({ instructor: teacher, status: 'PUBLISHED', price: 200000 });
+    const order = await createOrder(buyer, [course.id]);
+    await request(app).post('/api/orders/verify').set(H(buyer)).send({ vnp_TxnRef: order.code, vnp_ResponseCode: '00', dev_mock: '1' });
+    const [[{ earning }]] = await pool.query('SELECT SUM(instructor_earning) AS earning FROM order_items WHERE order_id = ?', [order.id]);
+    await pool.query("INSERT INTO instructor_payouts (instructor_id, amount, status, paid_at) VALUES (?, ?, 'PAID', NOW())", [teacher.id, earning]);
+    await request(app).put(`/api/admin/orders/${order.id}/cancel`).set(H(admin));
+    await pool.query("UPDATE courses SET status = 'ARCHIVED' WHERE id = ?", [course.id]);
+    const res = await setRole(teacher, 'USER');
+    expect(res.status).toBe(409);
+    expect(res.body.message).toMatch(/số dư âm/);
+  });
+
   it('không còn ràng buộc → đổi được; user không tồn tại → 404', async () => {
     const teacher = await createUser({ role: 'INSTRUCTOR' });
     expect((await setRole(teacher, 'USER')).status).toBe(200);
@@ -453,6 +500,22 @@ describe('Độ bền API', () => {
 });
 
 describe('Tài khoản bị khóa / đổi quyền', () => {
+  it('khóa tài khoản thu hồi mọi refresh token: mở khóa lại, phiên cũ không sống lại', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    const [single, bulk] = [await createUser(), await createUser()];
+    const login = async (u) => (await request(app).post('/api/auth/login').send({ email: u.email, password: u.password })).body.refreshToken;
+    const tokens = { single: await login(single), bulk: await login(bulk) };
+
+    await request(app).put(`/api/admin/users/${single.id}/status`).set(H(admin)).send({ status: 'LOCKED' });
+    await request(app).post('/api/admin/users/bulk').set(H(admin)).send({ ids: [bulk.id], action: 'LOCK' });
+    await request(app).put(`/api/admin/users/${single.id}/status`).set(H(admin)).send({ status: 'ACTIVE' });
+    await request(app).post('/api/admin/users/bulk').set(H(admin)).send({ ids: [bulk.id], action: 'UNLOCK' });
+
+    for (const refreshToken of Object.values(tokens)) {
+      expect((await request(app).post('/api/auth/refresh').send({ refreshToken })).status).toBe(401);
+    }
+  });
+
   it('khóa tài khoản: access token đang còn hạn bị từ chối ngay', async () => {
     const user = await createUser();
     expect((await request(app).get('/api/notifications').set(H(user))).status).toBe(200);

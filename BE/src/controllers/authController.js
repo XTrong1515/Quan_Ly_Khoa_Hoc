@@ -199,8 +199,9 @@ async function forgotPassword(req, res) {
 
     const resetUrl = `${process.env.FE_ORIGIN || 'http://localhost:5173'}/reset-password?token=${token}`;
 
-    // Dev fallback: luôn log link ra console để test không cần inbox thật
-    console.log(`\n[forgot-password] Reset URL:\n  ${resetUrl}\n`);
+    // Dev: log link ra console để test không cần inbox thật. Production thì không — link chứa token,
+    // ai đọc được log là đặt lại được mật khẩu của người khác.
+    if (process.env.NODE_ENV !== 'production') console.log(`\n[forgot-password] Reset URL:\n  ${resetUrl}\n`);
 
     try {
       await sendResetPasswordEmail(normalizedEmail, resetUrl);

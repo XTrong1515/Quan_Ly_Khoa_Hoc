@@ -31,6 +31,11 @@ const { platformStats }    = require('./controllers/statsController');
 
 const app = express();
 
+// Sau reverse proxy (Nginx / load balancer) req.ip là IP của proxy → mọi rate limit theo IP gộp
+// thành một (khóa đăng nhập của nạn nhân chỉ bằng email). TRUST_PROXY = số proxy đứng trước API.
+const trustProxy = Number(process.env.TRUST_PROXY);
+if (Number.isInteger(trustProxy) && trustProxy > 0) app.set('trust proxy', trustProxy);
+
 // Header bảo mật (X-Content-Type-Options, X-Frame-Options, HSTS, CSP…); ẩn "X-Powered-By: Express".
 // CORP = cross-origin để FE (khác cổng) vẫn hiển thị ảnh trong /uploads.
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));

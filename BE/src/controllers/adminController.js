@@ -161,6 +161,17 @@ async function adminReorderCourses(req, res) {
   }
 }
 
+/**
+ * Một ô CSV an toàn: bọc nháy kép, nhân đôi nháy kép bên trong, và chặn CSV/formula injection —
+ * ô bắt đầu bằng = + - @ (hoặc tab / CR) bị Excel coi là công thức (tên khóa học, họ tên do người
+ * dùng tự đặt) nên thêm dấu ' phía trước để hiện nguyên văn.
+ */
+function csvCell(value) {
+  let s = value == null ? '' : String(value);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
 async function adminExportCourses(req, res) {
   const { search = '', status = '' } = req.query;
   const wheres = []; const params = [];
@@ -180,7 +191,7 @@ async function adminExportCourses(req, res) {
 
     const header = 'ID,Tên khóa học,Giảng viên,Danh mục,Giá (VND),Cấp độ,Trạng thái,Học viên,Bài học,Điểm đánh giá,Ngày tạo\n';
     const body   = rows.map(r =>
-      [r.id, `"${r.title}"`, `"${r.instructor_name ?? ''}"`, `"${r.category ?? ''}"`,
+      [r.id, csvCell(r.title), csvCell(r.instructor_name), csvCell(r.category),
        r.price, r.level, r.status, r.student_count, r.total_lessons,
        r.rating, new Date(r.created_at).toLocaleDateString('vi-VN')].join(','),
     ).join('\n');
@@ -250,6 +261,11 @@ async function adminCreateCourse(req, res) {
 
   if (!title || !slug || !categoryId) {
     return res.status(400).json({ message: 'Thiếu: title, slug, categoryId' });
+  }
+  if (!COURSE_STATUSES.includes(status)) return res.status(400).json({ message: 'Trạng thái không hợp lệ' });
+  // Khóa mới chưa có bài học: xuất bản / gửi duyệt ngay lúc tạo sẽ bỏ qua quy tắc "phải có ít nhất 1 bài"
+  if (['PUBLISHED', 'PENDING_REVIEW'].includes(status)) {
+    return res.status(400).json({ message: 'Khóa học mới chưa có bài học — hãy tạo ở trạng thái Nháp, thêm bài rồi mới xuất bản' });
   }
 
   try {
@@ -714,6 +730,8 @@ async function adminUpdateUserRole(req, res) {
       if (active) return res.status(409).json({ message: `Giảng viên còn ${active} khóa học đang bán / chờ duyệt — hãy chuyển giao hoặc lưu trữ trước` });
       const { balance, pending } = await revenue.balanceOf(id);
       if (balance > 0 || pending > 0) return res.status(409).json({ message: 'Giảng viên còn doanh thu chưa chi trả — hãy hoàn tất chi trả trước' });
+      // Số dư âm: đã chi trả rồi đơn mới bị hủy → còn công nợ, hạ quyền sẽ làm mất dấu khoản này
+      if (balance < 0) return res.status(409).json({ message: 'Giảng viên đang có số dư âm (đơn bị hủy sau khi đã chi trả) — hãy đối soát trước khi đổi vai trò' });
     }
 
     await pool.query('UPDATE users SET role = ? WHERE id = ?', [role.toUpperCase(), id]);
@@ -722,6 +740,15 @@ async function adminUpdateUserRole(req, res) {
     console.error('[admin/users/role]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
+}
+
+/**
+ * Khóa tài khoản → thu hồi mọi refresh token. Middleware đã chặn tài khoản LOCKED ở mỗi request,
+ * nhưng không thu hồi thì mở khóa lại là các phiên cũ (kể cả phiên bị đánh cắp) sống lại.
+ */
+async function revokeSessions(userIds) {
+  if (!userIds.length) return;
+  await pool.query('UPDATE refresh_tokens SET revoked = TRUE WHERE user_id IN (?) AND revoked = FALSE', [userIds]);
 }
 
 async function adminBulkUsers(req, res) {
@@ -740,6 +767,7 @@ async function adminBulkUsers(req, res) {
       `UPDATE users SET status = ? WHERE id IN (${placeholders})`,
       [newStatus, ...safeIds],
     );
+    if (newStatus === 'LOCKED') await revokeSessions(safeIds);
     return res.json({ ok: true, affected: result.affectedRows });
   } catch (err) {
     console.error('[admin/users/bulk]', err);
@@ -766,7 +794,7 @@ async function adminExportUsers(req, res) {
 
     const header = 'ID,Họ tên,Email,Role,Status,Số khóa học,Tổng chi (VND),Ngày tham gia\n';
     const body   = rows.map(r =>
-      [r.id, `"${r.full_name}"`, r.email, r.role, r.status, r.enrollments,
+      [r.id, csvCell(r.full_name), csvCell(r.email), r.role, r.status, r.enrollments,
        r.totalSpent, new Date(r.created_at).toLocaleDateString('vi-VN')].join(','),
     ).join('\n');
 
@@ -803,6 +831,7 @@ async function adminUpdateUserStatus(req, res) {
   if (id === req.user.id) return res.status(400).json({ message: 'Không thể tự khóa tài khoản của mình' });
   try {
     await pool.query('UPDATE users SET status = ? WHERE id = ?', [status, id]);
+    if (status === 'LOCKED') await revokeSessions([id]);
     return res.json({ ok: true });
   } catch (err) {
     console.error('[admin/users/status]', err);
@@ -929,6 +958,21 @@ async function adminCancelOrder(req, res) {
         // Chỉ trừ khi đơn này thật sự tạo ra enrollment
         if (removed.affectedRows) {
           await conn.query('UPDATE courses SET student_count = GREATEST(0, student_count - 1) WHERE id = ?', [item.course_id]);
+          // Không còn là học viên → đánh giá (đang hiển thị) không còn được tính vào điểm khóa học.
+          // Đánh giá đã bị ẩn do kiểm duyệt thì giữ lại để không lách được việc ẩn bằng cách mua lại.
+          const [dropped] = await conn.query(
+            "DELETE FROM reviews WHERE user_id = ? AND course_id = ? AND status = 'VISIBLE'",
+            [order.user_id, item.course_id],
+          );
+          if (dropped.affectedRows) {
+            await conn.query(
+              `UPDATE courses
+               SET rating       = COALESCE((SELECT ROUND(AVG(rating),2) FROM reviews WHERE course_id=? AND status='VISIBLE'), 0),
+                   review_count = (SELECT COUNT(*) FROM reviews WHERE course_id=? AND status='VISIBLE')
+               WHERE id = ?`,
+              [item.course_id, item.course_id, item.course_id],
+            );
+          }
         }
       }
     }
@@ -973,8 +1017,8 @@ async function adminExportOrders(req, res) {
 
     const header = 'Mã đơn,Khách hàng,Email,Số tiền (VND),Trạng thái,Phương thức,Mã GD,Ngày tạo,Ngày thanh toán\n';
     const body   = rows.map(r =>
-      [r.order_code, `"${r.userName}"`, r.email, r.total_amount, r.status,
-       r.payment_method ?? '', r.transaction_id ?? '',
+      [r.order_code, csvCell(r.userName), csvCell(r.email), r.total_amount, r.status,
+       csvCell(r.payment_method), csvCell(r.transaction_id),
        new Date(r.created_at).toLocaleString('vi-VN'),
        r.paid_at ? new Date(r.paid_at).toLocaleString('vi-VN') : ''].join(','),
     ).join('\n');
