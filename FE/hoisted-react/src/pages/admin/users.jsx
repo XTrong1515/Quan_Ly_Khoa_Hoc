@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
+import { Dialog, confirmDiscard } from '@/components/ui/dialog.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { formatVND } from '@/lib/format';
@@ -276,7 +277,7 @@ function UserRow({ user: u, selected, expanded, onSelect, onToggleExpand, onTogg
       <td className="px-4 py-3">
         <div className="flex items-center gap-2.5">
           {u.avatar_url ? (
-            <img src={u.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+            <img src={u.avatar_url} alt="" width="32" height="32" loading="lazy" className="w-8 h-8 rounded-full object-cover shrink-0" />
           ) : (
             <div className="w-8 h-8 rounded-full shrink-0 grid place-items-center font-mono font-bold text-[11px] text-bg"
               style={{ background: avatarColor(u.full_name) }}>
@@ -395,12 +396,12 @@ function CreateUserModal({ onClose, onCreated }) {
   const set = (k) => (e) => { setForm(f => ({ ...f, [k]: e.target.value })); setErrors(er => ({ ...er, [k]: '' })); };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(11,15,25,0.7)' }}>
-      <div className="w-full max-w-md bg-bg rounded-xl border border-line shadow-2xl">
+    <Dialog onClose={onClose} dismiss="none" aria-labelledby="create-user-title" className="max-w-md"
+      onCancel={confirmDiscard(Boolean(form.full_name || form.email || form.password))}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-          <h2 className="font-display font-semibold text-[16px]">Tạo người dùng mới</h2>
-          <button onClick={onClose} className="w-7 h-7 rounded grid place-items-center text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors">
+          <h2 id="create-user-title" className="font-display font-semibold text-[16px]">Tạo người dùng mới</h2>
+          <button type="button" onClick={onClose} aria-label="Đóng" className="w-7 h-7 rounded grid place-items-center text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -457,8 +458,7 @@ function CreateUserModal({ onClose, onCreated }) {
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 

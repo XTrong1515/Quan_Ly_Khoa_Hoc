@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, useId, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
+import { Dialog } from '@/components/ui/dialog.jsx';
 import { Progress } from '@/components/ui/progress.jsx';
 import { RichContent } from '@/components/rich-content.jsx';
 import { HlsPlayer, Mp4Player } from '@/components/video/hls-player.jsx';
@@ -52,20 +53,17 @@ function VideoWatermark({ text }) {
 
 /* ── Reusable warning modal ───────────────────────────────────── */
 function WarningModal({ icon: Icon = AlertTriangle, title, children, onClose, actions }) {
+  const titleId = useId();
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="bg-bg border border-line rounded-2xl p-6 w-[400px] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+    <Dialog onClose={onClose} aria-labelledby={titleId} className="max-w-[400px] rounded-2xl p-6">
         <div className="flex items-start gap-4 mb-4">
           <div className="w-10 h-10 rounded-full bg-warn/15 text-warn grid place-items-center shrink-0">
             <Icon className="w-5 h-5" />
           </div>
           <div className="flex-1 pt-0.5">
-            <h3 className="font-display font-semibold text-[15px] text-ink">{title}</h3>
+            <h2 id={titleId} className="font-display font-semibold text-[15px] text-ink">{title}</h2>
           </div>
-          <button onClick={onClose} className="text-ink-3 hover:text-ink transition-colors mt-0.5">
+          <button type="button" onClick={onClose} aria-label="Đóng" className="text-ink-3 hover:text-ink transition-colors mt-0.5">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -75,8 +73,7 @@ function WarningModal({ icon: Icon = AlertTriangle, title, children, onClose, ac
         <div className="flex gap-2 justify-end">
           {actions}
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 

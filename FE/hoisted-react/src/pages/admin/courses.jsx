@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
+import { Dialog, confirmDiscard } from '@/components/ui/dialog.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
 import {
   CourseBadge, CurriculumPanel, CourseModal, inputCls,
@@ -424,11 +425,10 @@ function RejectModal({ course, onClose, onDone }) {
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md bg-bg border border-line rounded-xl shadow-2xl" onClick={e => e.stopPropagation()}>
+    <Dialog onClose={onClose} onCancel={confirmDiscard(reason.trim() !== '')} aria-labelledby="reject-course-title" className="max-w-md">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Từ chối khóa học</p>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-2 text-ink-3"><X className="w-4 h-4" /></button>
+          <h2 id="reject-course-title" className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Từ chối khóa học</h2>
+          <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-3">
           <p className="text-[13px] text-ink">
@@ -445,8 +445,7 @@ function RejectModal({ course, onClose, onDone }) {
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 

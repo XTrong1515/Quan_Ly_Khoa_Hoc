@@ -9,6 +9,7 @@ import { CourseCard } from '@/components/course-card.jsx';
 import { Reveal } from '@/components/reveal.jsx';
 import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
+import { Dialog } from '@/components/ui/dialog.jsx';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { levelLabel } from '@/lib/format';
@@ -300,14 +301,10 @@ export default function CourseListingPage() {
 
           {/* ── Filter drawer (mobile) ─────────────────────────────── */}
           {sidebarOpen && (
-            <div className="fixed inset-0 z-40 lg:hidden">
-              <div
-                className="absolute inset-0 bg-black/55 backdrop-blur-sm"
-                onClick={() => setSidebarOpen(false)}
-                aria-hidden="true"
-              />
-              <div className="absolute inset-y-0 left-0 w-[300px] max-w-[85vw] bg-bg border-r border-line p-6 overflow-y-auto shadow-2xl">
+            <Dialog onClose={() => setSidebarOpen(false)} aria-label="Bộ lọc khóa học"
+              className="m-0 h-dvh max-h-none w-[300px] max-w-[85vw] rounded-none border-0 border-r p-6">
                 <button
+                  type="button"
                   onClick={() => setSidebarOpen(false)}
                   aria-label="Đóng bộ lọc"
                   className="absolute top-4 right-4 w-9 h-9 rounded-lg border border-line text-ink-3 hover:text-ink hover:bg-bg-2 grid place-items-center cursor-pointer"
@@ -318,8 +315,7 @@ export default function CourseListingPage() {
                 <Button className="w-full justify-center mt-4" onClick={() => setSidebarOpen(false)}>
                   Xem {total} kết quả
                 </Button>
-              </div>
-            </div>
+            </Dialog>
           )}
 
           {/* ── Results ────────────────────────────────────────────── */}

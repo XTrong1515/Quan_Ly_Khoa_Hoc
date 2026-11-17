@@ -10,6 +10,7 @@ import {
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
+import { Dialog, confirmDiscard } from '@/components/ui/dialog.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ExerciseEditorModal } from '@/components/exercise/exercise-editor-modal.jsx';
@@ -486,7 +487,7 @@ const THUMB_MODES = [
 export function CourseModal({ apiBase, variant = 'admin', mode, initial, categories, onClose, onSaved }) {
   const isAdmin = variant === 'admin';
   const locked  = !isAdmin && initial?.status === 'PUBLISHED';
-  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting, isDirty } } = useForm({
     resolver: zodResolver(courseSchema),
     defaultValues: mode === 'edit' && initial ? {
       title: initial.title, slug: initial.slug,
@@ -580,14 +581,13 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
   const previewImg   = thumbMode === 'upload' ? uploadPreview : (thumbMode === 'url' ? thumbUrlVal : null);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(11,15,25,0.8)' }}>
-      <div className="w-full max-w-[660px] bg-bg border border-line rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog onClose={onClose} dismiss="none" onCancel={confirmDiscard(isDirty)} aria-labelledby="course-modal-title"
+      className="max-w-[660px] max-h-[90dvh]">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line sticky top-0 bg-bg z-10">
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+          <h2 id="course-modal-title" className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
             {mode === 'create' ? '// Tạo khóa học mới' : '// Chỉnh sửa khóa học'}
-          </p>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
+          </h2>
+          <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -758,8 +758,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -895,15 +894,16 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
     setQForm(f => ({ ...f, options: f.options.filter((_, idx) => idx !== i) }));
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-bg border border-line rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    // Câu hỏi được lưu từng cái qua API → chỉ có thể mất câu đang soạn dở (qForm).
+    <Dialog onClose={onClose} dismiss="none" onCancel={confirmDiscard(qForm !== null)} aria-labelledby="quiz-editor-title"
+      className="max-w-2xl max-h-[90dvh] overflow-hidden open:flex open:flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line shrink-0">
           <div>
             <p className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mb-0.5">Quiz</p>
-            <p className="font-semibold text-[14px] text-ink truncate max-w-[480px]">{lesson.title}</p>
+            <h2 id="quiz-editor-title" className="font-semibold text-[14px] text-ink truncate max-w-[480px]">{lesson.title}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
+          <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -1063,7 +1063,6 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
             </>
           )}
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }

@@ -10,7 +10,11 @@ const GRADIENTS = {
   sky:    'from-[#38BDF8] to-[#0C4A6E]',
 };
 
-export function CourseThumb({ course, className }) {
+/**
+ * priority: ảnh là ứng viên LCP (ảnh bìa đầu trang chi tiết khóa học) → tải ngay với
+ * fetchpriority="high"; mặc định lazy cho lưới thẻ khóa học dưới màn hình đầu.
+ */
+export function CourseThumb({ course, className, priority = false }) {
   const thumbUrl = course.thumbnail_url || course.thumbnailUrl;
 
   if (thumbUrl) {
@@ -19,8 +23,10 @@ export function CourseThumb({ course, className }) {
         <img
           src={thumbUrl}
           alt={course.title ?? ''}
+          width="640"
+          height="360"
           className="w-full h-full object-cover"
-          loading="lazy"
+          {...(priority ? { fetchpriority: 'high' } : { loading: 'lazy' })}
         />
         {course.tag && (
           <span className={cn(

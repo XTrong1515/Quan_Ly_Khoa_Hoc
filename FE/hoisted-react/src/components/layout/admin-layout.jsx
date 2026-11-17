@@ -7,6 +7,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
 import { PageFallback } from '@/components/page-fallback.jsx';
+import { Dialog } from '@/components/ui/dialog.jsx';
 
 const ADMIN_NAV = [
   {
@@ -149,14 +150,11 @@ function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel }) {
 
       {/* ── Sidebar (mobile drawer) ── */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/55 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="absolute inset-y-0 left-0 w-[260px] border-r border-line shadow-2xl">
+        // overflow-visible: nút đóng nằm ngoài mép phải ngăn kéo
+        <Dialog onClose={() => setMobileOpen(false)} aria-label="Menu điều hướng"
+          className="m-0 h-dvh max-h-none w-[260px] max-w-none rounded-none border-0 border-r overflow-visible">
             <button
+              type="button"
               onClick={() => setMobileOpen(false)}
               aria-label="Đóng menu"
               className="absolute top-4 -right-12 w-9 h-9 rounded-lg bg-bg-1 border border-line text-ink-2 grid place-items-center cursor-pointer"
@@ -170,8 +168,7 @@ function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel }) {
               onNavigate={() => setMobileOpen(false)}
               {...shell}
             />
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* ── Main content ── */}

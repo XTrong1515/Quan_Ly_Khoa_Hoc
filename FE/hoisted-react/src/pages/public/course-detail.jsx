@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Mp4Player } from '@/components/video/hls-player.jsx';
 import { Button } from '@/components/ui/button.jsx';
+import { Dialog } from '@/components/ui/dialog.jsx';
 import { RichContent } from '@/components/rich-content.jsx';
 import { Chip } from '@/components/ui/chip.jsx';
 import { CourseThumb } from '@/components/course-thumb.jsx';
@@ -156,12 +157,7 @@ export default function CourseDetailPage() {
   const handleGoLearn = () => navigate(`/learn/${course.id}/${lessons[0]?.id}`);
 
   // Group lessons by section
-  const sections = lessons.reduce((acc, l) => {
-    const key = l.section_title ?? 'Phần 1';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(l);
-    return acc;
-  }, {});
+  const sections = Object.groupBy(lessons, (l) => l.section_title ?? 'Phần 1');
 
   const TABS = [
     { id: 'overview',   label: 'Mô tả' },
@@ -325,7 +321,7 @@ export default function CourseDetailPage() {
               <div className="card p-6 flex flex-col sm:flex-row gap-5 items-start">
                 <div className="p-[3px] rounded-2xl bg-gradient-to-br from-accent to-indigo flex-shrink-0">
                   {instructor?.avatar ? (
-                    <img src={instructor.avatar} alt={instructorName}
+                    <img src={instructor.avatar} alt={instructorName} width="64" height="64" loading="lazy"
                       className="w-16 h-16 rounded-[13px] object-cover bg-bg-1" />
                   ) : (
                     <div className="w-16 h-16 rounded-[13px] bg-bg-1 grid place-items-center font-display font-bold text-[22px] text-ink">
@@ -366,7 +362,7 @@ export default function CourseDetailPage() {
           <aside className="mt-10 lg:mt-0 lg:sticky lg:top-20">
             <div className="card overflow-hidden shadow-2xl shadow-black/20 lg:rounded-2xl">
               <div className="relative">
-                <CourseThumb course={course} className="rounded-none" />
+                <CourseThumb course={course} className="rounded-none" priority />
                 {discount > 0 && (
                   <span className="absolute top-3 right-3 h-6 px-2.5 rounded-full bg-[#0B0F19] text-white font-mono text-[11.5px] font-bold grid place-items-center">
                     -{discount}%
@@ -722,21 +718,8 @@ function PreviewModal({ lesson, onClose }) {
   });
   const videoUrl = data?.lesson?.videoUrl;
 
-  useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Xem thử: ${lesson.title}`}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="w-full max-w-[760px] bg-bg rounded-2xl border border-line overflow-hidden shadow-2xl">
+    <Dialog onClose={onClose} aria-label={`Xem thử: ${lesson.title}`} className="max-w-[760px] rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
           <div>
             <p className="font-mono text-[11px] text-accent uppercase tracking-wide mb-0.5">● Xem thử miễn phí</p>
@@ -772,8 +755,7 @@ function PreviewModal({ lesson, onClose }) {
           </span>
           <span className="font-mono text-[11.5px] text-ink-3">Mua khóa học để mở toàn bộ bài học</span>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 

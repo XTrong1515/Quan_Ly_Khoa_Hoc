@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, Trash2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
+import { Dialog, confirmDiscard } from '@/components/ui/dialog.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ExerciseResults } from './exercise-results.jsx';
@@ -38,8 +39,9 @@ export function ExerciseEditorModal({ apiBase, lesson, onClose }) {
     setForm(data?.exercise ? { ...data.exercise } : { ...EMPTY, title: lesson.title });
   }, [data, isLoading, form, lesson.title]);
 
-  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
-  const setTest = (i, key, value) => setForm((f) => ({ ...f, tests: f.tests.map((t, idx) => (idx === i ? { ...t, [key]: value } : t)) }));
+  const [dirty, setDirty]       = useState(false);
+  const set = (key) => (value) => { setDirty(true); setForm((f) => ({ ...f, [key]: value })); };
+  const setTest = (i, key, value) => { setDirty(true); setForm((f) => ({ ...f, tests: f.tests.map((t, idx) => (idx === i ? { ...t, [key]: value } : t)) })); };
 
   const payload = () => ({
     title: form.title, functionName: form.functionName, timeLimitMs: Number(form.timeLimitMs),
@@ -79,14 +81,15 @@ export function ExerciseEditorModal({ apiBase, lesson, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-bg border border-line rounded-xl w-full max-w-4xl max-h-[92vh] flex flex-col">
+    <Dialog onClose={onClose} dismiss="none" onCancel={confirmDiscard(dirty)} aria-labelledby="exercise-editor-title"
+      className="max-w-4xl max-h-[92dvh] overflow-hidden open:flex open:flex-col">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line shrink-0">
           <div>
             <p className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mb-0.5">Bài tập lập trình</p>
-            <p className="font-semibold text-[14px] text-ink truncate max-w-[560px]">{lesson.title}</p>
+            <h2 id="exercise-editor-title" className="font-semibold text-[14px] text-ink truncate max-w-[560px]">{lesson.title}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-2 text-ink-3"><X className="w-4 h-4" /></button>
+          <button type="button" onClick={() => { if (!dirty || window.confirm('Đóng mà không lưu? Các thay đổi chưa lưu sẽ mất.')) onClose(); }}
+            aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3"><X className="w-4 h-4" /></button>
         </div>
 
         {!form ? (
@@ -160,7 +163,6 @@ export function ExerciseEditorModal({ apiBase, lesson, onClose }) {
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </Dialog>
   );
 }

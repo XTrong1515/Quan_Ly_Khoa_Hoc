@@ -213,7 +213,7 @@ export default function HomePage() {
   const quotes     = (data?.reviews ?? EMPTY).filter((r) => (r.comment ?? '').trim().length >= MIN_QUOTE_LENGTH);
   const reviewers  = (data?.reviews ?? EMPTY).slice(0, 4);
   const allCourses = data?.featured ?? EMPTY;
-  const newestCourses = data?.newest ?? [...allCourses].sort((a, b) => b.id - a.id).slice(0, 4);
+  const newestCourses = data?.newest ?? allCourses.toSorted((a, b) => b.id - a.id).slice(0, 4);
 
   const visibleCourses = (() => {
     if (activeTab === 2) return allCourses.filter((c) => Number(c.price) === 0);

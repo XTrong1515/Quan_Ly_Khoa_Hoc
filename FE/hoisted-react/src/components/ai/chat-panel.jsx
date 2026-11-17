@@ -191,7 +191,14 @@ export function ChatPanel({ conversationId, onConversationChange, className }) {
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value.slice(0, 1000))}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' || e.shiftKey) return;
+              e.preventDefault();
+              // Enter của bộ gõ (Telex/VNI trên macOS, Win 11…) chỉ chốt chữ đang gõ — chưa gửi.
+              // keyCode 229: Safari báo compositionend trước keydown nên isComposing đã là false.
+              if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+              send(input);
+            }}
             rows={1}
             placeholder="Hỏi trợ lý… (Enter để gửi)"
             className="flex-1 resize-none bg-transparent text-[13.5px] text-ink placeholder:text-ink-3 focus:outline-none max-h-32"

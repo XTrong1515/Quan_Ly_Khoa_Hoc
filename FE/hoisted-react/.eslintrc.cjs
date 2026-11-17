@@ -20,6 +20,8 @@ module.exports = {
     'react/no-unescaped-entities': 'off',
     // Một số module cố ý export chung hằng số + component (course-editor, chart, exercise) — chỉ ảnh hưởng HMR khi dev
     'react-refresh/only-export-components': 'off',
+    // React 18 chưa có fetchPriority / closedBy: viết chữ thường để React truyền thẳng thuộc tính HTML xuống DOM
+    'react/no-unknown-property': ['error', { ignore: ['fetchpriority', 'closedby'] }],
     'no-unused-vars': ['warn', { varsIgnorePattern: '^_', argsIgnorePattern: '^_', ignoreRestSiblings: true }],
   },
 };

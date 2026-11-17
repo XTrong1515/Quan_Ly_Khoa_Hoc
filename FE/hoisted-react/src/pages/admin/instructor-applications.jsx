@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, Ban, X, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
+import { Dialog, confirmDiscard } from '@/components/ui/dialog.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -90,11 +91,10 @@ function RejectModal({ application, onClose, onDone }) {
     onError: (err) => toast.error(apiMessage(err, 'Chưa gửi được quyết định từ chối. Thử lại sau giây lát.')),
   });
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md bg-bg border border-line rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <Dialog onClose={onClose} onCancel={confirmDiscard(note.trim() !== '')} aria-labelledby="reject-application-title" className="max-w-md">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Từ chối đơn của {application.name}</p>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-2 text-ink-3"><X className="w-4 h-4" /></button>
+          <h2 id="reject-application-title" className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Từ chối đơn của {application.name}</h2>
+          <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-3">
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={4} maxLength={500} autoFocus
@@ -105,7 +105,6 @@ function RejectModal({ application, onClose, onDone }) {
             <Button size="sm" onClick={() => m.mutate()} disabled={!note.trim() || m.isPending}>Từ chối</Button>
           </div>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }

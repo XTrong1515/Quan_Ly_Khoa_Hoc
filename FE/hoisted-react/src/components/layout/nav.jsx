@@ -103,7 +103,7 @@ export function Nav() {
               aria-expanded={menuOpen}
             >
               {user?.avatar ? (
-                <img src={user.avatar} alt={user.name}
+                <img src={user.avatar} alt={user.name} width="32" height="32"
                   className="w-8 h-8 rounded-full object-cover shrink-0 border border-line" />
               ) : (
                 <div
@@ -124,7 +124,7 @@ export function Nav() {
                 <div className="px-4 py-3 border-b border-line">
                   <div className="flex items-center gap-2.5">
                     {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name}
+                      <img src={user.avatar} alt={user.name} width="32" height="32" fetchpriority="low"
                         className="w-8 h-8 rounded-full object-cover shrink-0 border border-line" />
                     ) : (
                       <div
@@ -521,7 +521,7 @@ function SearchBox({ className }) {
 function MiniThumb({ course }) {
   const url = course.thumbnail_url || course.thumbnailUrl;
   if (url) {
-    return <img src={url} alt="" className="w-9 h-9 rounded object-cover shrink-0 border border-line" />;
+    return <img src={url} alt="" width="36" height="36" fetchpriority="low" className="w-9 h-9 rounded object-cover shrink-0 border border-line" />;
   }
   const bg = THUMB_COLORS[course.thumb] ?? '#6366F1';
   return (

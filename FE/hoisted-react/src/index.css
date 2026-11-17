@@ -80,6 +80,21 @@ html:not(.dark) {
   .progress > span { @apply block h-full bg-accent rounded-full; }
 }
 
+/* ── Modal <dialog> (components/ui/dialog.jsx) ─────────────────
+   overscroll-behavior trên dialog VÀ backdrop (backdrop phải là scroll container
+   → overflow: hidden) để cuộn trong / ngoài hộp thoại không kéo trang phía sau.
+   Không khóa cuộn bằng overflow: hidden trên html/body (mất thanh cuộn, lệch layout). */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+dialog::backdrop {
+  background: rgb(11 15 25 / 0.7);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
 /* ── Homepage v2: backdrops & motion ────────────────────────── */
 @layer utilities {
   .bg-grid {

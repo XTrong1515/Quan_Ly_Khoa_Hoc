@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Download, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
+import { Dialog } from '@/components/ui/dialog.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
 import { api, apiMessage, downloadCsv } from '@/lib/api';
 import { formatVND } from '@/lib/format';
@@ -252,12 +253,10 @@ function OrderDetailModal({ orderId, onClose }) {
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(11,15,25,0.8)' }}>
-      <div className="w-full max-w-[520px] bg-bg border border-line rounded-xl shadow-2xl">
+    <Dialog onClose={onClose} aria-labelledby="order-detail-title" className="max-w-[520px]">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Chi tiết đơn hàng</p>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
+          <h2 id="order-detail-title" className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Chi tiết đơn hàng</h2>
+          <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -296,7 +295,6 @@ function OrderDetailModal({ orderId, onClose }) {
             </>
           )}
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
