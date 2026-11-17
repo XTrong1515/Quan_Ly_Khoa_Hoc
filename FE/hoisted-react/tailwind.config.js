@@ -5,9 +5,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans:    ['"Inter Tight"', 'system-ui', 'sans-serif'],
-        display: ['"Inter Tight"', 'system-ui', 'sans-serif'],
-        mono:    ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        // "… Fallback": font hệ thống đã chỉnh số đo cho khớp (src/index.css) → không xô layout khi font tải xong
+        sans:    ['"Inter Tight"', '"Inter Tight Fallback"', 'system-ui', 'sans-serif'],
+        display: ['"Inter Tight"', '"Inter Tight Fallback"', 'system-ui', 'sans-serif'],
+        mono:    ['"JetBrains Mono"', '"JetBrains Mono Fallback"', 'ui-monospace', 'monospace'],
       },
       colors: {
         // semantic tokens — wired through CSS variables in src/index.css

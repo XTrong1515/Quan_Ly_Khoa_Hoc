@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "inter tight fallback",
+        "createdAt": "2026-11-17T09:17:19.607Z",
+        "reason": "Claude: metric-matched local Arial stand-in for the documented Inter Tight while the web font loads (CLS fix), not a new typeface"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "jetbrains mono fallback",
+        "createdAt": "2026-11-17T09:17:19.817Z",
+        "reason": "Claude: metric-matched local Courier New stand-in for the documented JetBrains Mono while the web font loads (CLS fix), not a new typeface"
+      }
+    ]
+  }
+}

@@ -65,7 +65,7 @@ export default function CourseListingPage() {
   };
 
   const { data, isLoading, isFetching, isError, refetch } = useCourses(queryParams);
-  const { data: categories = [] }       = useCategories();
+  const { data: categories = [], isPending: categoriesPending } = useCategories();
 
   const stateParams = () => {
     const p = new URLSearchParams();
@@ -255,7 +255,9 @@ export default function CourseListingPage() {
             </form>
           </div>
 
-          {/* Category quick-rail */}
+          {/* Category quick-rail — giữ chỗ (cùng chiều cao) khi đang tải: thanh hiện ra sau
+              không đẩy cả lưới khóa học xuống 60 px (CLS 0,45 trên desktop) */}
+          {categoriesPending && <div className="h-8 mt-7" aria-hidden="true" />}
           {categories.length > 0 && (
             <div className="flex gap-2 mt-7 overflow-x-auto pb-1 -mb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <button
