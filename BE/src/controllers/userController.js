@@ -9,7 +9,16 @@ async function updateProfile(req, res) {
   const { name, username, phone, bio } = req.body;
   const userId = req.user.id;
 
+  // Kiểu / độ dài theo cột DB — sai kiểu (object, số) hay quá dài thì trả 400 thay vì 500
+  const isText = (v) => v === undefined || v === null || typeof v === 'string';
+  if (![name, username, phone, bio].every(isText)) return res.status(400).json({ message: 'Dữ liệu hồ sơ không hợp lệ' });
   if (!name?.trim()) return res.status(400).json({ message: 'Tên không được để trống' });
+  if (name.trim().length > 100) return res.status(400).json({ message: 'Họ tên tối đa 100 ký tự' });
+  if (username?.trim() && !/^[a-z0-9_.]{3,30}$/.test(username.trim())) {
+    return res.status(400).json({ message: 'Tên đăng nhập: 3–30 ký tự, chỉ dùng a-z, 0-9, . hoặc _' });
+  }
+  if (phone?.trim() && !/^[0-9+\-\s().]{1,20}$/.test(phone.trim())) return res.status(400).json({ message: 'Số điện thoại không hợp lệ' });
+  if (bio && bio.length > 2000) return res.status(400).json({ message: 'Giới thiệu tối đa 2000 ký tự' });
 
   const cleanUsername = username?.trim() || null;
 

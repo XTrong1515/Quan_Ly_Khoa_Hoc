@@ -65,6 +65,13 @@ function shapeForAuthor(run, tests) {
   };
 }
 
+/** Lỗi khi chấm: hàng chờ đầy → 503 kèm lời nhắn thử lại; còn lại → 500. */
+function runnerFailure(res, err, tag, fallback) {
+  if (err?.code === 'RUNNER_BUSY') return res.status(503).json({ message: 'Hệ thống chấm bài đang bận — thử lại sau ít phút' });
+  console.error(tag, err);
+  return res.status(500).json({ message: fallback });
+}
+
 const runJob = (exercise, code, tests) => getRunner().runTests({
   code, functionName: exercise.functionName, tests, timeLimitMs: exercise.timeLimitMs,
 });
@@ -116,8 +123,7 @@ async function runForLearner(req, res) {
     const run = await runJob(exercise, req.body.code, tests);
     return res.json(shapeForLearner(run, tests));
   } catch (err) {
-    console.error('[exercise/run]', err);
-    return res.status(500).json({ message: 'Không chấm được bài lúc này' });
+    return runnerFailure(res, err, '[exercise/run]', 'Không chấm được bài lúc này');
   }
 }
 
@@ -148,8 +154,7 @@ async function submitForLearner(req, res) {
       lessonCompleted: !!progress, progressPercent: progress?.progressPercent ?? null,
     });
   } catch (err) {
-    console.error('[exercise/submit]', err);
-    return res.status(500).json({ message: 'Không chấm được bài lúc này' });
+    return runnerFailure(res, err, '[exercise/submit]', 'Không chấm được bài lúc này');
   }
 }
 
@@ -288,8 +293,7 @@ async function validateForAuthor(req, res) {
     const run = await runJob(exercise, exercise.solutionCode, exercise.tests);
     return res.json(shapeForAuthor(run, exercise.tests));
   } catch (err) {
-    console.error('[exercise/validate]', err);
-    return res.status(500).json({ message: 'Không chấm được lúc này' });
+    return runnerFailure(res, err, '[exercise/validate]', 'Không chấm được lúc này');
   }
 }
 

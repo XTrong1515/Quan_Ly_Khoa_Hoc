@@ -71,6 +71,42 @@ describe('Sandbox isolated-vm — chấm đúng & an toàn', () => {
   });
 });
 
+describe('Sandbox — không để một bài nộp chiếm máy chấm', () => {
+  const loadRunner = (env) => {
+    const saved = { ...process.env };
+    Object.assign(process.env, env);
+    try {
+      let mod;
+      jest.isolateModules(() => { mod = require('../src/services/code-runner/isolated-vm-runner'); });
+      return mod;
+    } finally {
+      process.env = saved;
+    }
+  };
+  // Mỗi test chạy ~120 ms — dưới timeLimit của từng test, nhưng cộng lại vượt tổng thời gian cho phép
+  const SLOW = 'function sum(a, b) { const t = Date.now(); while (Date.now() - t < 120) {} return a + b }';
+  const MANY = Array.from({ length: 20 }, (_, i) => ({ input: [i, 1], expected: i + 1 }));
+
+  it('vượt tổng thời gian của cả bài → dừng chấm, TIME_LIMIT (không được ACCEPTED)', async () => {
+    const limited = loadRunner({ CODE_RUNNER_TOTAL_MS: '400' });
+    const t0 = Date.now();
+    const result = await limited.runTests({ code: SLOW, functionName: 'sum', tests: MANY, timeLimitMs: 1000 });
+    expect(result.status).toBe('TIME_LIMIT');
+    expect(result.passed).toBeLessThan(MANY.length);
+    expect(Date.now() - t0).toBeLessThan(1500); // không chạy đủ 20 × 120 ms
+  });
+
+  it('hàng chờ đầy → từ chối ngay (RUNNER_BUSY) thay vì treo request', async () => {
+    const tiny = loadRunner({ CODE_RUNNER_CONCURRENCY: '1', CODE_RUNNER_MAX_QUEUE: '1' });
+    const job = () => tiny.runTests({ code: SLOW, functionName: 'sum', tests: MANY.slice(0, 2), timeLimitMs: 1000 });
+    const running = job();
+    const queued = job();
+    await expect(job()).rejects.toMatchObject({ code: 'RUNNER_BUSY' });
+    expect((await running).status).toBe('ACCEPTED');
+    expect((await queued).status).toBe('ACCEPTED');
+  });
+});
+
 describe('API bài tập', () => {
   let teacher; let otherTeacher; let student; let outsider; let course; let lesson;
   const H = (u) => authHeader(u);

@@ -13,13 +13,23 @@ const { UNDEFINED, parseActual, deepEqual, summarize } = require('./compare');
 
 const MEMORY_MB      = Number(process.env.CODE_RUNNER_MEMORY_MB) || 64;
 const MAX_CONCURRENT = Number(process.env.CODE_RUNNER_CONCURRENCY) || 4;
+// Tổng thời gian một bài nộp được giữ slot. Không có trần này, code chạy sát timeLimit ở mọi test
+// (vd 950 ms × 50 test ≈ 47 s) thì 4 bài nộp là chặn việc chấm của mọi học viên khác.
+const TOTAL_BUDGET_MS = Number(process.env.CODE_RUNNER_TOTAL_MS) || 10_000;
+// Hàng chờ có giới hạn: quá tải thì từ chối ngay (503) thay vì để request treo vô hạn
+const MAX_QUEUE      = Number(process.env.CODE_RUNNER_MAX_QUEUE) || 20;
 const MAX_LOG_LINES  = 50;
 const MAX_LOG_CHARS  = 500;
+
+class RunnerBusyError extends Error {
+  constructor() { super('Hệ thống chấm bài đang quá tải'); this.code = 'RUNNER_BUSY'; }
+}
 
 /* ── Hàng đợi giới hạn số isolate chạy cùng lúc ─────────────────── */
 let active = 0;
 const waiting = [];
 async function withSlot(fn) {
+  if (active >= MAX_CONCURRENT && waiting.length >= MAX_QUEUE) throw new RunnerBusyError();
   if (active >= MAX_CONCURRENT) await new Promise((resolve) => waiting.push(resolve));
   active += 1;
   try {
@@ -124,6 +134,11 @@ async function runTests({ code, functionName, tests, timeLimitMs = 1000 }) {
           results.push({ passed: false, status: 'SKIPPED', actual: undefined, error: 'Bỏ qua do test trước vượt giới hạn', timeMs: 0, logs: [] });
           continue;
         }
+        // Hết tổng thời gian của bài nộp: test đầu tiên bị dừng tính là TIME_LIMIT (bài không được ACCEPTED)
+        if (Date.now() - started > TOTAL_BUDGET_MS) {
+          results.push({ passed: false, status: 'TIME_LIMIT', actual: undefined, error: `Vượt tổng thời gian chấm (${TOTAL_BUDGET_MS / 1000} giây cho cả bài)`, timeMs: 0, logs: [] });
+          continue;
+        }
         await ensureIsolate();
         results.push(await runOne(isolate, script, functionName, test, timeLimitMs));
       }
@@ -134,4 +149,4 @@ async function runTests({ code, functionName, tests, timeLimitMs = 1000 }) {
   });
 }
 
-module.exports = { name: 'isolated-vm', runTests };
+module.exports = { name: 'isolated-vm', runTests, RunnerBusyError, TOTAL_BUDGET_MS };

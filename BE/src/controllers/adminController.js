@@ -246,8 +246,42 @@ function _priceError({ price, originalPrice }) {
   return null;
 }
 
+const COURSE_LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
+// [khóa body, độ dài tối đa (theo cột DB), tên hiển thị]
+const COURSE_TEXT_LIMITS = [
+  ['title', 255, 'Tên khóa học'], ['shortDescription', 500, 'Mô tả ngắn'], ['instructorName', 100, 'Tên giảng viên'],
+  ['tag', 50, 'Tag'], ['glyph', 10, 'Ký hiệu'], ['thumb', 50, 'Màu nền'],
+];
+
+/**
+ * Kiểu / độ dài các trường khóa học (chỉ trường có gửi lên). Thiếu bước này thì chuỗi quá dài
+ * hoặc object thay cho chuỗi làm MySQL / .trim() ném lỗi → 500 thay vì 400 có lời giải thích.
+ */
+function _courseFieldsError(body) {
+  for (const [key, max, label] of COURSE_TEXT_LIMITS) {
+    const v = body[key];
+    if (v === undefined || v === null) continue;
+    if (typeof v !== 'string') return `${label} không hợp lệ`;
+    if (v.length > max) return `${label} tối đa ${max} ký tự`;
+  }
+  if (body.title !== undefined && !String(body.title).trim()) return 'Tên khóa học không được để trống';
+  if (body.slug !== undefined && (typeof body.slug !== 'string' || !/^[a-z0-9-]{1,255}$/.test(body.slug))) {
+    return 'Slug chỉ gồm chữ thường không dấu, số và dấu gạch ngang';
+  }
+  if (body.level !== undefined && !COURSE_LEVELS.includes(body.level)) return 'Cấp độ không hợp lệ';
+  if (body.description !== undefined && body.description !== null && typeof body.description !== 'string') return 'Mô tả không hợp lệ';
+  const thumb = body.thumbnailUrl;
+  if (thumb !== undefined && thumb !== null && thumb !== '') {
+    // Ảnh bìa: link http(s) hoặc ảnh đã tải lên máy chủ (/uploads/...)
+    if (typeof thumb !== 'string' || thumb.length > 500 || !/^(https?:\/\/|\/uploads\/)/i.test(thumb)) {
+      return 'Ảnh bìa phải là link http(s) hoặc ảnh đã tải lên';
+    }
+  }
+  return null;
+}
+
 async function adminCreateCourse(req, res) {
-  const priceError = _priceError(req.body);
+  const priceError = _priceError(req.body) || _courseFieldsError(req.body);
   if (priceError) return res.status(400).json({ message: priceError });
 
   const {
@@ -298,7 +332,7 @@ async function adminCreateCourse(req, res) {
 }
 
 async function adminUpdateCourse(req, res) {
-  const priceError = _priceError(req.body);
+  const priceError = _priceError(req.body) || _courseFieldsError(req.body);
   if (priceError) return res.status(400).json({ message: priceError });
 
   const id = parseInt(req.params.id, 10);

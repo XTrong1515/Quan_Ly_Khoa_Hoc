@@ -178,6 +178,34 @@ describe('Admin tạo khóa học', () => {
   });
 });
 
+describe('Dữ liệu sai kiểu / quá dài → 400 có lời giải thích, không phải 500', () => {
+  it('khóa học: tên quá dài, slug có dấu, cấp độ lạ, ảnh bìa javascript:, tên là object', async () => {
+    const admin = await createUser({ role: 'ADMIN' });
+    const cat = await createCategory();
+    const base = () => ({ title: 'Khóa hợp lệ', slug: `hop-le-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, categoryId: cat.id, price: 0 });
+    const create = (patch) => request(app).post('/api/admin/courses').set(authHeader(admin)).send({ ...base(), ...patch });
+    for (const patch of [
+      { title: 'x'.repeat(256) }, { slug: 'Khóa Học' }, { level: 'EXPERT' },
+      { thumbnailUrl: 'javascript:alert(1)' }, { title: { $gt: '' } }, { shortDescription: 'y'.repeat(501) },
+    ]) {
+      const res = await create(patch);
+      expect({ patch, status: res.status }).toEqual({ patch, status: 400 });
+    }
+    expect((await create({ thumbnailUrl: 'http://localhost:3001/uploads/a.png' })).status).toBe(201);
+    const created = await create({});
+    expect((await request(app).put(`/api/admin/courses/${created.body.id}`).set(authHeader(admin)).send({ level: 'EXPERT' })).status).toBe(400);
+  });
+
+  it('hồ sơ: họ tên là object / quá dài, tên đăng nhập sai mẫu → 400', async () => {
+    const user = await createUser();
+    const update = (body) => request(app).put('/api/user/profile').set(authHeader(user)).send({ name: 'Hợp Lệ', ...body });
+    for (const body of [{ name: { a: 1 } }, { name: 'n'.repeat(101) }, { username: 'Có Dấu' }, { phone: 'abc' }, { bio: 5 }]) {
+      expect((await update(body)).status).toBe(400);
+    }
+    expect((await update({ username: 'hop.le_1', phone: '+84 912 345 678' })).status).toBe(200);
+  });
+});
+
 describe('JWT secret khi chạy production', () => {
   const load = (env) => {
     const saved = { ...process.env };
