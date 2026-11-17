@@ -14,6 +14,12 @@
         "value": "jetbrains mono fallback",
         "createdAt": "2026-11-17T09:17:19.817Z",
         "reason": "Claude: metric-matched local Courier New stand-in for the documented JetBrains Mono while the web font loads (CLS fix), not a new typeface"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-17T09:22:24.816Z",
+        "reason": "Claude: Inter Tight is the documented brand typeface in DESIGN.md (Typography + 'Two typefaces' rule); only its loading moved from Google Fonts into index.css"
       }
     ]
   }
