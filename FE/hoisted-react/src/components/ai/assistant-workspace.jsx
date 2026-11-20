@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, History, X, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, History, X, RotateCcw, Search, Pencil, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChatPanel } from '@/components/ai/chat-panel.jsx';
 import { Dialog } from '@/components/ui/dialog.jsx';
@@ -9,6 +9,9 @@ import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const DAY = 86_400_000;
+
+/** So khớp không phân biệt hoa thường / dấu tiếng Việt: "closure" khớp "Closure", "hoc" khớp "học". */
+const fold = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 
 /** Nhóm hội thoại theo thời gian cập nhật: Hôm nay / Hôm qua / 7 ngày qua / Cũ hơn. */
 function groupByDate(conversations) {
@@ -23,7 +26,7 @@ function groupByDate(conversations) {
   return groups.filter(([, items]) => items.length);
 }
 
-function ConversationList({ query, activeId, onOpen, onDelete, deletingId }) {
+function ConversationList({ query, activeId, onOpen, onDelete, deletingId, search = '' }) {
   if (query.isPending) {
     return (
       <div className="px-3 space-y-2" role="status" aria-label="Đang tải lịch sử">
@@ -42,9 +45,14 @@ function ConversationList({ query, activeId, onOpen, onDelete, deletingId }) {
       </div>
     );
   }
-  const conversations = query.data?.conversations ?? [];
-  if (!conversations.length) {
+  const all = query.data?.conversations ?? [];
+  if (!all.length) {
     return <p className="px-4 py-2 text-[12.5px] leading-relaxed text-ink-3">Chưa có hội thoại nào. Câu hỏi đầu tiên sẽ tự lưu ở đây.</p>;
+  }
+  const q = fold(search.trim());
+  const conversations = q ? all.filter((c) => fold(c.title).includes(q) || fold(c.lessonTitle).includes(q)) : all;
+  if (!conversations.length) {
+    return <p className="px-4 py-2 text-[12.5px] leading-relaxed text-ink-3">Không có hội thoại nào khớp “{search.trim()}”.</p>;
   }
   return (
     <nav aria-label="Lịch sử hội thoại" className="px-2 space-y-4">
@@ -58,9 +66,15 @@ function ConversationList({ query, activeId, onOpen, onDelete, deletingId }) {
                 <li key={c.id} className={cn('group relative flex items-center rounded-lg transition-colors',
                   active ? 'bg-accent/10' : 'hover:bg-bg-2')}>
                   <button type="button" onClick={() => onOpen(c.id)} aria-current={active ? 'page' : undefined}
-                    className={cn('flex-1 min-w-0 text-left pl-2.5 pr-9 py-2 rounded-lg text-[13px] truncate',
+                    className={cn('flex-1 min-w-0 text-left pl-2.5 pr-9 py-2 rounded-lg text-[13px]',
                       active ? 'text-ink font-medium' : 'text-ink-2 group-hover:text-ink')}>
-                    {c.title}
+                    <span className="block truncate">{c.title}</span>
+                    {c.lessonTitle && (
+                      <span className="mt-0.5 flex items-center gap-1 text-[11.5px] text-ink-3 font-normal">
+                        <BookOpen className="w-3 h-3 shrink-0" aria-hidden="true" />
+                        <span className="truncate"><span className="sr-only">Hỏi về bài </span>{c.lessonTitle}</span>
+                      </span>
+                    )}
                   </button>
                   <button type="button" onClick={() => onDelete(c)} disabled={deletingId === c.id}
                     aria-label={`Xóa hội thoại ${c.title ?? ''}`.trim()}
@@ -90,7 +104,12 @@ export function AssistantWorkspace({ assistant, className }) {
   // hội thoại mới giữa lúc đang stream (sẽ cắt ngang câu trả lời)
   const [panelKey, setPanelKey] = useState(0);
   const [drawer, setDrawer] = useState(false);
-  const open = (id) => { select(id); setPanelKey((k) => k + 1); setDrawer(false); };
+  const [search, setSearch] = useState('');
+  const [renaming, setRenaming] = useState(null); // tên đang sửa của hội thoại hiện tại
+  const renameRef = useRef(null);
+  const open = (id) => { select(id); setPanelKey((k) => k + 1); setDrawer(false); setRenaming(null); };
+  const isRenaming = renaming !== null;
+  useEffect(() => { if (isRenaming) renameRef.current?.select(); }, [isRenaming]);
 
   const list = useQuery({
     queryKey: ['ai-conversations', assistant.id],
@@ -108,11 +127,32 @@ export function AssistantWorkspace({ assistant, className }) {
     },
     onError: (err) => toast.error(apiMessage(err, 'Chưa xóa được hội thoại. Thử lại sau giây lát.')),
   });
+  const rename = useMutation({
+    mutationFn: ({ id, title }) => api.patch(`${assistant.api}/conversations/${id}`, { title }),
+    onSuccess: () => { setRenaming(null); qc.invalidateQueries({ queryKey: ['ai-conversations', assistant.id] }); },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa đổi được tên hội thoại. Thử lại sau giây lát.')),
+  });
+  const submitRename = () => {
+    const title = renaming?.trim();
+    if (!title || title === current?.title) { setRenaming(null); return; }
+    rename.mutate({ id: conversationId, title });
+  };
   const confirmDelete = (c) => {
     if (window.confirm(`Xóa hội thoại "${c.title}"? Toàn bộ tin nhắn trong đó sẽ mất.`)) remove.mutate(c.id);
   };
 
-  const listProps = { query: list, activeId: conversationId, onOpen: open, onDelete: confirmDelete, deletingId: remove.isPending ? remove.variables : null };
+  const listProps = {
+    query: list, activeId: conversationId, onOpen: open, onDelete: confirmDelete,
+    deletingId: remove.isPending ? remove.variables : null, search,
+  };
+  const searchBox = (list.data?.conversations?.length ?? 0) > 3 && (
+    <div className="relative mt-2">
+      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3 pointer-events-none" aria-hidden="true" />
+      <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Tìm hội thoại"
+        placeholder="Tìm hội thoại…"
+        className="w-full h-[34px] pl-8 pr-2.5 rounded-lg border border-line bg-bg-3 text-[13px] text-ink placeholder:text-ink-3 outline-none focus:border-accent/60" />
+    </div>
+  );
   const newButton = (
     <button type="button" onClick={() => open(null)}
       className="w-full inline-flex items-center justify-center gap-1.5 h-[38px] px-3 rounded-lg border border-line text-[13px] font-semibold text-ink hover:bg-bg-2 transition-colors">
@@ -126,6 +166,7 @@ export function AssistantWorkspace({ assistant, className }) {
         <div className="px-4 pt-5 pb-4">
           <h1 className="font-display font-semibold text-[17px] text-ink">{assistant.name}</h1>
           <div className="mt-3">{newButton}</div>
+          {searchBox}
         </div>
         <div className="flex-1 overflow-y-auto pb-4">
           <ConversationList {...listProps} />
@@ -138,15 +179,39 @@ export function AssistantWorkspace({ assistant, className }) {
             className="md:hidden w-9 h-9 rounded-lg border border-line text-ink-2 grid place-items-center hover:bg-bg-2">
             <History className="w-4 h-4" />
           </button>
-          <p className="flex-1 min-w-0 truncate text-[13.5px] font-medium text-ink">
-            <span className="md:hidden sr-only">{assistant.name}: </span>
-            {current?.title ?? (conversationId ? '' : 'Hội thoại mới')}
-          </p>
-          {conversationId && current && (
-            <button type="button" onClick={() => confirmDelete(current)} aria-label="Xóa hội thoại này"
-              className="w-9 h-9 rounded-lg grid place-items-center text-ink-3 hover:text-danger hover:bg-bg-2">
-              <Trash2 className="w-4 h-4" />
-            </button>
+          {renaming !== null ? (
+            <form className="flex-1 min-w-0" onSubmit={(e) => { e.preventDefault(); submitRename(); }}>
+              <input ref={renameRef} value={renaming} onChange={(e) => setRenaming(e.target.value.slice(0, 120))}
+                onBlur={submitRename} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); setRenaming(null); } }}
+                aria-label="Tên hội thoại" disabled={rename.isPending}
+                className="w-full h-8 px-2.5 rounded-md border border-accent/60 bg-bg-3 text-[13.5px] font-medium text-ink outline-none" />
+            </form>
+          ) : (
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              <p className="min-w-0 truncate text-[13.5px] font-medium text-ink">
+                <span className="md:hidden sr-only">{assistant.name}: </span>
+                {current?.title ?? (conversationId ? '' : 'Hội thoại mới')}
+              </p>
+              {current?.lessonId && current.lessonCourseId && (
+                <Link to={`/learn/${current.lessonCourseId}/${current.lessonId}`} title={`Mở bài: ${current.lessonTitle}`}
+                  className="hidden sm:inline-flex items-center gap-1 h-6 px-2 rounded-full border border-line text-[11.5px] text-ink-2 hover:text-ink hover:border-accent/40 max-w-[220px] shrink-0">
+                  <BookOpen className="w-3 h-3 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{current.lessonTitle}</span>
+                </Link>
+              )}
+            </div>
+          )}
+          {conversationId && current && renaming === null && (
+            <>
+              <button type="button" onClick={() => setRenaming(current.title)} aria-label="Đổi tên hội thoại" title="Đổi tên"
+                className="w-9 h-9 rounded-lg grid place-items-center text-ink-3 hover:text-ink hover:bg-bg-2">
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button type="button" onClick={() => confirmDelete(current)} aria-label="Xóa hội thoại này" title="Xóa"
+                className="w-9 h-9 rounded-lg grid place-items-center text-ink-3 hover:text-danger hover:bg-bg-2">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
           )}
           <button type="button" onClick={() => open(null)} aria-label="Bắt đầu hội thoại mới"
             className="md:hidden w-9 h-9 rounded-lg border border-line text-ink-2 grid place-items-center hover:bg-bg-2">
@@ -167,7 +232,7 @@ export function AssistantWorkspace({ assistant, className }) {
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="px-4 pb-4">{newButton}</div>
+          <div className="px-4 pb-4">{newButton}{searchBox}</div>
           <div className="flex-1 overflow-y-auto pb-6"><ConversationList {...listProps} /></div>
         </Dialog>
       )}

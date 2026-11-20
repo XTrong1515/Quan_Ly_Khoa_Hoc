@@ -10,5 +10,7 @@ router.post('/chat',                aiChatLimiter, ai.chat);
 router.get('/conversations',        ai.listConversations);
 router.get('/conversations/:id',    ai.getConversation);
 router.delete('/conversations/:id', ai.deleteConversation);
+router.patch('/conversations/:id',  ai.renameConversation);
+router.put('/messages/:id/feedback', ai.messageFeedback);
 
 module.exports = router;

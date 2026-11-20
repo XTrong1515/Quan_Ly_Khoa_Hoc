@@ -53,6 +53,8 @@ router.post('/ai/chat',                aiChatLimiter, ai.studioChat);
 router.get('/ai/conversations',        ai.studioListConversations);
 router.get('/ai/conversations/:id',    ai.studioGetConversation);
 router.delete('/ai/conversations/:id', ai.studioDeleteConversation);
+router.patch('/ai/conversations/:id',  ai.studioRenameConversation);
+router.put('/ai/messages/:id/feedback', ai.studioMessageFeedback);
 
 // AI sinh bản nháp câu hỏi quiz (giảng viên duyệt trước khi lưu)
 router.post('/lessons/:id/ai/quiz', ownLesson, aiGenerateLimiter, ai.generateQuizDraft);

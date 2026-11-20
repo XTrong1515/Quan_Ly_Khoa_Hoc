@@ -43,18 +43,28 @@ async function run() {
     console.log(`  ${result.warningStatus ? 'skip' : 'created'}: ${name}`);
   }
 
-  // Bảng tạo trước khi có trợ lý giảng viên → thêm cột kind (hội thoại cũ đều là của học viên)
-  const [cols] = await pool.query(
-    `SELECT COLUMN_NAME FROM information_schema.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ai_conversations' AND COLUMN_NAME = 'kind'`,
-  );
-  if (!cols.length) {
-    await pool.query(`ALTER TABLE ai_conversations
+  // Cột thêm sau khi bảng đã có dữ liệu (chạy lại an toàn: bỏ qua cột đã tồn tại)
+  const COLUMNS = [
+    // trợ lý giảng viên — hội thoại cũ đều là của học viên
+    ['ai_conversations', 'kind', `ALTER TABLE ai_conversations
       ADD COLUMN kind ENUM('LEARNER','INSTRUCTOR') NOT NULL DEFAULT 'LEARNER' AFTER title,
-      ADD INDEX idx_user_kind_updated (user_id, kind, updated_at)`);
-    console.log('  added: ai_conversations.kind');
-  } else {
-    console.log('  skip: ai_conversations.kind');
+      ADD INDEX idx_user_kind_updated (user_id, kind, updated_at)`],
+    // hội thoại mở từ trang học → AI có ngữ cảnh bài học khi hỏi tiếp
+    ['ai_conversations', 'lesson_id', `ALTER TABLE ai_conversations
+      ADD COLUMN lesson_id INT NULL AFTER kind,
+      ADD CONSTRAINT fk_ai_conversations_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE SET NULL`],
+    // người dùng đánh giá câu trả lời: 1 = hữu ích, -1 = chưa tốt
+    ['ai_messages', 'feedback', 'ALTER TABLE ai_messages ADD COLUMN feedback TINYINT NULL AFTER latency_ms'],
+  ];
+  for (const [table, column, sql] of COLUMNS) {
+    const [cols] = await pool.query(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+      [table, column],
+    );
+    if (cols.length) { console.log(`  skip: ${table}.${column}`); continue; }
+    await pool.query(sql);
+    console.log(`  added: ${table}.${column}`);
   }
   console.log('\nDone.');
 }

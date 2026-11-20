@@ -2,8 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
-import { ArrowUp, ArrowDown, Square, Sparkles, Copy, Check, RotateCcw, AlertCircle } from 'lucide-react';
-import { api } from '@/lib/api';
+import { ArrowUp, ArrowDown, Square, Sparkles, Copy, Check, RotateCcw, AlertCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { toast } from 'sonner';
+import { api, apiMessage } from '@/lib/api';
 import { streamSSE } from '@/lib/stream';
 import { formatPrice, levelLabel } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -123,9 +124,19 @@ function chatErrorText(err) {
   return err.message;
 }
 
-function MessageActions({ m, onRetry }) {
+function MessageActions({ m, onRetry, onFeedback }) {
   const [copied, copy] = useCopied();
   const btn = 'inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[12px] text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors';
+  const vote = (value, label, Icon) => {
+    const on = m.feedback === value;
+    return (
+      <button type="button" onClick={() => onFeedback(on ? null : value)} aria-pressed={on} aria-label={label} title={label}
+        className={cn('w-7 h-7 rounded-md grid place-items-center transition-colors hover:bg-bg-2',
+          on ? 'text-accent' : 'text-ink-3 hover:text-ink')}>
+        <Icon className={cn('w-3.5 h-3.5', on && 'fill-current')} />
+      </button>
+    );
+  };
   return (
     <div className="mt-1.5 -ml-2 flex items-center gap-0.5">
       {m.content && (
@@ -140,11 +151,17 @@ function MessageActions({ m, onRetry }) {
           <RotateCcw className="w-3.5 h-3.5" /> Thử lại
         </button>
       )}
+      {onFeedback && m.id && m.content && !m.error && (
+        <>
+          {vote(1, 'Câu trả lời hữu ích', ThumbsUp)}
+          {vote(-1, 'Câu trả lời chưa tốt', ThumbsDown)}
+        </>
+      )}
     </div>
   );
 }
 
-function Message({ m, onRetry, wide }) {
+function Message({ m, onRetry, onFeedback, wide }) {
   if (m.role === 'user') {
     return (
       <div className="flex justify-end pl-10">
@@ -181,7 +198,7 @@ function Message({ m, onRetry, wide }) {
             <div className={cn('grid gap-1.5', wide && 'sm:grid-cols-2')}>{m.courses.map((c) => <CourseCard key={c.slug} course={c} />)}</div>
           </div>
         )}
-        {!m.streaming && (m.content || onRetry) && <MessageActions m={m} onRetry={onRetry} />}
+        {!m.streaming && (m.content || onRetry) && <MessageActions m={m} onRetry={onRetry} onFeedback={onFeedback} />}
       </div>
     </div>
   );
@@ -195,7 +212,7 @@ function EmptyState({ assistant, onPick, wide }) {
           <Sparkles className="w-[18px] h-[18px]" />
         </span>
       )}
-      <h2 className="font-display font-semibold text-[17px] leading-snug text-ink">{assistant.name} Hoisted</h2>
+      <h2 className="font-display font-semibold text-[17px] leading-snug text-ink">{assistant.emptyTitle}</h2>
       <p className="mt-1 text-[13.5px] leading-[1.6] text-ink-2 max-w-[440px]">{assistant.intro}</p>
       <div className={cn('mt-5 grid gap-1.5', wide && 'sm:grid-cols-2')}>
         {assistant.suggestions.map(({ icon: Icon, text }) => (
@@ -235,8 +252,13 @@ function HistorySkeleton() {
  * assistant: một mục trong ASSISTANTS. conversationId = null → hội thoại mới;
  * onConversationChange(id) khi server tạo hội thoại (hoặc null khi hội thoại không còn).
  */
-export function ChatPanel({ assistant = ASSISTANTS.learner, conversationId, onConversationChange, autoFocus, wide = false, className }) {
+export function ChatPanel({
+  assistant = ASSISTANTS.learner, conversationId, onConversationChange, lessonId = null, autoFocus, wide = false, className,
+}) {
   const qc = useQueryClient();
+  const scope = assistant.history ?? assistant.id; // trợ lý trong trang học dùng chung lịch sử với trợ lý học viên
+  const keySeq = useRef(0);
+  const localKey = () => `local-${(keySeq.current += 1)}`;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -248,7 +270,7 @@ export function ChatPanel({ assistant = ASSISTANTS.learner, conversationId, onCo
   const ownConversation = useRef(null); // id do chính panel này vừa tạo → không tải lại giữa chừng
 
   const history = useQuery({
-    queryKey: ['ai-conversation', assistant.id, conversationId],
+    queryKey: ['ai-conversation', scope, conversationId],
     queryFn: () => api.get(`${assistant.api}/conversations/${conversationId}`).then((r) => r.data),
     enabled: !!conversationId && ownConversation.current !== conversationId,
     retry: (count, err) => err?.response?.status !== 404 && count < 2,
@@ -301,14 +323,14 @@ export function ChatPanel({ assistant = ASSISTANTS.learner, conversationId, onCo
     setAtBottom(true);
     setMessages((ms) => [
       ...(replaceLast ? ms.slice(0, -2) : ms),
-      { role: 'user', content: message },
-      { role: 'assistant', content: '', streaming: true },
+      { key: localKey(), role: 'user', content: message },
+      { key: localKey(), role: 'assistant', content: '', streaming: true },
     ]);
     setStreaming(true);
     const ctl = new AbortController();
     abortRef.current = ctl;
     try {
-      await streamSSE(`${assistant.api}/chat`, { message, conversationId }, {
+      await streamSSE(`${assistant.api}/chat`, { message, conversationId, ...(lessonId && !conversationId ? { lessonId } : {}) }, {
         signal: ctl.signal,
         onEvent: (event, payload) => {
           if (event === 'meta' && payload.conversationId !== conversationId) {
@@ -316,7 +338,7 @@ export function ChatPanel({ assistant = ASSISTANTS.learner, conversationId, onCo
             onConversationChange?.(payload.conversationId);
           }
           if (event === 'delta') patchLast((m) => ({ ...m, content: m.content + payload.text }));
-          if (event === 'done') patchLast((m) => ({ ...m, streaming: false, courses: payload.courses }));
+          if (event === 'done') patchLast((m) => ({ ...m, streaming: false, courses: payload.courses, id: payload.messageId }));
           if (event === 'error') patchLast((m) => ({ ...m, streaming: false, error: payload.message, retryText: message }));
         },
       });
@@ -327,7 +349,21 @@ export function ChatPanel({ assistant = ASSISTANTS.learner, conversationId, onCo
       patchLast((m) => ({ ...m, streaming: false }));
       setStreaming(false);
       abortRef.current = null;
-      qc.invalidateQueries({ queryKey: ['ai-conversations', assistant.id] });
+      qc.invalidateQueries({ queryKey: ['ai-conversations', scope] });
+    }
+  };
+
+  // Đánh giá câu trả lời: cập nhật ngay trên giao diện, lỗi thì trả lại như cũ
+  const setFeedback = async (id, value) => {
+    const prev = messages.find((m) => m.id === id)?.feedback ?? null;
+    const apply = (v) => setMessages((ms) => ms.map((m) => (m.id === id ? { ...m, feedback: v } : m)));
+    apply(value);
+    try {
+      await api.put(`${assistant.api}/messages/${id}/feedback`, { value });
+      if (value === -1) toast('Cảm ơn bạn — đánh giá này giúp cải thiện trợ lý.');
+    } catch (err) {
+      apply(prev);
+      toast.error(apiMessage(err, 'Chưa lưu được đánh giá. Thử lại sau giây lát.'));
     }
   };
 
@@ -376,7 +412,8 @@ export function ChatPanel({ assistant = ASSISTANTS.learner, conversationId, onCo
     body = (
       <div className="space-y-6 pb-2">
         {messages.map((m, i) => (
-          <Message key={m.id ?? `local-${i}`} m={m} wide={wide}
+          <Message key={m.key ?? m.id ?? i} m={m} wide={wide}
+            onFeedback={m.id ? (v) => setFeedback(m.id, v) : undefined}
             onRetry={m === last && m.error && m.retryText && !streaming ? () => send(m.retryText, { replaceLast: true }) : undefined} />
         ))}
       </div>

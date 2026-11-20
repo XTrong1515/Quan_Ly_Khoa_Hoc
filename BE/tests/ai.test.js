@@ -223,6 +223,96 @@ describe('POST /api/ai/chat — SSE', () => {
   });
 });
 
+describe('Trợ lý theo ngữ cảnh bài học, đánh giá câu trả lời, đổi tên hội thoại', () => {
+  let student; let stranger; let teacher; let lesson; let locked;
+  const sse = (u, body) => request(app).post('/api/ai/chat').set(authHeader(u)).send(body).buffer(true).parse((res, cb) => {
+    let data = ''; res.on('data', (c) => { data += c; }); res.on('end', () => cb(null, data));
+  });
+  beforeAll(async () => {
+    student = await createUser();
+    stranger = await createUser();
+    teacher = await createUser({ role: 'INSTRUCTOR' });
+    const course = await createCourse({ instructor: teacher, status: 'PUBLISHED' });
+    lesson = await createLesson(course.id);
+    locked = await createLesson(course.id);
+    await pool.query("UPDATE lessons SET title = 'Bai closure', content = '<p>Closure giữ tham chiếu tới scope</p>' WHERE id = ?", [lesson.id]);
+    await pool.query(
+      `INSERT INTO coding_exercises (lesson_id, title, description_md, starter_code, solution_code, function_name)
+       VALUES (?, 'Viết counter', 'Tạo hàm đếm', 'function counter() {}', 'BI_MAT_LOI_GIAI', 'counter')`,
+      [lesson.id],
+    );
+    await enroll(student, course.id);
+  });
+
+  it('chưa ghi danh khóa → 403 khi hỏi kèm lessonId; bài không tồn tại → 403', async () => {
+    expect((await sse(stranger, { message: 'Giải thích bài này', lessonId: lesson.id })).status).toBe(403);
+    expect((await sse(student, { message: 'hi', lessonId: 99999999 })).status).toBe(403);
+  });
+
+  let conversationId; let messageId;
+  it('học viên đã ghi danh: prompt có nội dung bài + đề bài tập, KHÔNG có lời giải; hỏi tiếp vẫn giữ ngữ cảnh', async () => {
+    mockStream.mockResolvedValue(fakeStream(['Closure là…']));
+    const events = parseSse((await sse(student, { message: 'Giải thích bài này', lessonId: lesson.id })).body);
+    conversationId = events[0].data.conversationId;
+    messageId = events.at(-1).data.messageId;
+    let { systemInstruction } = mockStream.mock.calls[0][0].config;
+    expect(systemInstruction).toContain('BÀI HỌC ĐANG XEM');
+    expect(systemInstruction).toContain('Closure giữ tham chiếu tới scope');
+    expect(systemInstruction).toContain('Viết counter');
+    expect(systemInstruction).not.toContain('BI_MAT_LOI_GIAI');
+
+    mockStream.mockClear();
+    mockStream.mockResolvedValue(fakeStream(['ok']));
+    await sse(student, { message: 'Còn ví dụ khác?', conversationId, lessonId: locked.id }); // lessonId bị bỏ qua
+    ({ systemInstruction } = mockStream.mock.calls[0][0].config);
+    expect(systemInstruction).toContain('Bai closure');
+
+    const detail = await request(app).get(`/api/ai/conversations/${conversationId}`).set(authHeader(student));
+    expect(detail.body.conversation).toMatchObject({ lessonId: lesson.id, lessonTitle: 'Bai closure' });
+    const list = await request(app).get('/api/ai/conversations').set(authHeader(student));
+    expect(list.body.conversations[0]).toMatchObject({ lessonId: lesson.id, lessonTitle: 'Bai closure' });
+  });
+
+  it('hỏi không kèm lessonId → không có khối bài học', async () => {
+    mockStream.mockClear();
+    mockStream.mockResolvedValue(fakeStream(['ok']));
+    await sse(student, { message: 'Nên học gì?' });
+    expect(mockStream.mock.calls[0][0].config.systemInstruction).not.toContain('BÀI HỌC ĐANG XEM');
+  });
+
+  it('giảng viên sở hữu khóa hỏi được về bài của mình (xem trước khóa)', async () => {
+    mockStream.mockResolvedValue(fakeStream(['ok']));
+    expect((await sse(teacher, { message: 'Bài này ổn chưa?', lessonId: lesson.id })).status).toBe(200);
+  });
+
+  it('đánh giá câu trả lời: chỉ chủ hội thoại, chỉ tin nhắn của trợ lý, giá trị 1 / -1 / null', async () => {
+    const put = (u, id, value) => request(app).put(`/api/ai/messages/${id}/feedback`).set(authHeader(u)).send({ value });
+    expect((await put(student, messageId, 5)).status).toBe(400);
+    expect((await put(stranger, messageId, 1)).status).toBe(404);
+    expect((await request(app).put(`/api/instructor/ai/messages/${messageId}/feedback`).set(authHeader(teacher)).send({ value: 1 })).status).toBe(404);
+    expect((await put(student, messageId, -1)).status).toBe(200);
+    const [[row]] = await pool.query('SELECT feedback FROM ai_messages WHERE id = ?', [messageId]);
+    expect(row.feedback).toBe(-1);
+    const [[userMsg]] = await pool.query("SELECT id FROM ai_messages WHERE conversation_id = ? AND role = 'user' LIMIT 1", [conversationId]);
+    expect((await put(student, userMsg.id, 1)).status).toBe(404);
+    expect((await put(student, messageId, null)).status).toBe(200);
+
+    const detail = await request(app).get(`/api/ai/conversations/${conversationId}`).set(authHeader(student));
+    expect(detail.body.messages.find((m) => m.id === messageId).feedback).toBeNull();
+  });
+
+  it('đổi tên hội thoại: chuẩn hóa khoảng trắng, chặn rỗng / quá dài / người khác', async () => {
+    const patch = (u, title) => request(app).patch(`/api/ai/conversations/${conversationId}`).set(authHeader(u)).send({ title });
+    expect((await patch(student, '   ')).status).toBe(400);
+    expect((await patch(student, 'x'.repeat(121))).status).toBe(400);
+    expect((await patch(stranger, 'Chiếm')).status).toBe(404);
+    const res = await patch(student, '  Hỏi về   closure ');
+    expect(res.body.title).toBe('Hỏi về closure');
+    const detail = await request(app).get(`/api/ai/conversations/${conversationId}`).set(authHeader(student));
+    expect(detail.body.conversation.title).toBe('Hỏi về closure');
+  });
+});
+
 describe('POST /api/instructor/ai/chat — trợ lý giảng viên', () => {
   let teacher; let otherTeacher; let learner; let mine; let theirs;
   beforeAll(async () => {

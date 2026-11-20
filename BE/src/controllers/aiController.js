@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const llm = require('../services/llm');
 const assistant = require('../services/ai/assistant-prompt');
 const studio = require('../services/ai/instructor-prompt');
+const { loadLessonContext } = require('../services/ai/lesson-context');
 const { generateQuiz, DIFFICULTY } = require('../services/ai/quiz-generator');
 const { writeLesson, LENGTHS } = require('../services/ai/lesson-writer');
 
@@ -10,17 +11,19 @@ const HISTORY_LIMIT = 10;  // số tin nhắn gần nhất gửi kèm cho AI
 
 /*
  * Hai trợ lý dùng chung luồng chat / lịch sử, khác nhau ở ngữ cảnh đưa cho AI:
- *  - LEARNER    (/api/ai)            : danh mục khóa PUBLISHED + khóa học viên đã có → gợi ý [[course:slug]]
+ *  - LEARNER    (/api/ai)            : danh mục khóa PUBLISHED + khóa học viên đã có → gợi ý [[course:slug]];
+ *                                       hỏi từ trang học thì hội thoại gắn lesson_id → thêm nội dung bài vào prompt
  *  - INSTRUCTOR (/api/instructor/ai) : khóa học của chính giảng viên + quy trình duyệt / doanh thu
  * Hội thoại tách theo ai_conversations.kind: trợ lý này không đọc / ghi được hội thoại của trợ lý kia.
  */
 const ASSISTANTS = {
   LEARNER: {
     tag: 'ai/chat',
-    async prepare(userId) {
+    lessons: true,
+    async prepare(userId, { lesson }) {
       const [catalog, learner] = await Promise.all([assistant.loadCatalog(), assistant.loadLearnerContext(userId)]);
       return {
-        system: assistant.buildSystemPrompt({ catalog, learner }),
+        system: assistant.buildSystemPrompt({ catalog, learner, lesson }),
         courses: (text) => assistant.resolveCourses(assistant.extractCourseSlugs(text), catalog),
       };
     },
@@ -35,7 +38,8 @@ const ASSISTANTS = {
 };
 
 /**
- * POST {base}/chat  { message, conversationId? }  → text/event-stream
+ * POST {base}/chat  { message, conversationId?, lessonId? }  → text/event-stream
+ *   lessonId (chỉ trợ lý học viên, khi tạo hội thoại mới): phải có quyền xem bài, nếu không → 403
  *   event: meta  { conversationId }
  *   event: delta { text }            (nhiều lần)
  *   event: done  { messageId, courses }
@@ -52,20 +56,28 @@ const chatHandler = (kind) => async function chat(req, res) {
   let conversationId = req.body.conversationId ? parseInt(req.body.conversationId, 10) : null;
 
   let history = [];
+  let lesson = null;
   try {
     if (conversationId) {
       const [[conv]] = await pool.query(
-        'SELECT id FROM ai_conversations WHERE id = ? AND user_id = ? AND kind = ?', [conversationId, userId, kind],
+        'SELECT id, lesson_id FROM ai_conversations WHERE id = ? AND user_id = ? AND kind = ?', [conversationId, userId, kind],
       );
       if (!conv) return res.status(404).json({ message: 'Không tìm thấy hội thoại' });
+      // Kiểm tra quyền lại mỗi lần: mất quyền xem bài (hoàn tiền, khóa bị gỡ) thì hỏi tiếp không còn ngữ cảnh bài
+      if (cfg.lessons && conv.lesson_id) lesson = await loadLessonContext(req.user, conv.lesson_id);
       const [rows] = await pool.query(
         'SELECT role, content FROM ai_messages WHERE conversation_id = ? ORDER BY id DESC LIMIT ?',
         [conversationId, HISTORY_LIMIT],
       );
       history = rows.reverse();
     } else {
+      if (cfg.lessons && req.body.lessonId) {
+        lesson = await loadLessonContext(req.user, req.body.lessonId);
+        if (!lesson) return res.status(403).json({ message: 'Bạn chưa có quyền xem bài học này' });
+      }
       const [r] = await pool.query(
-        'INSERT INTO ai_conversations (user_id, title, kind) VALUES (?, ?, ?)', [userId, message.slice(0, 120), kind],
+        'INSERT INTO ai_conversations (user_id, title, kind, lesson_id) VALUES (?, ?, ?, ?)',
+        [userId, message.slice(0, 120), kind, lesson?.id ?? null],
       );
       conversationId = r.insertId;
     }
@@ -91,7 +103,7 @@ const chatHandler = (kind) => async function chat(req, res) {
 
   let text = '';
   try {
-    const ctx = await cfg.prepare(userId);
+    const ctx = await cfg.prepare(userId, { lesson });
     const result = await llm.streamChat({
       system: ctx.system,
       history,
@@ -126,9 +138,10 @@ const chatHandler = (kind) => async function chat(req, res) {
 const listHandler = (kind) => async function listConversations(req, res) {
   try {
     const [rows] = await pool.query(
-      `SELECT c.id, c.title, c.updated_at AS updatedAt,
+      `SELECT c.id, c.title, c.updated_at AS updatedAt, c.lesson_id AS lessonId, l.title AS lessonTitle, l.course_id AS lessonCourseId,
               (SELECT COUNT(*) FROM ai_messages m WHERE m.conversation_id = c.id) AS messageCount
-       FROM ai_conversations c WHERE c.user_id = ? AND c.kind = ? ORDER BY c.updated_at DESC, c.id DESC LIMIT 50`,
+       FROM ai_conversations c LEFT JOIN lessons l ON l.id = c.lesson_id
+       WHERE c.user_id = ? AND c.kind = ? ORDER BY c.updated_at DESC, c.id DESC LIMIT 50`,
       [req.user.id, kind],
     );
     return res.json({ conversations: rows });
@@ -143,11 +156,14 @@ const getHandler = (kind) => async function getConversation(req, res) {
   const id = parseInt(req.params.id, 10);
   try {
     const [[conv]] = await pool.query(
-      'SELECT id, title FROM ai_conversations WHERE id = ? AND user_id = ? AND kind = ?', [id, req.user.id, kind],
+      `SELECT c.id, c.title, c.lesson_id AS lessonId, l.title AS lessonTitle, l.course_id AS lessonCourseId
+       FROM ai_conversations c LEFT JOIN lessons l ON l.id = c.lesson_id
+       WHERE c.id = ? AND c.user_id = ? AND c.kind = ?`,
+      [id, req.user.id, kind],
     );
     if (!conv) return res.status(404).json({ message: 'Không tìm thấy hội thoại' });
     const [messages] = await pool.query(
-      'SELECT id, role, content, courses, created_at AS createdAt FROM ai_messages WHERE conversation_id = ? ORDER BY id ASC',
+      'SELECT id, role, content, courses, feedback, created_at AS createdAt FROM ai_messages WHERE conversation_id = ? ORDER BY id ASC',
       [id],
     );
     return res.json({
@@ -176,17 +192,58 @@ const deleteHandler = (kind) => async function deleteConversation(req, res) {
   }
 };
 
+/* PATCH {base}/conversations/:id  { title } — đổi tên hội thoại (không đổi thứ tự trong danh sách) */
+const renameHandler = (kind) => async function renameConversation(req, res) {
+  const title = typeof req.body?.title === 'string' ? req.body.title.replace(/\s+/g, ' ').trim() : '';
+  if (!title) return res.status(400).json({ message: 'Tên hội thoại không được để trống' });
+  if (title.length > 120) return res.status(400).json({ message: 'Tên hội thoại tối đa 120 ký tự' });
+  try {
+    const [r] = await pool.query(
+      'UPDATE ai_conversations SET title = ?, updated_at = updated_at WHERE id = ? AND user_id = ? AND kind = ?',
+      [title, parseInt(req.params.id, 10), req.user.id, kind],
+    );
+    if (!r.affectedRows) return res.status(404).json({ message: 'Không tìm thấy hội thoại' });
+    return res.json({ ok: true, title });
+  } catch (err) {
+    console.error('[ai/conversation:rename]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+};
+
+/* PUT {base}/messages/:id/feedback  { value: 1 | -1 | null } — đánh giá câu trả lời của trợ lý */
+const feedbackHandler = (kind) => async function messageFeedback(req, res) {
+  const value = req.body?.value;
+  if (![1, -1, null].includes(value)) return res.status(400).json({ message: 'Đánh giá không hợp lệ' });
+  try {
+    const [r] = await pool.query(
+      `UPDATE ai_messages m JOIN ai_conversations c ON c.id = m.conversation_id
+       SET m.feedback = ?
+       WHERE m.id = ? AND m.role = 'assistant' AND c.user_id = ? AND c.kind = ?`,
+      [value, parseInt(req.params.id, 10), req.user.id, kind],
+    );
+    if (!r.affectedRows) return res.status(404).json({ message: 'Không tìm thấy câu trả lời' });
+    return res.json({ ok: true, feedback: value });
+  } catch (err) {
+    console.error('[ai/message:feedback]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+};
+
 /* ══════════════════════ Trợ lý học viên (/api/ai) ══════════════════════ */
 const chat = chatHandler('LEARNER');
 const listConversations = listHandler('LEARNER');
 const getConversation = getHandler('LEARNER');
 const deleteConversation = deleteHandler('LEARNER');
+const renameConversation = renameHandler('LEARNER');
+const messageFeedback = feedbackHandler('LEARNER');
 
 /* ══════════════════════ Trợ lý giảng viên — chat (/api/instructor/ai) ══════════════════════ */
 const studioChat = chatHandler('INSTRUCTOR');
 const studioListConversations = listHandler('INSTRUCTOR');
 const studioGetConversation = getHandler('INSTRUCTOR');
 const studioDeleteConversation = deleteHandler('INSTRUCTOR');
+const studioRenameConversation = renameHandler('INSTRUCTOR');
+const studioMessageFeedback = feedbackHandler('INSTRUCTOR');
 
 /* ══════════════════════ Trợ lý giảng viên ══════════════════════ */
 
@@ -246,7 +303,8 @@ async function generateLessonContent(req, res) {
 }
 
 module.exports = {
-  chat, listConversations, getConversation, deleteConversation,
+  chat, listConversations, getConversation, deleteConversation, renameConversation, messageFeedback,
   studioChat, studioListConversations, studioGetConversation, studioDeleteConversation,
+  studioRenameConversation, studioMessageFeedback,
   generateQuizDraft, generateLessonContent,
 };

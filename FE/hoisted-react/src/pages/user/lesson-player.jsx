@@ -14,6 +14,7 @@ import { Dialog } from '@/components/ui/dialog.jsx';
 import { Progress } from '@/components/ui/progress.jsx';
 import { RichContent } from '@/components/rich-content.jsx';
 import { HlsPlayer, Mp4Player } from '@/components/video/hls-player.jsx';
+import { LessonAssistant } from '@/components/ai/lesson-assistant.jsx';
 import { api, apiMessage, BASE_URL } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
@@ -372,6 +373,8 @@ export default function LessonPlayerPage() {
           <Button size="sm" variant="ghost" aria-label="Bài sau" title="Bài sau" disabled={!nextLesson} onClick={goNext}>
             <ChevronRight className="w-4 h-4" />
           </Button>
+
+          <LessonAssistant lessonId={currentLessonId} lessonTitle={lesson.title} />
 
           {/* Wishlist toggle */}
           <button
