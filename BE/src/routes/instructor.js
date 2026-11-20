@@ -7,7 +7,7 @@ const quiz  = require('../controllers/quizController');
 const media = require('../controllers/mediaController');
 const payout = require('../controllers/payoutController');
 const exercise = require('../controllers/exerciseController');
-const { codeRunLimiter, aiGenerateLimiter } = require('../middleware/rateLimit');
+const { codeRunLimiter, aiGenerateLimiter, aiChatLimiter } = require('../middleware/rateLimit');
 const ai = require('../controllers/aiController');
 
 // Khu vực giảng viên — đường dẫn giống /api/admin để FE dùng chung component (apiBase)
@@ -47,6 +47,12 @@ router.get('/lessons/:id/exercise',           ownLesson, exercise.getForAuthor);
 router.put('/lessons/:id/exercise',           ownLesson, editable, exercise.saveForAuthor);
 router.delete('/lessons/:id/exercise',        ownLesson, editable, exercise.deleteForAuthor);
 router.post('/lessons/:id/exercise/validate', ownLesson, codeRunLimiter, exercise.validateForAuthor);
+
+// Trợ lý AI cho giảng viên (chat stream SSE, lịch sử riêng với trợ lý học viên)
+router.post('/ai/chat',                aiChatLimiter, ai.studioChat);
+router.get('/ai/conversations',        ai.studioListConversations);
+router.get('/ai/conversations/:id',    ai.studioGetConversation);
+router.delete('/ai/conversations/:id', ai.studioDeleteConversation);
 
 // AI sinh bản nháp câu hỏi quiz (giảng viên duyệt trước khi lưu)
 router.post('/lessons/:id/ai/quiz', ownLesson, aiGenerateLimiter, ai.generateQuizDraft);

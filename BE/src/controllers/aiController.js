@@ -1,22 +1,48 @@
 const pool = require('../config/db');
 const llm = require('../services/llm');
 const assistant = require('../services/ai/assistant-prompt');
+const studio = require('../services/ai/instructor-prompt');
 const { generateQuiz, DIFFICULTY } = require('../services/ai/quiz-generator');
 const { writeLesson, LENGTHS } = require('../services/ai/lesson-writer');
 
 const MAX_MESSAGE = 1000;  // ký tự / tin nhắn
 const HISTORY_LIMIT = 10;  // số tin nhắn gần nhất gửi kèm cho AI
 
-/* ══════════════════════ Trợ lý học viên ══════════════════════ */
+/*
+ * Hai trợ lý dùng chung luồng chat / lịch sử, khác nhau ở ngữ cảnh đưa cho AI:
+ *  - LEARNER    (/api/ai)            : danh mục khóa PUBLISHED + khóa học viên đã có → gợi ý [[course:slug]]
+ *  - INSTRUCTOR (/api/instructor/ai) : khóa học của chính giảng viên + quy trình duyệt / doanh thu
+ * Hội thoại tách theo ai_conversations.kind: trợ lý này không đọc / ghi được hội thoại của trợ lý kia.
+ */
+const ASSISTANTS = {
+  LEARNER: {
+    tag: 'ai/chat',
+    async prepare(userId) {
+      const [catalog, learner] = await Promise.all([assistant.loadCatalog(), assistant.loadLearnerContext(userId)]);
+      return {
+        system: assistant.buildSystemPrompt({ catalog, learner }),
+        courses: (text) => assistant.resolveCourses(assistant.extractCourseSlugs(text), catalog),
+      };
+    },
+  },
+  INSTRUCTOR: {
+    tag: 'instructor/ai/chat',
+    async prepare(userId) {
+      const context = await studio.loadInstructorContext(userId);
+      return { system: studio.buildInstructorPrompt(context), courses: () => [] };
+    },
+  },
+};
 
 /**
- * POST /api/ai/chat  { message, conversationId? }  → text/event-stream
+ * POST {base}/chat  { message, conversationId? }  → text/event-stream
  *   event: meta  { conversationId }
  *   event: delta { text }            (nhiều lần)
  *   event: done  { messageId, courses }
  *   event: error { message }
  */
-async function chat(req, res) {
+const chatHandler = (kind) => async function chat(req, res) {
+  const cfg = ASSISTANTS[kind];
   const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
   if (!message) return res.status(400).json({ message: 'Tin nhắn trống' });
   if (message.length > MAX_MESSAGE) return res.status(400).json({ message: `Tin nhắn tối đa ${MAX_MESSAGE} ký tự` });
@@ -28,7 +54,9 @@ async function chat(req, res) {
   let history = [];
   try {
     if (conversationId) {
-      const [[conv]] = await pool.query('SELECT id FROM ai_conversations WHERE id = ? AND user_id = ?', [conversationId, userId]);
+      const [[conv]] = await pool.query(
+        'SELECT id FROM ai_conversations WHERE id = ? AND user_id = ? AND kind = ?', [conversationId, userId, kind],
+      );
       if (!conv) return res.status(404).json({ message: 'Không tìm thấy hội thoại' });
       const [rows] = await pool.query(
         'SELECT role, content FROM ai_messages WHERE conversation_id = ? ORDER BY id DESC LIMIT ?',
@@ -36,12 +64,14 @@ async function chat(req, res) {
       );
       history = rows.reverse();
     } else {
-      const [r] = await pool.query('INSERT INTO ai_conversations (user_id, title) VALUES (?, ?)', [userId, message.slice(0, 120)]);
+      const [r] = await pool.query(
+        'INSERT INTO ai_conversations (user_id, title, kind) VALUES (?, ?, ?)', [userId, message.slice(0, 120), kind],
+      );
       conversationId = r.insertId;
     }
     await pool.query('INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, ?, ?)', [conversationId, 'user', message]);
   } catch (err) {
-    console.error('[ai/chat:prepare]', err);
+    console.error(`[${cfg.tag}:prepare]`, err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
 
@@ -61,9 +91,9 @@ async function chat(req, res) {
 
   let text = '';
   try {
-    const [catalog, learner] = await Promise.all([assistant.loadCatalog(), assistant.loadLearnerContext(userId)]);
+    const ctx = await cfg.prepare(userId);
     const result = await llm.streamChat({
-      system: assistant.buildSystemPrompt({ catalog, learner }),
+      system: ctx.system,
       history,
       message,
       signal: abort.signal,
@@ -71,7 +101,7 @@ async function chat(req, res) {
     });
     text = result.text || text;
 
-    const courses = assistant.resolveCourses(assistant.extractCourseSlugs(text), catalog);
+    const courses = ctx.courses(text);
     const [saved] = await pool.query(
       `INSERT INTO ai_messages (conversation_id, role, content, courses, tokens_in, tokens_out, latency_ms)
        VALUES (?, 'assistant', ?, ?, ?, ?, ?)`,
@@ -80,7 +110,7 @@ async function chat(req, res) {
     await pool.query('UPDATE ai_conversations SET updated_at = NOW() WHERE id = ?', [conversationId]);
     send('done', { messageId: saved.insertId, courses });
   } catch (err) {
-    if (err.code !== 'ABORTED') console.error('[ai/chat]', err.code ?? '', err.message);
+    if (err.code !== 'ABORTED') console.error(`[${cfg.tag}]`, err.code ?? '', err.message);
     // Lưu phần đã nhận được để lịch sử không bị hụt câu trả lời
     if (text) {
       await pool.query('INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, ?, ?)', [conversationId, 'assistant', text])
@@ -90,29 +120,31 @@ async function chat(req, res) {
   } finally {
     res.end();
   }
-}
+};
 
-/* GET /api/ai/conversations */
-async function listConversations(req, res) {
+/* GET {base}/conversations */
+const listHandler = (kind) => async function listConversations(req, res) {
   try {
     const [rows] = await pool.query(
       `SELECT c.id, c.title, c.updated_at AS updatedAt,
               (SELECT COUNT(*) FROM ai_messages m WHERE m.conversation_id = c.id) AS messageCount
-       FROM ai_conversations c WHERE c.user_id = ? ORDER BY c.updated_at DESC, c.id DESC LIMIT 50`,
-      [req.user.id],
+       FROM ai_conversations c WHERE c.user_id = ? AND c.kind = ? ORDER BY c.updated_at DESC, c.id DESC LIMIT 50`,
+      [req.user.id, kind],
     );
     return res.json({ conversations: rows });
   } catch (err) {
     console.error('[ai/conversations]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
-}
+};
 
-/* GET /api/ai/conversations/:id */
-async function getConversation(req, res) {
+/* GET {base}/conversations/:id */
+const getHandler = (kind) => async function getConversation(req, res) {
   const id = parseInt(req.params.id, 10);
   try {
-    const [[conv]] = await pool.query('SELECT id, title FROM ai_conversations WHERE id = ? AND user_id = ?', [id, req.user.id]);
+    const [[conv]] = await pool.query(
+      'SELECT id, title FROM ai_conversations WHERE id = ? AND user_id = ? AND kind = ?', [id, req.user.id, kind],
+    );
     if (!conv) return res.status(404).json({ message: 'Không tìm thấy hội thoại' });
     const [messages] = await pool.query(
       'SELECT id, role, content, courses, created_at AS createdAt FROM ai_messages WHERE conversation_id = ? ORDER BY id ASC',
@@ -128,19 +160,33 @@ async function getConversation(req, res) {
     console.error('[ai/conversation]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
-}
+};
 
-/* DELETE /api/ai/conversations/:id */
-async function deleteConversation(req, res) {
+/* DELETE {base}/conversations/:id */
+const deleteHandler = (kind) => async function deleteConversation(req, res) {
   try {
-    const [r] = await pool.query('DELETE FROM ai_conversations WHERE id = ? AND user_id = ?', [parseInt(req.params.id, 10), req.user.id]);
+    const [r] = await pool.query(
+      'DELETE FROM ai_conversations WHERE id = ? AND user_id = ? AND kind = ?', [parseInt(req.params.id, 10), req.user.id, kind],
+    );
     if (!r.affectedRows) return res.status(404).json({ message: 'Không tìm thấy hội thoại' });
     return res.json({ ok: true });
   } catch (err) {
     console.error('[ai/conversation:delete]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
-}
+};
+
+/* ══════════════════════ Trợ lý học viên (/api/ai) ══════════════════════ */
+const chat = chatHandler('LEARNER');
+const listConversations = listHandler('LEARNER');
+const getConversation = getHandler('LEARNER');
+const deleteConversation = deleteHandler('LEARNER');
+
+/* ══════════════════════ Trợ lý giảng viên — chat (/api/instructor/ai) ══════════════════════ */
+const studioChat = chatHandler('INSTRUCTOR');
+const studioListConversations = listHandler('INSTRUCTOR');
+const studioGetConversation = getHandler('INSTRUCTOR');
+const studioDeleteConversation = deleteHandler('INSTRUCTOR');
 
 /* ══════════════════════ Trợ lý giảng viên ══════════════════════ */
 
@@ -199,4 +245,8 @@ async function generateLessonContent(req, res) {
   }
 }
 
-module.exports = { chat, listConversations, getConversation, deleteConversation, generateQuizDraft, generateLessonContent };
+module.exports = {
+  chat, listConversations, getConversation, deleteConversation,
+  studioChat, studioListConversations, studioGetConversation, studioDeleteConversation,
+  generateQuizDraft, generateLessonContent,
+};

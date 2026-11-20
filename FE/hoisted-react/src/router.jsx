@@ -47,6 +47,7 @@ const InstructorDashboardPage = lazy(() => import('./pages/instructor/dashboard.
 const InstructorCoursesPage = lazy(() => import('./pages/instructor/courses.jsx'));
 const InstructorRevenuePage = lazy(() => import('./pages/instructor/revenue.jsx'));
 const InstructorProfilePage = lazy(() => import('./pages/instructor/profile.jsx'));
+const InstructorAssistantPage = lazy(() => import('./pages/instructor/assistant.jsx'));
 
 /* ── SEO theo đường dẫn ───────────────────────────────────────── */
 // Trang riêng tư / theo tài khoản không nên xuất hiện trên công cụ tìm kiếm (khớp PRIVATE_PATHS trong vite.config.js)
@@ -203,6 +204,7 @@ export function Router() {
         <Route path="/instructor/courses" element={<InstructorCoursesPage />} />
         <Route path="/instructor/revenue" element={<InstructorRevenuePage />} />
         <Route path="/instructor/profile" element={<InstructorProfilePage />} />
+        <Route path="/instructor/assistant" element={<InstructorAssistantPage />} />
       </Route>
 
       <Route element={<PublicLayout />}>

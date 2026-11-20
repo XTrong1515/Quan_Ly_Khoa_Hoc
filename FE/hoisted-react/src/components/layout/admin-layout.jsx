@@ -2,12 +2,14 @@ import { useState, Suspense } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Tag, Users,
-  ShoppingCart, Star, LogOut, ArrowLeft, Menu, X, GraduationCap, Wallet, UserCircle, Banknote, UserPlus,
+  ShoppingCart, Star, LogOut, ArrowLeft, Menu, X, GraduationCap, Wallet, UserCircle, Banknote, UserPlus, Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
 import { PageFallback } from '@/components/page-fallback.jsx';
 import { Dialog } from '@/components/ui/dialog.jsx';
+import { ChatWidget } from '@/components/ai/chat-widget.jsx';
+import { ASSISTANTS } from '@/components/ai/assistants.js';
 
 const ADMIN_NAV = [
   {
@@ -41,6 +43,7 @@ const INSTRUCTOR_NAV = [
     items: [
       { to: '/instructor',         label: 'Tổng quan', icon: LayoutDashboard, exact: true },
       { to: '/instructor/courses', label: 'Khóa học của tôi', icon: GraduationCap },
+      { to: '/instructor/assistant', label: 'Trợ lý AI', icon: Sparkles },
       { to: '/instructor/revenue', label: 'Doanh thu', icon: Wallet },
       { to: '/instructor/profile', label: 'Hồ sơ & nhận tiền', icon: UserCircle },
     ],
@@ -135,7 +138,7 @@ function Sidebar({ pathname, user, logout, onNavigate, navGroups, home, consoleL
   );
 }
 
-function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel }) {
+function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel, assistant }) {
   const { pathname } = useLocation();
   const { logout, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -192,6 +195,7 @@ function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel }) {
           <Suspense fallback={<PageFallback />}><Outlet /></Suspense>
         </main>
       </div>
+      {assistant && <ChatWidget assistant={assistant} />}
     </div>
   );
 }
@@ -201,5 +205,5 @@ export function AdminLayout() {
 }
 
 export function InstructorLayout() {
-  return <ConsoleLayout navGroups={INSTRUCTOR_NAV} home="/instructor" consoleLabel="Instructor studio" roleLabel="giảng viên" />;
+  return <ConsoleLayout navGroups={INSTRUCTOR_NAV} home="/instructor" consoleLabel="Instructor studio" roleLabel="giảng viên" assistant={ASSISTANTS.instructor} />;
 }

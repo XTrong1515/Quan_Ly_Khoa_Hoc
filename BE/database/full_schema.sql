@@ -1,4 +1,4 @@
--- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-10-27T03:43:13.592Z
+-- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-11-20T07:14:49.093Z
 -- Sinh lại: npm run db:export-schema · Dựng DB mới: npm run db:setup
 
 
@@ -19,10 +19,12 @@ CREATE TABLE `ai_conversations` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
   `title` varchar(120) NOT NULL,
+  `kind` enum('LEARNER','INSTRUCTOR') NOT NULL DEFAULT 'LEARNER',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_user_updated` (`user_id`,`updated_at`),
+  KEY `idx_user_kind_updated` (`user_id`,`kind`,`updated_at`),
   CONSTRAINT `ai_conversations_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

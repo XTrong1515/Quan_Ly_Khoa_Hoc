@@ -223,6 +223,68 @@ describe('POST /api/ai/chat — SSE', () => {
   });
 });
 
+describe('POST /api/instructor/ai/chat — trợ lý giảng viên', () => {
+  let teacher; let otherTeacher; let learner; let mine; let theirs;
+  beforeAll(async () => {
+    teacher = await createUser({ role: 'INSTRUCTOR' });
+    otherTeacher = await createUser({ role: 'INSTRUCTOR' });
+    learner = await createUser();
+    mine = await createCourse({ instructor: teacher, status: 'REJECTED' });
+    await pool.query("UPDATE courses SET title = 'Khoa cua toi', reject_reason = 'Thiếu video bài 1' WHERE id = ?", [mine.id]);
+    theirs = await createCourse({ instructor: otherTeacher, status: 'PUBLISHED' });
+    await pool.query("UPDATE courses SET title = 'Khoa nguoi khac' WHERE id = ?", [theirs.id]);
+    await createLesson(mine.id);
+  });
+
+  const chat = (u, body) => request(app).post('/api/instructor/ai/chat').set(authHeader(u)).send(body).buffer(true).parse((res, cb) => {
+    let data = ''; res.on('data', (c) => { data += c; }); res.on('end', () => cb(null, data));
+  });
+
+  it('chỉ giảng viên dùng được (học viên → 403, khách → 401)', async () => {
+    expect((await request(app).post('/api/instructor/ai/chat').send({ message: 'hi' })).status).toBe(401);
+    expect((await request(app).post('/api/instructor/ai/chat').set(authHeader(learner)).send({ message: 'hi' })).status).toBe(403);
+    expect((await request(app).get('/api/instructor/ai/conversations').set(authHeader(learner))).status).toBe(403);
+  });
+
+  it('prompt chứa khóa của chính giảng viên (kèm lý do bị từ chối), không lộ khóa người khác', async () => {
+    mockStream.mockResolvedValue(fakeStream(['Sửa video bài 1 rồi gửi duyệt lại.']));
+    const res = await chat(teacher, { message: 'Vì sao khóa bị từ chối?' });
+    const events = parseSse(res.body);
+    expect(events.map((e) => e.event)).toEqual(['meta', 'delta', 'done']);
+    expect(events.at(-1).data.courses).toEqual([]);
+
+    const { systemInstruction } = mockStream.mock.calls[0][0].config;
+    expect(systemInstruction).toContain('Hoisted Studio Assistant');
+    expect(systemInstruction).toContain('Khoa cua toi');
+    expect(systemInstruction).toContain('Thiếu video bài 1');
+    expect(systemInstruction).not.toContain('Khoa nguoi khac');
+    expect(systemInstruction).toMatch(/"commissionPercent":\d+/);
+  });
+
+  it('lịch sử tách riêng: hội thoại giảng viên không hiện / không mở được ở trợ lý học viên và ngược lại', async () => {
+    const studioList = await request(app).get('/api/instructor/ai/conversations').set(authHeader(teacher));
+    expect(studioList.body.conversations).toHaveLength(1);
+    const studioId = studioList.body.conversations[0].id;
+
+    mockStream.mockResolvedValue(fakeStream(['ok']));
+    const learnerEvents = parseSse((await request(app).post('/api/ai/chat').set(authHeader(teacher)).send({ message: 'Nên học gì?' })
+      .buffer(true).parse((r, cb) => { let d = ''; r.on('data', (c) => { d += c; }); r.on('end', () => cb(null, d)); })).body);
+    const learnerId = learnerEvents[0].data.conversationId;
+
+    const learnerList = await request(app).get('/api/ai/conversations').set(authHeader(teacher));
+    expect(learnerList.body.conversations.map((c) => c.id)).toEqual([learnerId]);
+    expect((await request(app).get(`/api/ai/conversations/${studioId}`).set(authHeader(teacher))).status).toBe(404);
+    expect((await request(app).get(`/api/instructor/ai/conversations/${learnerId}`).set(authHeader(teacher))).status).toBe(404);
+    expect((await chat(teacher, { message: 'tiếp', conversationId: learnerId })).status).toBe(404);
+    expect((await request(app).delete(`/api/ai/conversations/${studioId}`).set(authHeader(teacher))).status).toBe(404);
+
+    expect((await request(app).get(`/api/instructor/ai/conversations/${studioId}`).set(authHeader(otherTeacher))).status).toBe(404);
+    const detail = await request(app).get(`/api/instructor/ai/conversations/${studioId}`).set(authHeader(teacher));
+    expect(detail.body.messages.map((m) => m.role)).toEqual(['user', 'assistant']);
+    expect((await request(app).delete(`/api/instructor/ai/conversations/${studioId}`).set(authHeader(teacher))).status).toBe(200);
+  });
+});
+
 describe('AI sinh câu hỏi quiz cho giảng viên', () => {
   let teacher; let otherTeacher; let lesson;
   beforeAll(async () => {
