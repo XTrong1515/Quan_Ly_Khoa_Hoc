@@ -32,7 +32,9 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const { data: platformStats } = usePlatformStats();
 
-  const from = location.state?.from?.pathname || '/me';
+  // Trang cần quay lại (bị chặn vì chưa đăng nhập) — không có thì về trang chính theo vai trò
+  const from = location.state?.from?.pathname;
+  const ROLE_HOME = { admin: '/admin', instructor: '/instructor' };
 
   const {
     register,
@@ -44,9 +46,9 @@ export default function LoginPage() {
 
   const onSubmit = async (data) => {
     try {
-      await login({ email: data.email, password: data.password });
+      const user = await login({ email: data.email, password: data.password });
       toast.success('Chào mừng trở lại!');
-      navigate(from, { replace: true });
+      navigate(from || ROLE_HOME[String(user?.role ?? '').toLowerCase()] || '/me', { replace: true });
     } catch (err) {
       toast.error(apiMessage(err, 'Không đăng nhập được. Thử lại sau giây lát.'));
     }

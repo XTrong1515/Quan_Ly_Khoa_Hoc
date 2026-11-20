@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId, Children, isValidElement, cloneElement } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -778,11 +778,16 @@ export const inputCls = (err) => cn(
   err ? 'border-danger focus:border-danger' : 'border-line focus:border-accent',
 );
 
+/** Nhãn gắn với ô nhập (htmlFor/id) khi Field chỉ bọc một ô — trình đọc màn hình đọc đúng tên trường, bấm nhãn thì focus ô. */
 export function Field({ label, error, children, className }) {
+  const autoId = useId();
+  const single = Children.count(children) === 1 && isValidElement(children) && typeof children.type === 'string'
+    ? children : null;
+  const id = single ? (single.props.id ?? autoId) : undefined;
   return (
     <div className={className}>
-      <label className="block font-mono text-[10px] text-ink-3 mb-1.5 uppercase tracking-widest">{label}</label>
-      {children}
+      <label htmlFor={id} className="block font-mono text-[10px] text-ink-3 mb-1.5 uppercase tracking-widest">{label}</label>
+      {single && !single.props.id ? cloneElement(single, { id }) : children}
       {error && <p className="mt-1 font-mono text-[11px] text-danger">{error}</p>}
     </div>
   );

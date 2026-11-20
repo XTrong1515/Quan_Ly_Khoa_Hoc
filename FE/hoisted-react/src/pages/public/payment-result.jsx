@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { CheckCircle, XCircle, Loader2, PartyPopper, Receipt } from 'lucide-react';
 import { Seo } from '@/components/seo.jsx';
 import { Button } from '@/components/ui/button.jsx';
@@ -49,6 +50,22 @@ export default function PaymentResultPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [orderInfo, setOrderInfo] = useState(null);
   const verifiedRef = useRef(false);
+
+  // Đơn chỉ có 1 khóa → "Vào học" mở thẳng bài cần học tiếp của khóa đó (nhiều khóa → trang Học tập)
+  const { data: startHref } = useQuery({
+    queryKey: ['payment-start', orderInfo?.orderId],
+    enabled: state === 'success' && !!orderInfo?.orderId,
+    queryFn: async () => {
+      const { data: o } = await api.get(`/api/orders/${orderInfo.orderId}`);
+      const items = o.order?.items ?? [];
+      if (items.length !== 1) return '/me';
+      const { data: en } = await api.get('/api/enrollments/me');
+      const list = en.enrollments ?? en.items ?? (Array.isArray(en) ? en : []);
+      const e = list.find((x) => Number(x.courseId) === Number(items[0].course_id));
+      return e?.nextLessonId ? `/learn/${e.courseId}/${e.nextLessonId}` : '/me';
+    },
+    staleTime: Infinity,
+  });
 
   useEffect(() => {
     if (verifiedRef.current) return;
@@ -117,7 +134,7 @@ export default function PaymentResultPage() {
           title="Chúc mừng, khóa học đã mở!"
           actions={
             <>
-              <Link to="/me"><Button size="lg" className="shadow-[0_8px_24px_rgb(var(--accent)/0.3)]">Vào học →</Button></Link>
+              <Link to={startHref ?? '/me'}><Button size="lg" className="shadow-[0_8px_24px_rgb(var(--accent)/0.3)]">Vào học →</Button></Link>
               <Link to="/courses"><Button size="lg" variant="ghost">Xem thêm khóa học</Button></Link>
             </>
           }

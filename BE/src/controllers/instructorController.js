@@ -147,6 +147,21 @@ async function submitMyCourse(req, res) {
   try {
     const [[{ lessons }]] = await pool.query('SELECT COUNT(*) AS lessons FROM lessons WHERE course_id = ?', [courseId]);
     if (!lessons) return res.status(400).json({ message: 'Khóa học cần ít nhất 1 bài học trước khi gửi duyệt' });
+    // Bài rỗng (không nội dung, không video) không được gửi duyệt — nêu tên bài để giảng viên biết sửa đâu
+    const [empty] = await pool.query(
+      `SELECT title FROM lessons
+       WHERE course_id = ? AND video_key IS NULL AND (content IS NULL OR TRIM(content) = '')
+       ORDER BY order_index, id`,
+      [courseId],
+    );
+    if (empty.length) {
+      const names = empty.slice(0, 3).map((l) => `"${l.title}"`).join(', ');
+      const more = empty.length > 3 ? ` và ${empty.length - 3} bài khác` : '';
+      return res.status(400).json({
+        message: `Bài ${names}${more} chưa có nội dung hay video — bổ sung trước khi gửi duyệt`,
+        emptyLessons: empty.length,
+      });
+    }
 
     await pool.query(
       `UPDATE courses SET status = 'PENDING_REVIEW', submitted_at = NOW(), reject_reason = NULL

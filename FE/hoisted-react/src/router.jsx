@@ -137,7 +137,9 @@ function BareLayout() {
 /* ── Route guards ─────────────────────────────────────────────── */
 function RequireAuth({ children }) {
   const { role } = useAuth();
-  if (role === 'guest') return <Navigate to="/login" replace />;
+  const location = useLocation();
+  // Mang theo trang đang muốn vào → đăng nhập xong quay lại đúng trang đó (login.jsx đọc state.from)
+  if (role === 'guest') return <Navigate to="/login" replace state={{ from: location }} />;
   return children;
 }
 function RequireAdmin({ children }) {

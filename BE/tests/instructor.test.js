@@ -133,9 +133,27 @@ describe('Quy trình gửi duyệt → duyệt / từ chối', () => {
     expect(res.status).toBe(400);
   });
 
+  it('bài học chưa có nội dung lẫn video → không gửi duyệt được, báo tên bài', async () => {
+    const course = await createCourse({ instructor: teacherA });
+    await createLesson(course.id, { content: '## Có nội dung' });
+    await createLesson(course.id, { content: '   ' });
+    const res = await request(app).post(`/api/instructor/courses/${course.id}/submit`).set(authHeader(teacherA));
+    expect(res.status).toBe(400);
+    expect(res.body.emptyLessons).toBe(1);
+    expect(res.body.message).toMatch(/chưa có nội dung hay video/);
+    expect(await statusOf(course.id)).toBe('DRAFT');
+  });
+
+  it('bài chỉ có video (chưa có nội dung) vẫn gửi duyệt được', async () => {
+    const course = await createCourse({ instructor: teacherA });
+    const lesson = await createLesson(course.id);
+    await pool.query("UPDATE lessons SET video_key = 'courses/x/lessons/y/video.mp4' WHERE id = ?", [lesson.id]);
+    expect((await request(app).post(`/api/instructor/courses/${course.id}/submit`).set(authHeader(teacherA))).status).toBe(200);
+  });
+
   it('gửi duyệt → PENDING_REVIEW, admin nhận thông báo, khóa chỉnh sửa, chưa hiện công khai', async () => {
     const course = await createCourse({ instructor: teacherA });
-    await createLesson(course.id);
+    await createLesson(course.id, { content: '## Bài 1' });
     const res = await request(app).post(`/api/instructor/courses/${course.id}/submit`).set(authHeader(teacherA));
     expect(res.status).toBe(200);
     expect(await statusOf(course.id)).toBe('PENDING_REVIEW');
@@ -167,7 +185,7 @@ describe('Quy trình gửi duyệt → duyệt / từ chối', () => {
 
   it('từ chối bắt buộc có lý do; giảng viên thấy lý do; gửi lại thì lý do được xóa', async () => {
     const course = await createCourse({ instructor: teacherA, status: 'PENDING_REVIEW' });
-    await createLesson(course.id);
+    await createLesson(course.id, { content: '## Bài 1' });
     expect((await request(app).put(`/api/admin/courses/${course.id}/reject`).set(authHeader(admin)).send({})).status).toBe(400);
 
     const res = await request(app).put(`/api/admin/courses/${course.id}/reject`).set(authHeader(admin)).send({ reason: 'Thiếu mô tả' });

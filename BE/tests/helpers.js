@@ -60,11 +60,11 @@ async function createCourse({ instructor, status = 'DRAFT', price = 100000, cate
   return { id: result.insertId, slug, categoryId: catId };
 }
 
-async function createLesson(courseId, { sectionId = null } = {}) {
+async function createLesson(courseId, { sectionId = null, content = null } = {}) {
   seq += 1;
   const [result] = await pool.query(
-    'INSERT INTO lessons (course_id, section_id, title, order_index) VALUES (?, ?, ?, ?)',
-    [courseId, sectionId, `Lesson ${seq}`, seq],
+    'INSERT INTO lessons (course_id, section_id, title, order_index, content) VALUES (?, ?, ?, ?, ?)',
+    [courseId, sectionId, `Lesson ${seq}`, seq, content],
   );
   return { id: result.insertId };
 }

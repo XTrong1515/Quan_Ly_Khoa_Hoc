@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress.jsx';
 import { RichContent } from '@/components/rich-content.jsx';
 import { HlsPlayer, Mp4Player } from '@/components/video/hls-player.jsx';
 import { LessonAssistant } from '@/components/ai/lesson-assistant.jsx';
+import { Seo } from '@/components/seo.jsx';
 import { api, apiMessage, BASE_URL } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
@@ -330,6 +331,7 @@ export default function LessonPlayerPage() {
 
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
+      <Seo title={`${lesson.title} — ${lesson.courseTitle} · Hoisted`} />
       {/* ── Top bar ── */}
       <header className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[50px] border-b border-line bg-bg shrink-0">
         <Link to={`/courses/${lesson.courseSlug}`}
