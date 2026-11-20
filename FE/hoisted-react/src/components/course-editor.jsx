@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { Dialog, confirmDiscard } from '@/components/ui/dialog.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { RichContent } from '@/components/rich-content.jsx';
 import { ExerciseEditorModal } from '@/components/exercise/exercise-editor-modal.jsx';
 import { AiQuizGenerator } from '@/components/ai/ai-quiz-generator.jsx';
 import { LessonContentEditor } from '@/components/ai/lesson-content-editor.jsx';
@@ -83,19 +84,25 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
   const lessons  = data?.lessons  ?? [];
   const sections = data?.sections ?? [];
 
+  // Đổi bài học → làm mới cả danh sách khóa (dòng "n bài" trên thẻ khóa học), không chỉ curriculum
+  const lessonsChanged = () => {
+    qc.invalidateQueries({ queryKey: ['course-lessons', apiBase, courseId] });
+    qc.invalidateQueries({ queryKey: [apiBase === '/api/admin' ? 'admin-courses' : 'instructor-courses'] });
+  };
+
   const grouped = sections.length
     ? sections.map(s => ({ ...s, items: lessons.filter(l => l.section_id === s.id) }))
     : [{ id: null, title: null, items: lessons }];
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`${apiBase}/lessons/${id}`),
-    onSuccess: () => { toast.success('Đã xóa bài học'); qc.invalidateQueries({ queryKey: ['course-lessons', apiBase, courseId] }); },
+    onSuccess: () => { toast.success('Đã xóa bài học'); lessonsChanged(); },
     onError: (err) => toast.error(apiMessage(err, 'Chưa xóa được bài học. Thử lại sau giây lát.')),
   });
 
   const reorderMutation = useMutation({
     mutationFn: (items) => api.put(`${apiBase}/lessons/reorder`, items),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['course-lessons', apiBase, courseId] }),
+    onSuccess: () => lessonsChanged(),
     onError: (err) => toast.error(apiMessage(err, 'Chưa lưu được thứ tự bài học. Tải lại trang để xem thứ tự hiện tại.')),
   });
 
@@ -142,7 +149,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
         <LessonForm
           apiBase={apiBase} courseId={courseId} sections={sections}
           onCancel={() => setAddOpen(false)}
-          onSaved={() => { setAddOpen(false); qc.invalidateQueries({ queryKey: ['course-lessons', apiBase, courseId] }); }}
+          onSaved={() => { setAddOpen(false); lessonsChanged(); }}
         />
       )}
 
@@ -236,7 +243,7 @@ Video, tài liệu, quiz, bài tập, thảo luận và tiến độ của học
                 </div>
               </div>
             ))}
-            {section.items.length === 0 && (
+            {section.items.length === 0 && section.title && (
               <p className="px-4 py-3 font-mono text-[11px] text-ink-3">// Chưa có bài học trong section này</p>
             )}
           </div>
@@ -965,10 +972,11 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
                 {quiz.questions.map((q, qi) => (
                   <div key={q.id} className="border border-line rounded-lg p-3 bg-bg">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-[13px] font-medium text-ink flex-1">
-                        <span className="font-mono text-ink-3 mr-1.5">{qi + 1}.</span>
-                        {q.question}
-                      </p>
+                      <div className="flex gap-1.5 flex-1 min-w-0">
+                        <span className="font-mono text-[13px] text-ink-3 leading-snug shrink-0">{qi + 1}.</span>
+                        <RichContent content={q.question}
+                          className="min-w-0 flex-1 text-[13px] font-medium text-ink leading-snug [&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_pre]:my-2 [&_pre]:text-[12px]" />
+                      </div>
                       <div className="flex items-center gap-0.5 shrink-0">
                         <button onClick={() => setQForm({ id: q.id, question: q.question, type: q.type, options: q.options.map(o => ({ text: o.text, isCorrect: o.isCorrect })) })}
                           className="p-1 rounded hover:bg-bg-2 text-ink-3 transition-colors">

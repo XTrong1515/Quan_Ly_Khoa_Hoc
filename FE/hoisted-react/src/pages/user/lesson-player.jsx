@@ -869,11 +869,13 @@ function QuizPanel({ quiz, mode = 'locked', onPassed }) {
           const labelId = `quiz-q-${q.id}`;
           return (
             <li key={q.id}>
-              <p id={labelId} className="text-[14px] font-medium text-ink leading-snug">
-                <span className="font-mono text-ink-3 mr-1.5">{qi + 1}.</span>
-                {q.question}
-                {multiple && <span className="ml-2 text-[12px] font-normal text-accent">(chọn tất cả đáp án đúng)</span>}
-              </p>
+              <div id={labelId} className="flex gap-1.5">
+                <span className="font-mono text-[14px] text-ink-3 leading-snug shrink-0">{qi + 1}.</span>
+                <div className="min-w-0 flex-1">
+                  <RichContent content={q.question} className="text-[14px] font-medium text-ink leading-snug [&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_pre]:my-2 [&_pre]:text-[12.5px] [&_pre]:leading-[1.6]" />
+                  {multiple && <span className="text-[12px] font-normal text-accent">(chọn tất cả đáp án đúng)</span>}
+                </div>
+              </div>
               <div role={multiple ? 'group' : 'radiogroup'} aria-labelledby={labelId}
                 className="mt-2 grid gap-2 sm:grid-cols-2">
                 {q.options.map(o => {

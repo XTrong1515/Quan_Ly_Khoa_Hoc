@@ -113,7 +113,7 @@ const remarkPlugins = [remarkGfm];
 function CourseCard({ course }) {
   return (
     <Link to={`/courses/${course.slug}`}
-      className="group flex items-center gap-3 p-2.5 rounded-[10px] border border-line bg-bg-1 hover:border-accent/40 hover:bg-bg-2 transition-colors">
+      className="group flex min-w-0 items-center gap-3 p-2.5 rounded-[10px] border border-line bg-bg-1 hover:border-accent/40 hover:bg-bg-2 transition-colors">
       <span className="w-10 h-10 rounded-lg grid place-items-center font-mono font-bold text-[11px] text-bg shrink-0"
         style={{ background: THUMB_COLORS[course.thumb] ?? THUMB_COLORS.yellow }} aria-hidden="true">
         {course.glyph || 'JS'}
@@ -215,7 +215,7 @@ function Message({ m, onRetry, onFeedback, wide }) {
         {m.courses?.length > 0 && !m.streaming && (
           <div className="mt-3">
             <p className="mb-1.5 font-mono text-[10.5px] tracking-[0.08em] uppercase text-ink-3">Khóa học được nhắc tới</p>
-            <div className={cn('grid gap-1.5', wide && 'sm:grid-cols-2')}>{m.courses.map((c) => <CourseCard key={c.slug} course={c} />)}</div>
+            <div className={cn('grid grid-cols-[minmax(0,1fr)] gap-1.5', wide && 'sm:grid-cols-2')}>{m.courses.map((c) => <CourseCard key={c.slug} course={c} />)}</div>
           </div>
         )}
         {!m.streaming && (m.content || onRetry) && <MessageActions m={m} onRetry={onRetry} onFeedback={onFeedback} />}
