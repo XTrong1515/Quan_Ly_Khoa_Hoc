@@ -42,6 +42,7 @@ const ai = require('../controllers/aiController');
 const { codeRunLimiter, aiGenerateLimiter } = require('../middleware/rateLimit');
 router.post('/lessons/:id/ai/quiz', requireOwnership('lesson'), aiGenerateLimiter, ai.generateQuizDraft);
 router.post('/lessons/:id/ai/content', requireOwnership('lesson'), aiGenerateLimiter, ai.generateLessonContent);
+router.get('/ai-stats', ai.adminAiStats); // thống kê trợ lý AI (30 ngày) cho dashboard
 
 // Đơn đăng ký làm giảng viên
 const applications = require('../controllers/applicationController');

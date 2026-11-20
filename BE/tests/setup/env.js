@@ -13,6 +13,7 @@ process.env.QUIZ_RETRY_SECONDS = '0'; // test giãn cách làm lại quiz bật 
 process.env.HLS_AUTO = 'false'; // không chạy ffmpeg nền trong test (hls.test.js gọi processLesson trực tiếp)
 process.env.AI_CHAT_RATE_LIMIT = '1000';
 process.env.AI_GENERATE_RATE_LIMIT = '1000';
+process.env.AI_GUEST_RATE_LIMIT = '4'; // ai.test.js kiểm tra lượt thứ 5 bị chặn
 process.env.AUTH_LOGIN_RATE_LIMIT = '1000';
 process.env.AUTH_REGISTER_RATE_LIMIT = '1000';
 process.env.AUTH_RESET_RATE_LIMIT = '1000';

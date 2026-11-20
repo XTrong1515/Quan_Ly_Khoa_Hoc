@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/ui/status-badge.jsx';
 import { formatVND } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { RevenueAreaChart, useChartColors } from '@/components/charts/revenue-area-chart.jsx';
+import { AiStatsCard } from '@/components/ai/ai-stats-card.jsx';
 
 /* ── Bảng màu (mọi số liệu lấy từ API, không dùng dữ liệu mẫu) ─── */
 const TOP_COLORS = ['#8B5CF6', '#F7DF1E', '#06B6D4', '#10B981', '#F59E0B'];
@@ -281,6 +282,11 @@ export default function AdminDashboardPage() {
             {!statusTotal && <p className="font-mono text-[12px] text-ink-3">// Chưa có đơn trong 30 ngày</p>}
           </div>
         </div>
+      </div>
+
+      {/* Trợ lý AI — câu hỏi, đánh giá, thời gian trả lời */}
+      <div className="mt-6">
+        <AiStatsCard />
       </div>
     </div>
   );

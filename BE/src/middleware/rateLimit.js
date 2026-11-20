@@ -70,7 +70,16 @@ const refreshLimiter = rateLimit({
   message: authMessage('Quá nhiều yêu cầu làm mới phiên đăng nhập'),
 });
 
+/** Khách chưa đăng nhập hỏi thử trợ lý — theo IP, chặt hơn người dùng đã đăng nhập (dùng quota Gemini chung). */
+const aiGuestLimiter = rateLimit({
+  windowMs: 60 * 60_000,
+  limit: Number(process.env.AI_GUEST_RATE_LIMIT) || 8,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { message: 'Bạn đã hỏi thử đủ lượt trong 1 giờ. Đăng nhập để hỏi tiếp và lưu lịch sử trò chuyện.' },
+});
+
 module.exports = {
-  codeRunLimiter, aiChatLimiter, aiGenerateLimiter,
+  codeRunLimiter, aiChatLimiter, aiGuestLimiter, aiGenerateLimiter,
   loginLimiter, registerLimiter, passwordResetLimiter, refreshLimiter,
 };

@@ -207,6 +207,11 @@ function Message({ m, onRetry, onFeedback, wide }) {
             <AlertCircle className="w-4 h-4 shrink-0 mt-px" /> {m.error}
           </p>
         )}
+        {m.limit && (
+          <Link to="/login" className="mt-2 inline-flex items-center h-[30px] px-3 rounded-md bg-accent text-accent-ink text-[12.5px] font-semibold hover:brightness-95">
+            Đăng nhập để hỏi tiếp
+          </Link>
+        )}
         {m.courses?.length > 0 && !m.streaming && (
           <div className="mt-3">
             <p className="mb-1.5 font-mono text-[10.5px] tracking-[0.08em] uppercase text-ink-3">Khóa học được nhắc tới</p>
@@ -333,6 +338,11 @@ export function ChatPanel({
   const send = async (text, { replaceLast = false } = {}) => {
     const message = text.trim();
     if (!message || streaming) return;
+    // Khách: server không lưu gì → gửi kèm vài tin gần nhất (đã hoàn tất, không lỗi) làm ngữ cảnh
+    const guestHistory = assistant.guest
+      ? (replaceLast ? messages.slice(0, -2) : messages)
+        .filter((m) => m.content && !m.error && !m.streaming).slice(-6).map(({ role, content }) => ({ role, content }))
+      : null;
     setInput('');
     stick.current = true;
     setAtBottom(true);
@@ -345,7 +355,10 @@ export function ChatPanel({
     const ctl = new AbortController();
     abortRef.current = ctl;
     try {
-      await streamSSE(`${assistant.api}/chat`, { message, conversationId, ...(lessonId && !conversationId ? { lessonId } : {}) }, {
+      const body = assistant.guest
+        ? { message, history: guestHistory }
+        : { message, conversationId, ...(lessonId && !conversationId ? { lessonId } : {}) };
+      await streamSSE(`${assistant.api}/chat`, body, {
         signal: ctl.signal,
         onEvent: (event, payload) => {
           if (event === 'meta' && payload.conversationId !== conversationId) {
@@ -359,12 +372,15 @@ export function ChatPanel({
       });
     } catch (err) {
       if (err.name === 'AbortError') patchLast((m) => ({ ...m, stopped: true }));
-      else patchLast((m) => ({ ...m, streaming: false, error: chatErrorText(err), retryText: message }));
+      else {
+        const limit = assistant.guest && err.status === 429;
+        patchLast((m) => ({ ...m, streaming: false, error: chatErrorText(err), retryText: limit ? null : message, limit }));
+      }
     } finally {
       patchLast((m) => ({ ...m, streaming: false }));
       setStreaming(false);
       abortRef.current = null;
-      qc.invalidateQueries({ queryKey: ['ai-conversations', scope] });
+      if (!assistant.guest) qc.invalidateQueries({ queryKey: ['ai-conversations', scope] });
     }
   };
 

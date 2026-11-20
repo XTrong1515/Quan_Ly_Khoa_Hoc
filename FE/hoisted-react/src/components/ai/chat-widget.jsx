@@ -12,7 +12,7 @@ const iconBtn = 'w-8 h-8 rounded-lg grid place-items-center text-ink-3 hover:tex
  * Nút trợ lý AI nổi góc phải. Học viên: trên các trang công khai; giảng viên: trong Instructor studio.
  * Ẩn trên chính trang toàn màn hình của trợ lý đó. Trên điện thoại khung chat phủ toàn màn hình.
  */
-export function ChatWidget({ assistant = ASSISTANTS.learner }) {
+export function ChatWidget({ assistant: signedIn = ASSISTANTS.learner }) {
   const { role } = useAuth();
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
@@ -39,8 +39,10 @@ export function ChatWidget({ assistant = ASSISTANTS.learner }) {
     };
   }, [open]);
 
-  if (pathname.startsWith(assistant.page)) return null;
   const guest = role === 'guest';
+  // Khách: hỏi thử ngay trong widget (không lưu lịch sử), không có trang toàn màn hình
+  const assistant = guest && signedIn.id === 'learner' ? ASSISTANTS.guest : signedIn;
+  if (!guest && pathname.startsWith(assistant.page)) return null;
 
   return (
     <>
@@ -52,12 +54,12 @@ export function ChatWidget({ assistant = ASSISTANTS.learner }) {
               <Sparkles className="w-3.5 h-3.5" />
             </span>
             <h2 className="flex-1 min-w-0 truncate font-display font-semibold text-[14.5px] text-ink">{assistant.name}</h2>
+            <button type="button" onClick={() => { setConversationId(null); setPanelKey((k) => k + 1); }}
+              title="Hội thoại mới" aria-label="Bắt đầu hội thoại mới" className={iconBtn}>
+              <Plus className="w-4 h-4" />
+            </button>
             {!guest && (
               <>
-                <button type="button" onClick={() => { setConversationId(null); setPanelKey((k) => k + 1); }}
-                  title="Hội thoại mới" aria-label="Bắt đầu hội thoại mới" className={iconBtn}>
-                  <Plus className="w-4 h-4" />
-                </button>
                 <Link to={conversationId ? `${assistant.page}?c=${conversationId}` : assistant.page} onClick={() => setOpen(false)}
                   title="Mở toàn màn hình" aria-label="Mở trợ lý toàn màn hình" className={iconBtn}>
                   <Maximize2 className="w-4 h-4" />
@@ -69,30 +71,18 @@ export function ChatWidget({ assistant = ASSISTANTS.learner }) {
             </button>
           </header>
 
-          {guest ? (
-            <div className="flex-1 flex flex-col justify-center px-6 py-8">
-              <h3 className="font-display font-semibold text-[17px] text-ink">Hỏi trợ lý học tập Hoisted</h3>
-              <p className="mt-1.5 text-[13.5px] leading-[1.6] text-ink-2">
-                Đăng nhập để được gợi ý khóa học và lộ trình theo đúng trình độ của bạn. Lịch sử trò chuyện được lưu trong tài khoản.
-              </p>
-              <div className="mt-5 flex gap-2">
-                <Link to="/login" onClick={() => setOpen(false)}
-                  className="inline-flex items-center h-[38px] px-4 rounded-lg bg-accent text-accent-ink text-[13.5px] font-semibold hover:brightness-95">
-                  Đăng nhập
-                </Link>
-                <Link to="/register" onClick={() => setOpen(false)}
-                  className="inline-flex items-center h-[38px] px-4 rounded-lg border border-line text-ink text-[13.5px] font-semibold hover:bg-bg-2">
-                  Tạo tài khoản
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <Suspense fallback={<div className="flex-1" />}>
-              <ChatPanel key={panelKey} assistant={assistant} conversationId={conversationId}
-                onConversationChange={(id) => { setConversationId(id); if (!id) setPanelKey((k) => k + 1); }}
-                autoFocus className="flex-1" />
-            </Suspense>
+          {guest && (
+            <p className="px-4 py-2 border-b border-line bg-bg-1 text-[12px] text-ink-3">
+              Dùng thử · không lưu lịch sử.{' '}
+              <Link to="/login" onClick={() => setOpen(false)} className="font-semibold text-accent hover:underline underline-offset-2">Đăng nhập</Link>
+              {' '}để lưu và được gợi ý theo khóa đã học.
+            </p>
           )}
+          <Suspense fallback={<div className="flex-1" />}>
+            <ChatPanel key={`${assistant.id}-${panelKey}`} assistant={assistant} conversationId={guest ? null : conversationId}
+              onConversationChange={(id) => { setConversationId(id); if (!id) setPanelKey((k) => k + 1); }}
+              autoFocus className="flex-1" />
+          </Suspense>
         </section>
       )}
 

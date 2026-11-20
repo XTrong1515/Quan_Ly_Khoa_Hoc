@@ -302,9 +302,137 @@ async function generateLessonContent(req, res) {
   }
 }
 
+/* ══════════════════════ Khách hỏi thử (không đăng nhập) ══════════════════════ */
+
+const GUEST_HISTORY = 6;          // số tin gần nhất trình duyệt được gửi kèm
+const GUEST_HISTORY_CHARS = 4000; // tổng độ dài lịch sử gửi kèm
+
+/** Lịch sử do trình duyệt gửi (không tin tưởng): chỉ giữ role hợp lệ, cắt số lượng và độ dài. */
+function sanitizeGuestHistory(raw) {
+  if (!Array.isArray(raw)) return [];
+  const items = raw
+    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
+    .slice(-GUEST_HISTORY)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE * 2) }));
+  let total = 0;
+  const kept = [];
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    total += items[i].content.length;
+    if (total > GUEST_HISTORY_CHARS) break;
+    kept.unshift(items[i]);
+  }
+  return kept;
+}
+
+/**
+ * POST /api/ai/guest/chat  { message, history? }  → text/event-stream (delta* → done { courses } | error)
+ * Không lưu DB, không có ngữ cảnh học viên; prompt và bộ lọc khóa học giống trợ lý học viên.
+ */
+async function guestChat(req, res) {
+  const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+  if (!message) return res.status(400).json({ message: 'Tin nhắn trống' });
+  if (message.length > MAX_MESSAGE) return res.status(400).json({ message: `Tin nhắn tối đa ${MAX_MESSAGE} ký tự` });
+  if (!llm.isConfigured()) return res.status(503).json({ message: 'Trợ lý AI chưa được cấu hình' });
+  const history = sanitizeGuestHistory(req.body.history);
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  const send = (event, data) => { if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
+  const abort = new AbortController();
+  res.on('close', () => { if (!res.writableFinished) abort.abort(); });
+
+  let text = '';
+  try {
+    const catalog = await assistant.loadCatalog();
+    const result = await llm.streamChat({
+      system: assistant.buildSystemPrompt({ catalog, learner: { name: null, enrolled: [] } }),
+      history,
+      message,
+      signal: abort.signal,
+      onDelta: (piece) => { text += piece; send('delta', { text: piece }); },
+    });
+    text = result.text || text;
+    send('done', { courses: assistant.resolveCourses(assistant.extractCourseSlugs(text), catalog) });
+  } catch (err) {
+    if (err.code !== 'ABORTED') console.error('[ai/guest-chat]', err.code ?? '', err.message);
+    send('error', { message: err instanceof llm.LlmError ? err.message : 'Trợ lý AI đang gặp sự cố' });
+  } finally {
+    res.end();
+  }
+}
+
+/* ══════════════════════ Thống kê cho admin ══════════════════════ */
+
+const STATS_DAYS = 30;
+
+/**
+ * GET /api/admin/ai-stats — 30 ngày gần nhất: số câu hỏi theo trợ lý, đánh giá 👍/👎, thời gian trả lời,
+ * 5 câu trả lời bị đánh giá chưa tốt gần nhất (để cải thiện prompt). Chỉ số liệu thật từ ai_messages.
+ */
+async function adminAiStats(req, res) {
+  try {
+    const since = `NOW() - INTERVAL ${STATS_DAYS} DAY`;
+    const [[byKind], [[fb]], [lat], [disliked]] = await Promise.all([
+      pool.query(
+        `SELECT c.kind, c.lesson_id IS NOT NULL AS inLesson,
+                COUNT(DISTINCT c.id) AS conversations,
+                SUM(m.role = 'user') AS questions
+         FROM ai_conversations c JOIN ai_messages m ON m.conversation_id = c.id
+         WHERE m.created_at >= ${since}
+         GROUP BY c.kind, inLesson`,
+      ),
+      pool.query(
+        `SELECT COALESCE(SUM(feedback = 1), 0) AS up, COALESCE(SUM(feedback = -1), 0) AS down, COUNT(*) AS answers
+         FROM ai_messages WHERE role = 'assistant' AND created_at >= ${since}`,
+      ),
+      pool.query(
+        `SELECT latency_ms FROM ai_messages
+         WHERE role = 'assistant' AND latency_ms IS NOT NULL AND created_at >= ${since}
+         ORDER BY latency_ms LIMIT 10000`,
+      ),
+      pool.query(
+        `SELECT a.id, a.created_at AS createdAt, c.kind, c.lesson_id IS NOT NULL AS inLesson,
+                LEFT(a.content, 240) AS answer,
+                (SELECT LEFT(q.content, 200) FROM ai_messages q
+                 WHERE q.conversation_id = a.conversation_id AND q.id < a.id AND q.role = 'user'
+                 ORDER BY q.id DESC LIMIT 1) AS question
+         FROM ai_messages a JOIN ai_conversations c ON c.id = a.conversation_id
+         WHERE a.role = 'assistant' AND a.feedback = -1
+         ORDER BY a.id DESC LIMIT 5`,
+      ),
+    ]);
+
+    const bucket = (kind, inLesson) => byKind.find((r) => r.kind === kind && Boolean(r.inLesson) === inLesson);
+    const pack = (r) => ({ conversations: Number(r?.conversations ?? 0), questions: Number(r?.questions ?? 0) });
+    const assistants = {
+      learner: pack(bucket('LEARNER', false)),
+      lesson: pack(bucket('LEARNER', true)),
+      instructor: pack(bucket('INSTRUCTOR', false)),
+    };
+    const up = Number(fb.up); const down = Number(fb.down);
+    const ms = lat.map((r) => r.latency_ms);
+
+    return res.json({
+      days: STATS_DAYS,
+      questions: Object.values(assistants).reduce((s, a) => s + a.questions, 0),
+      assistants,
+      feedback: { up, down, rated: up + down, answers: Number(fb.answers), helpfulRate: up + down ? up / (up + down) : null },
+      latencyMs: ms.length ? { median: ms[Math.floor(ms.length / 2)], p90: ms[Math.min(ms.length - 1, Math.floor(ms.length * 0.9))] } : null,
+      disliked: disliked.map((d) => ({ ...d, inLesson: Boolean(d.inLesson) })),
+    });
+  } catch (err) {
+    console.error('[admin/ai-stats]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
 module.exports = {
   chat, listConversations, getConversation, deleteConversation, renameConversation, messageFeedback,
   studioChat, studioListConversations, studioGetConversation, studioDeleteConversation,
   studioRenameConversation, studioMessageFeedback,
-  generateQuizDraft, generateLessonContent,
+  generateQuizDraft, generateLessonContent, adminAiStats, guestChat, sanitizeGuestHistory,
 };

@@ -1,7 +1,10 @@
 const router = require('express').Router();
 const { authMiddleware } = require('../middleware/auth');
-const { aiChatLimiter } = require('../middleware/rateLimit');
+const { aiChatLimiter, aiGuestLimiter } = require('../middleware/rateLimit');
 const ai = require('../controllers/aiController');
+
+// Khách hỏi thử: không cần đăng nhập, không lưu DB, giới hạn theo IP (đặt trước authMiddleware)
+router.post('/guest/chat', aiGuestLimiter, ai.guestChat);
 
 // Trợ lý học viên — cần đăng nhập (lưu lịch sử, cá nhân hóa theo khóa đã mua)
 router.use(authMiddleware);

@@ -20,6 +20,23 @@ export const ASSISTANTS = {
       { icon: Bug,       text: 'Vì sao this bị undefined trong callback?' },
     ],
   },
+  // Khách chưa đăng nhập hỏi thử: không lưu lịch sử, giới hạn lượt theo IP (BE: /api/ai/guest/chat)
+  guest: {
+    id: 'guest',
+    guest: true,
+    api: '/api/ai/guest',
+    page: '/assistant',
+    name: 'Trợ lý học tập',
+    emptyTitle: 'Hỏi thử trợ lý học tập Hoisted',
+    intro: 'Hỏi về lộ trình, khóa học hợp trình độ hay một khái niệm JavaScript. Bản dùng thử không lưu lịch sử — đăng nhập để lưu lại và được gợi ý theo các khóa bạn đã học.',
+    placeholder: 'Hỏi về khóa học, lộ trình hay JavaScript…',
+    suggestions: [
+      { icon: Compass,   text: 'Mình mới học lập trình, nên bắt đầu từ khóa nào?' },
+      { icon: Route,     text: 'Lộ trình từ JavaScript cơ bản tới React developer?' },
+      { icon: Lightbulb, text: 'Giải thích closure trong JavaScript kèm ví dụ' },
+      { icon: Bug,       text: 'Vì sao this bị undefined trong callback?' },
+    ],
+  },
   // Trợ lý trong trang học: cùng API & lịch sử với trợ lý học viên, gửi kèm lessonId khi bắt đầu hội thoại
   lesson: {
     id: 'lesson',
