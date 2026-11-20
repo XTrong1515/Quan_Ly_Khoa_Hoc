@@ -5,6 +5,7 @@ import { Plus, Trash2, History, X, RotateCcw, Search, Pencil, BookOpen } from 'l
 import { toast } from 'sonner';
 import { ChatPanel } from '@/components/ai/chat-panel.jsx';
 import { Dialog } from '@/components/ui/dialog.jsx';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -122,6 +123,7 @@ export function AssistantWorkspace({ assistant, className }) {
     onSuccess: (_r, id) => {
       qc.invalidateQueries({ queryKey: ['ai-conversations', assistant.id] });
       qc.removeQueries({ queryKey: ['ai-conversation', assistant.id, id] });
+      setPendingDelete(null);
       if (id === conversationId) open(null);
       toast.success('Đã xóa hội thoại');
     },
@@ -137,9 +139,8 @@ export function AssistantWorkspace({ assistant, className }) {
     if (!title || title === current?.title) { setRenaming(null); return; }
     rename.mutate({ id: conversationId, title });
   };
-  const confirmDelete = (c) => {
-    if (window.confirm(`Xóa hội thoại "${c.title}"? Toàn bộ tin nhắn trong đó sẽ mất.`)) remove.mutate(c.id);
-  };
+  const [pendingDelete, setPendingDelete] = useState(null); // hội thoại đang chờ xác nhận xóa
+  const confirmDelete = (c) => setPendingDelete(c);
 
   const listProps = {
     query: list, activeId: conversationId, onOpen: open, onDelete: confirmDelete,
@@ -221,6 +222,16 @@ export function AssistantWorkspace({ assistant, className }) {
         <ChatPanel key={`${assistant.id}-${panelKey}`} assistant={assistant} conversationId={conversationId}
           onConversationChange={(id) => (id ? select(id) : open(null))} autoFocus wide className="flex-1" />
       </section>
+
+      {pendingDelete && (
+        <ConfirmDialog title="Xóa hội thoại?" confirmLabel="Xóa hội thoại" destructive pending={remove.isPending}
+          onClose={() => { if (!remove.isPending) setPendingDelete(null); }}
+          onConfirm={() => remove.mutate(pendingDelete.id)}>
+          <p>
+            <span className="font-medium text-ink">“{pendingDelete.title}”</span> và toàn bộ tin nhắn trong đó sẽ bị xóa vĩnh viễn, không khôi phục được.
+          </p>
+        </ConfirmDialog>
+      )}
 
       {drawer && (
         <Dialog onClose={() => setDrawer(false)} aria-label="Lịch sử hội thoại"

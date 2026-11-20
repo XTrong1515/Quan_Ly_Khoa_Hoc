@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ArrowUp, ArrowDown, Square, Sparkles, Copy, Check, RotateCcw, AlertCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, apiMessage } from '@/lib/api';
@@ -10,6 +11,7 @@ import { formatPrice, levelLabel } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { THUMB_COLORS } from '@/components/course-editor.jsx';
 import { ASSISTANTS } from './assistants.js';
+import { highlightJs } from './highlight.jsx';
 
 const MAX_LEN = 1000;
 const TOKEN_RE = /\[\[course:([a-z0-9-]+)\]\]/g;
@@ -58,6 +60,7 @@ function CodeBlock({ node, children }) {
   const code = node?.children?.[0];
   const lang = (code?.properties?.className ?? []).find((c) => String(c).startsWith('language-'))?.slice(9);
   const source = (code?.children ?? []).map((c) => c.value ?? '').join('').replace(/\n$/, '');
+  const highlighted = useMemo(() => highlightJs(source, lang), [source, lang]);
   return (
     <div className="my-3 rounded-[10px] overflow-hidden border border-white/10 bg-[#0d1117]">
       <div className="flex items-center justify-between h-8 pl-3 pr-1 border-b border-white/10">
@@ -68,7 +71,9 @@ function CodeBlock({ node, children }) {
           {copied ? 'Đã chép' : 'Chép'}
         </button>
       </div>
-      <pre className="px-3.5 py-3 overflow-x-auto text-[12.5px] leading-[1.6] text-slate-200 font-mono">{children}</pre>
+      <pre className="px-3.5 py-3 overflow-x-auto text-[12.5px] leading-[1.6] text-slate-200 font-mono">
+        {highlighted ? <code className="code-hl">{highlighted}</code> : children}
+      </pre>
     </div>
   );
 }
@@ -82,7 +87,10 @@ const MD_CLS = cn(
   '[&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[12.5px] [&_:not(pre)>code]:bg-bg-2 [&_:not(pre)>code]:border [&_:not(pre)>code]:border-line',
   '[&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-px [&_:not(pre)>code]:rounded',
   '[&_blockquote]:border-l [&_blockquote]:border-line [&_blockquote]:pl-3 [&_blockquote]:text-ink-2',
-  '[&_hr]:my-3 [&_hr]:border-line',
+  '[&_hr]:my-3 [&_hr]:border-line [&_del]:text-ink-3',
+  '[&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:align-bottom [&_th]:font-semibold [&_th]:text-[12.5px] [&_th]:bg-bg-2 [&_th]:border-b [&_th]:border-line',
+  '[&_td]:px-3 [&_td]:py-2 [&_td]:align-top [&_td]:text-[13px] [&_tr:not(:last-child)>td]:border-b [&_tr:not(:last-child)>td]:border-line',
+  '[&_.contains-task-list]:list-none [&_.contains-task-list]:pl-1 [&_input]:mr-2 [&_input]:accent-[rgb(var(--accent))]',
 );
 
 const markdownComponents = {
@@ -93,7 +101,14 @@ const markdownComponents = {
   // sẽ tự gửi dữ liệu ra ngoài ngay khi hiển thị, không cần ai bấm. Chỉ giữ lại chữ thay thế (alt).
   img: ({ alt }) => (alt ? <span className="text-ink-3">[{alt}]</span> : null),
   pre: CodeBlock,
+  // Bảng (GFM) cuộn ngang trong khung hẹp thay vì làm tràn khung chat
+  table: ({ children }) => (
+    <div className="my-3 overflow-x-auto rounded-[10px] border border-line">
+      <table className="w-full border-collapse">{children}</table>
+    </div>
+  ),
 };
+const remarkPlugins = [remarkGfm];
 
 function CourseCard({ course }) {
   return (
@@ -183,7 +198,7 @@ function Message({ m, onRetry, onFeedback, wide }) {
         )}
         {m.content && (
           <div className={cn(MD_CLS, m.streaming && 'chat-caret')}>
-            <ReactMarkdown components={markdownComponents}>{renderTokens(m.content, m.courses, m.streaming)}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={remarkPlugins} components={markdownComponents}>{renderTokens(m.content, m.courses, m.streaming)}</ReactMarkdown>
           </div>
         )}
         {m.stopped && !m.error && <p className="mt-2 text-[12.5px] text-ink-3">Đã dừng câu trả lời.</p>}
