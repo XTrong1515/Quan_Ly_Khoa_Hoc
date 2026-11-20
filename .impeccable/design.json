@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-29T08:34:47+00:00",
+  "generatedAt": "2026-11-20T07:28:50+00:00",
   "title": "Design System: Hoisted",
   "extensions": {
     "colorMeta": {
@@ -67,7 +67,7 @@
       "hairline-night": {
         "role": "neutral",
         "displayName": "Hairline Night",
-        "canonical": "rgba(255, 255, 255, 0.07)"
+        "canonical": "rgba(255, 255, 255, 0.09)"
       },
       "ink-bright": {
         "role": "neutral",
@@ -102,7 +102,7 @@
       "ink-faint": {
         "role": "neutral",
         "displayName": "Ink Faint",
-        "canonical": "#6B7392",
+        "canonical": "#8B92AF",
         "tonalRamp": [
           "#22242A",
           "#383B47",
@@ -177,7 +177,7 @@
       "hairline-day": {
         "role": "neutral",
         "displayName": "Hairline Day",
-        "canonical": "rgba(15, 23, 42, 0.08)"
+        "canonical": "rgba(15, 23, 42, 0.10)"
       },
       "ink-day-muted": {
         "role": "neutral",
@@ -197,7 +197,7 @@
       "ink-day-faint": {
         "role": "neutral",
         "displayName": "Ink Day Faint",
-        "canonical": "#94A3B8",
+        "canonical": "#5B6B82",
         "tonalRamp": [
           "#21252C",
           "#363E4A",
@@ -207,6 +207,51 @@
           "#ACB6C3",
           "#D0D5DC",
           "#F1F2F4"
+        ]
+      },
+      "pass-green-day": {
+        "role": "status",
+        "displayName": "Pass Green Day",
+        "canonical": "#047857",
+        "tonalRamp": [
+          "#0F3D30",
+          "#147056",
+          "#14A87E",
+          "#0FE6A9",
+          "#3EF4C0",
+          "#7FF0D0",
+          "#BAF2E2",
+          "#EBFAF6"
+        ]
+      },
+      "fail-rose-day": {
+        "role": "status",
+        "displayName": "Fail Rose Day",
+        "canonical": "#D61942",
+        "tonalRamp": [
+          "#3A131B",
+          "#691C2C",
+          "#9D203B",
+          "#D52047",
+          "#E64C6D",
+          "#E7889D",
+          "#EEBEC9",
+          "#F9ECEF"
+        ]
+      },
+      "caution-amber-day": {
+        "role": "status",
+        "displayName": "Caution Amber Day",
+        "canonical": "#B45309",
+        "tonalRamp": [
+          "#3C2310",
+          "#6F3C16",
+          "#A65517",
+          "#E26C13",
+          "#F18D41",
+          "#EEB081",
+          "#F1D3BB",
+          "#FAF1EB"
         ]
       },
       "indigo-signal": {
@@ -353,6 +398,11 @@
         "name": "reduced-motion",
         "value": "@media (prefers-reduced-motion: reduce)",
         "purpose": "Disables reveal, marquee, float and caret."
+      },
+      {
+        "name": "chat-in",
+        "value": "180ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Assistant panel / widget entrance: 8px rise + 0.985 scale from the bottom-right. Off under reduced motion."
       }
     ],
     "breakpoints": [
@@ -469,7 +519,7 @@
       "Dark-first: dark is the default theme. Light mode is a real theme, not an inversion, and it swaps the accent from JS yellow to indigo for contrast.",
       "One accent at a time, carried by the semantic `accent` token.",
       "Two typefaces: Inter Tight for language, JetBrains Mono for anything a machine would print.",
-      "Flat by default, tonal layers, 1px hairlines at 7–8% opacity.",
+      "Flat by default, tonal layers, 1px hairlines at 9–10% opacity (`--line` is an RGB triplet, `--line-a` its strength).",
       "Always-dark code surfaces, in both themes."
     ],
     "rules": [
@@ -510,21 +560,23 @@
       }
     ],
     "dos": [
-      "**Do** use the semantic tokens (`bg-bg-1`, `text-ink-2`, `border-line`, `bg-accent text-accent-ink`) for every themed surface, so light mode swaps correctly.",
-      "**Do** keep one primary (accent) button per view, with the Signal Glow only on the page's main call to action.",
-      "**Do** set prices, counts, codes, durations and paths in JetBrains Mono with `tabular-nums`.",
-      "**Do** separate surfaces with tone and 1px hairlines before reaching for a shadow.",
-      "**Do** give every icon-only control an `aria-label`, and keep a visible focus state.",
-      "**Do** honour `prefers-reduced-motion`: the reveal, marquee, float and caret all stop."
+      "Do let section headings stand alone. No numbered kickers (\"01 / Chủ đề\") or `//` labels above a heading; the `~/hoisted / path` breadcrumb is the only line allowed above an H1, because it tells the user where they are.",
+      "Do show a number only when it is real and non-zero; hide the stat, the category or the testimonial block instead of printing \"0\" or a one-word review.",
+      "Do use the semantic tokens (`bg-bg-1`, `text-ink-2`, `border-line`, `bg-accent text-accent-ink`) for every themed surface, so light mode swaps correctly.",
+      "Do keep one primary (accent) button per view, with the Signal Glow only on the page's main call to action.",
+      "Do set prices, counts, codes, durations and paths in JetBrains Mono with `tabular-nums`.",
+      "Do separate surfaces with tone and 1px hairlines before reaching for a shadow.",
+      "Do give every icon-only control an `aria-label`, and keep a visible focus state.",
+      "Do honour `prefers-reduced-motion`: the reveal, marquee, float and caret all stop."
     ],
     "donts": [
-      "**Don't** use gradient text (`bg-clip-text` with a gradient) for emphasis. Use the accent on one phrase, or weight.",
-      "**Don't** use purple or violet as a decorative accent or gradient. The difficulty scale uses Pass Green → JS Yellow → Fail Rose.",
-      "**Don't** hardcode `#F7DF1E` or any hex on a themed surface. Use `accent`, which is indigo in light mode.",
-      "**Don't** use status colours (green, rose, amber) to decorate. They only report state.",
-      "**Don't** give resting cards a shadow, or stack shadow on shadow.",
-      "**Don't** use `warning` colour classes. The token is `warn`, and `bg-warning` generates nothing.",
-      "**Don't** use emoji or unicode glyphs as icons in new UI. Use lucide-react at 14–20px with a consistent stroke."
+      "Don't use gradient text (`bg-clip-text` with a gradient) for emphasis. Use the accent on one phrase, or weight.",
+      "Don't use purple or violet as a decorative accent or gradient. The difficulty scale uses Pass Green → JS Yellow → Fail Rose.",
+      "Don't hardcode `#F7DF1E` or any hex on a themed surface. Use `accent`, which is indigo in light mode.",
+      "Don't use status colours (green, rose, amber) to decorate. They only report state.",
+      "Don't give resting cards a shadow, or stack shadow on shadow.",
+      "Don't use `warning` colour classes. The token is `warn`, and `bg-warning` generates nothing.",
+      "Don't use emoji or unicode glyphs as icons in new UI. Use lucide-react at 14–20px with a consistent stroke."
     ]
   }
 }
