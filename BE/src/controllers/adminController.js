@@ -230,14 +230,14 @@ async function _resolveInstructor(instructorId) {
 }
 
 const COURSE_STATUSES = ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED', 'ARCHIVED'];
-const MIN_PAID_PRICE = 5000;      // Giao dịch VNPay tối thiểu 5.000đ
+const MIN_PAID_PRICE = 5000;      // Mức tối thiểu an toàn cho cổng thanh toán (ZaloPay/VNPay)
 const MAX_PRICE = 999_999_999;    // và dưới 1 tỷ đồng
 
 function _priceError({ price, originalPrice }) {
   if (price !== undefined) {
     const value = Number(price);
     if (!Number.isFinite(value) || value < 0 || value > MAX_PRICE) return 'Giá khóa học không hợp lệ';
-    if (value > 0 && value < MIN_PAID_PRICE) return 'Giá tối thiểu 5.000đ (giới hạn của VNPay), hoặc đặt 0đ cho khóa miễn phí';
+    if (value > 0 && value < MIN_PAID_PRICE) return 'Giá tối thiểu 5.000đ (giới hạn của cổng thanh toán), hoặc đặt 0đ cho khóa miễn phí';
   }
   if (originalPrice !== undefined && originalPrice !== null) {
     const value = Number(originalPrice);

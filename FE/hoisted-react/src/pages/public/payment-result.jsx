@@ -46,10 +46,11 @@ export default function PaymentResultPage() {
   const { role }        = useAuth();
   const { clear }       = useCart();
 
-  const [state, setState] = useState('verifying'); // 'verifying' | 'success' | 'failed' | 'error'
+  const [state, setState] = useState('verifying'); // 'verifying' | 'success' | 'failed' | 'processing' | 'error'
   const [errorMsg, setErrorMsg] = useState('');
   const [orderInfo, setOrderInfo] = useState(null);
   const verifiedRef = useRef(false);
+  const retryTimer  = useRef(null);
 
   // Đơn chỉ có 1 khóa → "Vào học" mở thẳng bài cần học tiếp của khóa đó (nhiều khóa → trang Học tập)
   const { data: startHref } = useQuery({
@@ -76,35 +77,45 @@ export default function PaymentResultPage() {
       return;
     }
 
-    // Collect all vnp_* params + dev_mock into an object
+    verify(0);
+    return () => clearTimeout(retryTimer.current);
+  }, []); // eslint-disable-line
+
+  // ZaloPay quay về với ?apptransid=…; VNPay / thanh toán giả lập với ?vnp_TxnRef=…
+  // Server tự hỏi lại cổng thanh toán, query string chỉ để biết giao dịch nào.
+  function verify(attempt) {
     const params = {};
     searchParams.forEach((val, key) => { params[key] = val; });
 
-    if (!params.vnp_TxnRef) {
+    if (!params.apptransid && !params.vnp_TxnRef) {
       setState('error');
-      setErrorMsg('Đường dẫn này không chứa thông tin giao dịch từ VNPay.');
+      setErrorMsg('Đường dẫn này không chứa thông tin giao dịch từ cổng thanh toán.');
       return;
     }
 
+    setState('verifying');
     api.post('/api/orders/verify', params)
       .then(({ data }) => {
+        setOrderInfo(data);
         if (data.success) {
           clear(); // remove paid courses from cart
           setState('success');
-          setOrderInfo(data);
+        } else if (data.status === 'PROCESSING') {
+          // ZaloPay có thể cần vài giây để chốt giao dịch → tự hỏi lại vài lần trước khi nhờ học viên bấm
+          if (attempt < 4) retryTimer.current = setTimeout(() => verify(attempt + 1), 3000);
+          else setState('processing');
         } else {
           setState('failed');
-          setOrderInfo(data);
         }
       })
       .catch((err) => {
         setState('error');
-        setErrorMsg(apiMessage(err, 'Máy chủ chưa xác nhận được kết quả từ VNPay.'));
+        setErrorMsg(apiMessage(err, 'Máy chủ chưa xác nhận được kết quả từ ZaloPay.'));
       });
-  }, []); // eslint-disable-line
+  }
 
-  const amountStr = searchParams.get('vnp_Amount');
-  const amount    = amountStr ? Number(amountStr) / 100 : null;
+  const vnpAmount = searchParams.get('vnp_Amount');
+  const amount    = orderInfo?.amount ?? (vnpAmount ? Number(vnpAmount) / 100 : null);
   const orderCode = orderInfo?.orderCode ?? searchParams.get('vnp_TxnRef');
 
   if (state === 'verifying') {
@@ -117,7 +128,7 @@ export default function PaymentResultPage() {
             <div className="w-16 h-16 rounded-2xl bg-accent/10 grid place-items-center">
               <Loader2 className="w-8 h-8 text-accent animate-spin motion-reduce:animate-none" aria-hidden="true" />
             </div>
-            <p className="font-mono text-ink-3 text-sm" aria-live="polite">Đang xác thực thanh toán với VNPay…</p>
+            <p className="font-mono text-ink-3 text-sm" aria-live="polite">Đang xác thực thanh toán với ZaloPay…</p>
           </div>
         </div>
       </>
@@ -185,8 +196,33 @@ export default function PaymentResultPage() {
           }
         >
           <p className="text-ink-2 leading-relaxed">
-            VNPay báo giao dịch{orderCode ? <> <span className="font-mono text-ink">{orderCode}</span></> : ''} bị hủy
-            hoặc bị từ chối, nên khóa học chưa được mở. Khóa học vẫn nằm trong giỏ của bạn để đặt đơn mới.
+            Cổng thanh toán báo giao dịch cho đơn{orderCode ? <> <span className="font-mono text-ink">{orderCode}</span></> : ''} bị
+            hủy hoặc bị từ chối, nên khóa học chưa được mở. Khóa học vẫn nằm trong giỏ của bạn để thanh toán lại.
+          </p>
+        </ResultScreen>
+      </>
+    );
+  }
+
+  if (state === 'processing') {
+    return (
+      <>
+        <Seo title="Giao dịch đang xử lý — Hoisted" />
+        <ResultScreen
+          tone="neutral"
+          icon={Loader2}
+          title="ZaloPay đang xử lý giao dịch"
+          actions={
+            <>
+              <Button size="lg" onClick={() => verify(0)}>Kiểm tra lại</Button>
+              <Link to="/me/orders"><Button size="lg" variant="ghost">Đơn hàng của tôi</Button></Link>
+            </>
+          }
+        >
+          <p className="text-ink-2 leading-relaxed">
+            Đơn{orderCode ? <> <span className="font-mono text-ink">{orderCode}</span></> : ''} chưa được ZaloPay chốt kết quả.
+            Nếu bạn đã xác nhận trên ứng dụng ZaloPay, đợi ít phút rồi bấm "Kiểm tra lại". Chưa trả tiền thì
+            có thể thanh toán lại từ "Đơn hàng của tôi".
           </p>
         </ResultScreen>
       </>
@@ -202,7 +238,7 @@ export default function PaymentResultPage() {
         title="Chưa xác nhận được thanh toán"
         actions={
           <>
-            <Button size="lg" onClick={() => window.location.reload()}>Xác nhận lại</Button>
+            <Button size="lg" onClick={() => verify(0)}>Xác nhận lại</Button>
             <Link to="/me/orders"><Button size="lg" variant="ghost">Đơn hàng của tôi</Button></Link>
           </>
         }

@@ -22,3 +22,6 @@ process.env.AUTH_REFRESH_RATE_LIMIT = '1000';
 // test riêng tự bật VNPay để kiểm tra chữ ký
 process.env.VNPAY_TMN_CODE = '';
 process.env.VNPAY_HASH_SECRET = '';
+process.env.ZALOPAY_APP_ID = ''; // zalopay.test.js tự bật với khóa giả + mock fetch
+process.env.ZALOPAY_KEY1 = '';
+process.env.ZALOPAY_KEY2 = '';

@@ -23,7 +23,7 @@ export default function TransactionsPage() {
   const total = transactions.reduce((sum, t) => (t.status === 'PAID' ? sum + Number(t.amount) : sum), 0);
 
   return (
-    <AccountShell title="Giao dịch" desc="Lịch sử thanh toán qua VNPay">
+    <AccountShell title="Giao dịch" desc="Lịch sử thanh toán qua ZaloPay">
       <Seo title="Lịch sử giao dịch — Hoisted" />
 
       {!isLoading && transactions.length > 0 && (
@@ -70,7 +70,7 @@ export default function TransactionsPage() {
               <Receipt className="w-7 h-7" aria-hidden="true" />
             </div>
             <h3 className="font-display font-bold text-[17px] mb-1.5">Chưa có giao dịch nào</h3>
-            <p className="text-ink-2 text-[13.5px] mb-6">Mỗi lần thanh toán qua VNPay, thành công hay thất bại, đều được ghi lại ở đây.</p>
+            <p className="text-ink-2 text-[13.5px] mb-6">Mỗi lần thanh toán qua ZaloPay, thành công hay thất bại, đều được ghi lại ở đây.</p>
             <Link to="/courses"><Button variant="ghost">Xem khóa học</Button></Link>
           </div>
         </div>

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const pool   = require('../config/db');
 const { createNotification } = require('./notificationController');
 const { markOrderPaid } = require('../services/orders');
+const zalopay = require('../services/payments/zalopay');
 
 const VNPAY_URL  = process.env.VNPAY_URL  || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
 const TMN_CODE   = process.env.VNPAY_TMN_CODE   || '';
@@ -71,20 +72,60 @@ function resolveIpAddr(req) {
   return ipAddr;
 }
 
-function resolvePaymentUrl(orderCode, amountVND, ipAddr, orderExpiresAt) {
-  if (TMN_CODE && HASH_SECRET) {
-    return buildVNPayUrl(orderCode, amountVND, ipAddr, orderExpiresAt);
+const vnpayConfigured = () => Boolean(TMN_CODE && HASH_SECRET);
+
+/**
+ * Cổng đang dùng: PAYMENT_PROVIDER (zalopay mặc định | vnpay) nếu đã cấu hình, không thì cổng nào đã cấu hình,
+ * null = chưa cấu hình cổng nào → thanh toán giả lập (chỉ ngoài production).
+ */
+function activeGateway() {
+  const preferred = (process.env.PAYMENT_PROVIDER || 'zalopay').toLowerCase();
+  if (preferred === 'vnpay' && vnpayConfigured()) return 'vnpay';
+  if (preferred === 'zalopay' && zalopay.isConfigured()) return 'zalopay';
+  if (zalopay.isConfigured()) return 'zalopay';
+  if (vnpayConfigured()) return 'vnpay';
+  return null;
+}
+
+class GatewayError extends Error {}
+
+/** URL để học viên trả tiền cho đơn. ZaloPay phải gọi API tạo giao dịch → async; lỗi cổng ném GatewayError. */
+async function resolvePaymentUrl(order, req) {
+  const gateway = activeGateway();
+  if (gateway === 'zalopay') {
+    let url;
+    try {
+      ({ paymentUrl: url } = await zalopay.createPaymentUrl({
+        orderId: order.id, orderCode: order.order_code, userId: req.user.id,
+        amountVND: order.total_amount, orderExpiresAt: order.expires_at,
+      }));
+    } catch (err) {
+      console.error('[orders/zalopay-create]', err.message);
+      throw new GatewayError('Không tạo được giao dịch ZaloPay. Thử lại sau giây lát.');
+    }
+    await pool.query("UPDATE orders SET payment_method = 'ZALOPAY' WHERE id = ? AND status = 'PENDING'", [order.id]);
+    return url;
   }
-  // Dev fallback: bypass VNPay, simulate success redirect
+  if (gateway === 'vnpay') {
+    await pool.query("UPDATE orders SET payment_method = 'VNPAY' WHERE id = ? AND status = 'PENDING'", [order.id]);
+    return buildVNPayUrl(order.order_code, order.total_amount, resolveIpAddr(req), order.expires_at);
+  }
+  // Dev fallback: chưa cấu hình cổng nào → giả lập trang kết quả thành công
   const mockParams = new URLSearchParams({
-    vnp_TxnRef:        orderCode,
+    vnp_TxnRef:        order.order_code,
     vnp_ResponseCode:  '00',
-    vnp_Amount:        String(Math.round(amountVND) * 100),
+    vnp_Amount:        String(Math.round(order.total_amount) * 100),
     vnp_TransactionNo: `DEV${Date.now()}`,
     dev_mock:          '1',
   });
   return `/payment/result?${mockParams.toString()}`;
 }
+
+/**
+ * Link trả về ngay lúc đặt đơn. FE mở cổng qua POST /:id/pay ở trang chờ thanh toán, nên với ZaloPay
+ * (mỗi link là 1 giao dịch tạo trên server ZaloPay) không tạo sẵn giao dịch thừa ở bước này.
+ */
+const checkoutPaymentUrl = (order, req) => (activeGateway() === 'zalopay' ? null : resolvePaymentUrl(order, req));
 
 function verifyVNPaySignature(params) {
   const secureHash = params.vnp_SecureHash;
@@ -232,7 +273,7 @@ async function createOrder(req, res) {
       return res.json({
         orderId: same.id,
         orderCode: same.order_code,
-        paymentUrl: resolvePaymentUrl(same.order_code, same.total_amount, resolveIpAddr(req), same.expires_at),
+        paymentUrl: await checkoutPaymentUrl(same, req),
         expiresAt: same.expires_at,
         reused: true,
       });
@@ -267,7 +308,9 @@ async function createOrder(req, res) {
       return res.status(201).json({ orderId, orderCode, paymentUrl: null, expiresAt, free: true });
     }
 
-    const paymentUrl = resolvePaymentUrl(orderCode, totalAmount, resolveIpAddr(req), expiresAt);
+    const paymentUrl = await checkoutPaymentUrl(
+      { id: orderId, order_code: orderCode, total_amount: totalAmount, expires_at: expiresAt }, req,
+    );
     return res.status(201).json({ orderId, orderCode, paymentUrl, expiresAt });
   } catch (err) {
     if (conn) await conn.rollback().catch(() => {});
@@ -303,6 +346,86 @@ async function vnpayIpn(req, res) {
   }
 }
 
+/* ── POST /api/orders/zalopay-callback ─────────────────────────── */
+// ZaloPay gọi server-to-server khi thu tiền thành công (cần ZALOPAY_CALLBACK_URL công khai).
+// Chữ ký HMAC-SHA256(key2, data) là bằng chứng duy nhất. return_code: 1 = đã nhận, 2 = đã xử lý trước đó,
+// 0 = lỗi tạm (ZaloPay gọi lại), -1 = dữ liệu không hợp lệ.
+async function zalopayCallback(req, res) {
+  const reply = (code, message) => res.status(200).json({ return_code: code, return_message: message });
+  try {
+    const data = zalopay.verifyCallback(req.body);
+    if (!data) return reply(-1, 'mac not equal');
+
+    const orderId = zalopay.orderIdFrom(data.app_trans_id);
+    if (!orderId) return reply(-1, 'order not found');
+    const [[order]] = await pool.query(
+      'SELECT id, user_id, order_code, status, total_amount FROM orders WHERE id = ?',
+      [orderId],
+    );
+    if (!order) return reply(-1, 'order not found');
+    if (Number(data.amount) !== Math.round(Number(order.total_amount))) return reply(-1, 'invalid amount');
+
+    await applyPaymentResult(order, { success: true, transactionId: String(data.zp_trans_id) });
+    return order.status === 'PENDING' ? reply(1, 'success') : reply(2, 'already processed');
+  } catch (err) {
+    console.error('[orders/zalopay-callback]', err);
+    return reply(0, 'retry');
+  }
+}
+
+/**
+ * Học viên quay về từ cổng ZaloPay (?apptransid=…&status=…). Không tin query string:
+ * hỏi lại ZaloPay bằng API query (ký key1) rồi mới áp kết quả. Đang xử lý → status PROCESSING để FE hỏi lại.
+ */
+async function verifyZaloPayReturn(req, res) {
+  const appTransId = String(req.body.apptransid);
+  const orderId = zalopay.orderIdFrom(appTransId);
+  if (!zalopay.isConfigured()) return res.status(400).json({ message: 'Cổng ZaloPay chưa được cấu hình' });
+  if (!orderId) return res.status(400).json({ message: 'Mã giao dịch ZaloPay không hợp lệ' });
+
+  try {
+    const [[order]] = await pool.query(
+      'SELECT id, user_id, order_code, status, total_amount FROM orders WHERE id = ?',
+      [orderId],
+    );
+    if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    if (order.user_id !== req.user.id) return res.status(403).json({ message: 'Không có quyền' });
+
+    let result;
+    try {
+      result = await zalopay.queryOrder(appTransId);
+    } catch (err) {
+      console.error('[orders/zalopay-query]', err.message);
+      return res.status(502).json({ message: 'Chưa liên lạc được với ZaloPay để xác nhận giao dịch.' });
+    }
+
+    if (result.state === 'PAID') {
+      if (result.amount !== Math.round(Number(order.total_amount))) {
+        return res.status(400).json({ message: 'Số tiền thanh toán không khớp đơn hàng' });
+      }
+      await applyPaymentResult(order, { success: true, transactionId: result.zpTransId });
+    }
+    // Một lần mở cổng thất bại không đánh FAILED cả đơn: học viên có thể mở lại cổng và trả bằng giao dịch khác
+
+    const [[current]] = await pool.query('SELECT status FROM orders WHERE id = ?', [order.id]);
+    // Sandbox vẫn trả "đang xử lý" một lúc sau khi học viên bấm hủy → dùng status trên redirect
+    // (đã ký key2) để báo thất bại sớm. Không bao giờ dùng nó để mở khóa học.
+    const cancelledOnGateway = zalopay.verifyRedirect(req.body) && String(req.body.status) !== '1';
+    let status = current.status;
+    if (status === 'PENDING') status = result.state === 'FAILED' || cancelledOnGateway ? 'FAILED' : 'PROCESSING';
+    return res.json({
+      success: current.status === 'PAID',
+      status,
+      orderCode: order.order_code,
+      orderId: order.id,
+      amount: Number(order.total_amount),
+    });
+  } catch (err) {
+    console.error('[orders/verify-zalopay]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
 /* ── POST /api/orders/:id/cancel ──────────────────────────────── */
 async function cancelMyOrder(req, res) {
   const orderId = parseInt(req.params.id, 10);
@@ -328,18 +451,19 @@ async function verifyPayment(req, res) {
   const params  = req.body ?? {};
   const userId  = req.user.id;
 
+  if (params.apptransid) return verifyZaloPayReturn(req, res);
+
   const orderCode     = params.vnp_TxnRef;
   const transactionId = params.vnp_TransactionNo;
-  // Thanh toán giả lập CHỈ khi chưa cấu hình VNPay và không chạy production.
+  // Thanh toán giả lập CHỈ khi chưa cấu hình cổng nào và không chạy production.
   // (Trước đây chỉ cần gửi dev_mock=1 là bỏ qua kiểm tra chữ ký → tự đánh dấu PAID không cần trả tiền.)
-  const vnpayConfigured = Boolean(TMN_CODE && HASH_SECRET);
-  const wantsMock       = params.dev_mock === '1' || params.dev_mock === 1;
-  const mockAllowed     = !vnpayConfigured && process.env.NODE_ENV !== 'production';
+  const wantsMock   = params.dev_mock === '1' || params.dev_mock === 1;
+  const mockAllowed = activeGateway() === null && process.env.NODE_ENV !== 'production';
 
   if (!orderCode) return res.status(400).json({ message: 'Thiếu thông tin đơn hàng' });
 
   try {
-    if (vnpayConfigured) {
+    if (vnpayConfigured()) {
       if (!verifyVNPaySignature(params)) {
         return res.status(400).json({ message: 'Chữ ký thanh toán không hợp lệ' });
       }
@@ -355,7 +479,7 @@ async function verifyPayment(req, res) {
 
     const order = orders[0];
     if (order.user_id !== userId) return res.status(403).json({ message: 'Không có quyền' });
-    if (vnpayConfigured && !vnpayAmountMatches(order, params)) {
+    if (vnpayConfigured() && !vnpayAmountMatches(order, params)) {
       return res.status(400).json({ message: 'Số tiền thanh toán không khớp đơn hàng' });
     }
 
@@ -399,9 +523,10 @@ async function payOrder(req, res) {
       return res.status(409).json({ message: `${reject.message}. Đơn hàng đã được hủy, vui lòng đặt đơn mới.` });
     }
 
-    const paymentUrl = resolvePaymentUrl(order.order_code, order.total_amount, resolveIpAddr(req), order.expires_at);
+    const paymentUrl = await resolvePaymentUrl(order, req);
     return res.json({ paymentUrl });
   } catch (err) {
+    if (err instanceof GatewayError) return res.status(502).json({ message: err.message });
     console.error('[orders/pay]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
@@ -512,4 +637,4 @@ async function myTransactions(req, res) {
   }
 }
 
-module.exports = { createOrder, verifyPayment, vnpayIpn, payOrder, cancelMyOrder, myOrders, getOrder, myTransactions };
+module.exports = { createOrder, verifyPayment, vnpayIpn, zalopayCallback, payOrder, cancelMyOrder, myOrders, getOrder, myTransactions };

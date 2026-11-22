@@ -49,7 +49,7 @@ const TECH_TICKER = [
 const BENTO_SMALL = [
   { icon: InfinityIcon, title: 'Truy cập trọn đời', desc: 'Mua một lần, khóa học ở lại trong tài khoản của bạn — không gia hạn, không hết hạn.' },
   { icon: MessageSquareText, title: 'Hỏi đáp trong bài học', desc: 'Đặt câu hỏi ngay dưới bài học; giảng viên và học viên khác cùng trả lời.' },
-  { icon: ShieldCheck, title: 'Thanh toán VNPay', desc: 'Thẻ ATM, QR hoặc thẻ quốc tế. Thanh toán xong là khóa học mở ngay.' },
+  { icon: ShieldCheck, title: 'Thanh toán ZaloPay', desc: 'Ví ZaloPay, QR, thẻ ATM hoặc thẻ quốc tế. Thanh toán xong là khóa học mở ngay.' },
   { icon: Sparkles, title: 'Trợ lý AI chọn khóa', desc: 'Hỏi bằng tiếng Việt về JavaScript hay nên học gì tiếp — trợ lý chỉ gợi ý khóa học có thật trên Hoisted.' },
 ];
 
@@ -89,7 +89,7 @@ const FAQS = [
   },
   {
     q: 'Thanh toán như thế nào?',
-    a: 'Qua VNPay: thẻ ATM nội địa, QR hoặc thẻ quốc tế. Thanh toán thành công thì khóa học mở ngay trong mục "Học tập của tôi".',
+    a: 'Qua ZaloPay: ví ZaloPay, quét QR, thẻ ATM nội địa hoặc thẻ quốc tế. Thanh toán thành công thì khóa học mở ngay trong mục "Học tập của tôi".',
   },
   {
     q: 'Bài tập code được chấm thế nào?',

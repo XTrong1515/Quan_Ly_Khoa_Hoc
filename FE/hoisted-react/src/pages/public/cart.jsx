@@ -279,7 +279,7 @@ export default function CartPage() {
               <ul className="mt-5 pt-4 border-t border-line space-y-2 text-[12px] text-ink-3">
                 <li className="flex items-center gap-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-accent flex-shrink-0" aria-hidden="true" />
-                  Thanh toán trên cổng VNPay — Hoisted không lưu thông tin thẻ
+                  Thanh toán trên cổng ZaloPay — Hoisted không lưu thông tin thẻ
                 </li>
                 <li className="flex items-center gap-2">
                   <InfinityIcon className="w-3.5 h-3.5 text-accent flex-shrink-0" aria-hidden="true" />

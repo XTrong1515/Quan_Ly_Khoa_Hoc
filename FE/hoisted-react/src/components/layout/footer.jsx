@@ -82,7 +82,7 @@ export function Footer() {
       {/* pr-24: chừa chỗ cho nút trợ lý AI nổi ở góc phải */}
       <div className="pl-5 sm:pl-8 lg:pl-16 pr-24 py-5 border-t border-line flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-[12.5px] text-ink-3">
         <p>© {new Date().getFullYear()} Hoisted · Đồ án tốt nghiệp, Khoa CNTT — ĐH Tài nguyên và Môi trường TP.HCM</p>
-        <p>Thanh toán qua VNPay</p>
+        <p>Thanh toán qua ZaloPay</p>
       </div>
     </footer>
   );

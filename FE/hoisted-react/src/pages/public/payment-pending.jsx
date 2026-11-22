@@ -110,7 +110,7 @@ export default function PaymentPendingPage() {
       else navigate(paymentUrl);
     },
     onError: (err) => {
-      toast.error(apiMessage(err, 'Không mở được cổng VNPay. Thử lại sau giây lát.'));
+      toast.error(apiMessage(err, 'Không mở được cổng ZaloPay. Thử lại sau giây lát.'));
       qc.invalidateQueries({ queryKey: ['order', orderId] });
       qc.invalidateQueries({ queryKey: ['my-orders'] });
     },
@@ -207,7 +207,7 @@ export default function PaymentPendingPage() {
         >
           {failed ? (
             <>
-              VNPay báo giao dịch cho đơn <span className="font-mono font-semibold text-ink">{data.order_code}</span> không
+              Cổng thanh toán báo giao dịch cho đơn <span className="font-mono font-semibold text-ink">{data.order_code}</span> không
               thành công. Đặt đơn mới từ giỏ hàng; nếu tài khoản vẫn bị trừ tiền, giữ lại mã đơn này để đối soát.
             </>
           ) : cancelledEarly ? (
@@ -357,7 +357,7 @@ export default function PaymentPendingPage() {
           onClick={() => payMutation.mutate()}
         >
           <CreditCard className="w-4 h-4" aria-hidden="true" />
-          {payMutation.isPending ? 'Đang chuyển đến VNPay…' : 'Thanh toán qua VNPay'}
+          {payMutation.isPending ? 'Đang chuyển đến ZaloPay…' : 'Thanh toán qua ZaloPay'}
         </Button>
 
         <Button
