@@ -1,4 +1,5 @@
-const router = require('express').Router();
+const express = require('express');
+const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const {
   createOrder, verifyPayment, vnpayIpn, zalopayCallback, payOrder, cancelMyOrder,
@@ -9,7 +10,8 @@ const {
 // VNPay gọi server-to-server, không có JWT — phải đứng trước authMiddleware; xác thực bằng chữ ký HMAC
 router.get('/vnpay-ipn', vnpayIpn);
 // ZaloPay cũng gọi server-to-server (POST JSON { data, mac, type }) — xác thực bằng HMAC key2
-router.post('/zalopay-callback', zalopayCallback);
+// Tài liệu ghi body JSON; nhận thêm form-urlencoded phòng khi cổng gửi kiểu form (body rỗng → mac sai)
+router.post('/zalopay-callback', express.urlencoded({ extended: false }), zalopayCallback);
 
 router.use(authMiddleware);
 

@@ -356,18 +356,23 @@ async function vnpayIpn(req, res) {
 // 0 = lỗi tạm (ZaloPay gọi lại), -1 = dữ liệu không hợp lệ.
 async function zalopayCallback(req, res) {
   const reply = (code, message) => res.status(200).json({ return_code: code, return_message: message });
+  // Callback bị từ chối vẫn ghi log (không ghi data/mac) → phân biệt "ZaloPay không gọi tới" với "gọi tới nhưng sai"
+  const reject = (message, detail = '') => {
+    console.warn(`[orders/zalopay-callback] từ chối: ${message}${detail} (content-type: ${req.headers['content-type'] ?? '—'})`);
+    return reply(-1, message);
+  };
   try {
     const data = zalopay.verifyCallback(req.body);
-    if (!data) return reply(-1, 'mac not equal');
+    if (!data) return reject('mac not equal');
 
     const orderId = zalopay.orderIdFrom(data.app_trans_id);
-    if (!orderId) return reply(-1, 'order not found');
+    if (!orderId) return reject('order not found', ` — ${data.app_trans_id}`);
     const [[order]] = await pool.query(
       'SELECT id, user_id, order_code, status, total_amount FROM orders WHERE id = ?',
       [orderId],
     );
-    if (!order) return reply(-1, 'order not found');
-    if (Number(data.amount) !== Math.round(Number(order.total_amount))) return reply(-1, 'invalid amount');
+    if (!order) return reject('order not found', ` — ${data.app_trans_id}`);
+    if (Number(data.amount) !== Math.round(Number(order.total_amount))) return reject('invalid amount', ` — ${order.order_code}`);
 
     await applyPaymentResult(order, { success: true, transactionId: String(data.zp_trans_id) });
     console.log(`[orders/zalopay-callback] ${order.order_code} ← GD ${data.zp_trans_id} (${order.status === 'PENDING' ? 'PAID' : `đã ${order.status}`})`);
