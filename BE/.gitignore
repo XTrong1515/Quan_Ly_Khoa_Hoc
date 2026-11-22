@@ -12,3 +12,6 @@ tests/report/jest-results.json
 
 # Bản sao lưu CSDL (chứa dữ liệu người dùng)
 backups/
+
+# cloudflared tải về bởi scripts/tunnel.js
+.tools/

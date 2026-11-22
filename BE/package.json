@@ -19,7 +19,8 @@
     "db:backup": "node scripts/db-tools.js backup",
     "db:restore": "node scripts/db-tools.js restore",
     "db:recompute-stats": "node database/recompute_course_stats.js",
-    "seed:catalog": "node --no-node-snapshot database/seed_catalog.js"
+    "seed:catalog": "node --no-node-snapshot database/seed_catalog.js",
+    "tunnel": "node scripts/tunnel.js"
   },
   "keywords": [],
   "author": "",

@@ -366,6 +366,7 @@ async function zalopayCallback(req, res) {
     if (Number(data.amount) !== Math.round(Number(order.total_amount))) return reply(-1, 'invalid amount');
 
     await applyPaymentResult(order, { success: true, transactionId: String(data.zp_trans_id) });
+    console.log(`[orders/zalopay-callback] ${order.order_code} ← GD ${data.zp_trans_id} (${order.status === 'PENDING' ? 'PAID' : `đã ${order.status}`})`);
     return order.status === 'PENDING' ? reply(1, 'success') : reply(2, 'already processed');
   } catch (err) {
     console.error('[orders/zalopay-callback]', err);
