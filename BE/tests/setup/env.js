@@ -25,3 +25,4 @@ process.env.VNPAY_HASH_SECRET = '';
 process.env.ZALOPAY_APP_ID = ''; // zalopay.test.js tự bật với khóa giả + mock fetch
 process.env.ZALOPAY_KEY1 = '';
 process.env.ZALOPAY_KEY2 = '';
+process.env.PAYMENT_FEE_PERCENT = '0'; // .env dev có thể đặt phí demo; test phí cổng tự đặt trong revenue.test.js

@@ -2,7 +2,8 @@
  * Số liệu doanh thu giảng viên — dùng chung cho trang giảng viên và trang đối soát của admin,
  * nên hai bên luôn khớp nhau. Chỉ tính đơn PAID; số liệu lấy từ order_items đã chụp lúc thanh toán.
  *
- *   earned   = Σ instructor_earning (đơn PAID)
+ *   gross    = Σ giá bán   fees = Σ phí cổng thanh toán (trừ trước khi chia)
+ *   earned   = Σ instructor_earning (đơn PAID) = (gross − fees) × (100 − hoa hồng)%
  *   paidOut  = Σ payout PAID       pending = Σ payout PENDING
  *   balance  = earned − paidOut − pending   (số còn có thể chi trả)
  */
@@ -13,7 +14,8 @@ const money = (v) => Math.round(Number(v ?? 0));
 async function balances(instructorIds, conn = pool) {
   if (!instructorIds.length) return new Map();
   const [earned] = await conn.query(
-    `SELECT oi.instructor_id AS id, SUM(oi.price) AS gross, SUM(oi.instructor_earning) AS earned, COUNT(*) AS sales
+    `SELECT oi.instructor_id AS id, SUM(oi.price) AS gross, SUM(oi.payment_fee) AS fees,
+            SUM(oi.instructor_earning) AS earned, COUNT(*) AS sales
      FROM order_items oi JOIN orders o ON o.id = oi.order_id AND o.status = 'PAID'
      WHERE oi.instructor_id IN (?) GROUP BY oi.instructor_id`,
     [instructorIds],
@@ -29,7 +31,8 @@ async function balances(instructorIds, conn = pool) {
   const p = new Map(payouts.map((r) => [r.id, r]));
   return new Map(instructorIds.map((id) => {
     const row = {
-      gross: money(e.get(id)?.gross), earned: money(e.get(id)?.earned), sales: Number(e.get(id)?.sales ?? 0),
+      gross: money(e.get(id)?.gross), fees: money(e.get(id)?.fees), earned: money(e.get(id)?.earned),
+      sales: Number(e.get(id)?.sales ?? 0),
       paidOut: money(p.get(id)?.paidOut), pending: money(p.get(id)?.pending),
     };
     row.balance = row.earned - row.paidOut - row.pending;
@@ -60,7 +63,8 @@ async function dailySeries(instructorId, from, to) {
 
 async function byCourse(instructorId, from, to) {
   const [rows] = await pool.query(
-    `SELECT c.id, c.title, c.slug, COUNT(*) AS sales, SUM(oi.price) AS gross, SUM(oi.instructor_earning) AS earned
+    `SELECT c.id, c.title, c.slug, COUNT(*) AS sales, SUM(oi.price) AS gross, SUM(oi.payment_fee) AS fees,
+            SUM(oi.instructor_earning) AS earned
      FROM order_items oi
      JOIN orders o  ON o.id = oi.order_id AND o.status = 'PAID'
      JOIN courses c ON c.id = oi.course_id
@@ -68,7 +72,7 @@ async function byCourse(instructorId, from, to) {
      GROUP BY c.id ORDER BY earned DESC`,
     [instructorId, from, to],
   );
-  return rows.map((r) => ({ ...r, sales: Number(r.sales), gross: money(r.gross), earned: money(r.earned) }));
+  return rows.map((r) => ({ ...r, sales: Number(r.sales), gross: money(r.gross), fees: money(r.fees), earned: money(r.earned) }));
 }
 
 /** Khoảng ngày hợp lệ từ query (?from=&to=), mặc định 30 ngày gần nhất, tối đa 366 ngày. */

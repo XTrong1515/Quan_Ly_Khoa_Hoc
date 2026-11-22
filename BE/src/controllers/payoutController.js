@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 const revenue = require('../services/revenue');
-const { defaultCommission } = require('../services/orders');
+const { defaultCommission, paymentFeePercent } = require('../services/orders');
 const { createNotification } = require('./notificationController');
 
 /* ══════════════════════ Giảng viên ══════════════════════ */
@@ -24,6 +24,7 @@ async function myRevenue(req, res) {
     return res.json({
       range: { from, to },
       commissionRate: me.commission_rate === null ? defaultCommission() : Number(me.commission_rate),
+      paymentFeePercent: paymentFeePercent(), // tỷ lệ hiện hành cho đơn MỚI; đơn cũ đã chụp tỷ lệ lúc bán
       summary,
       series,
       courses,
@@ -99,12 +100,15 @@ async function payoutSummary(req, res) {
     })).sort((a, b) => b.balance - a.balance);
 
     const totals = rows.reduce((t, r) => ({
-      gross: t.gross + r.gross, earned: t.earned + r.earned, paidOut: t.paidOut + r.paidOut,
+      gross: t.gross + r.gross, fees: t.fees + r.fees, earned: t.earned + r.earned, paidOut: t.paidOut + r.paidOut,
       pending: t.pending + r.pending, balance: t.balance + r.balance,
-    }), { gross: 0, earned: 0, paidOut: 0, pending: 0, balance: 0 });
-    totals.platformShare = totals.gross - totals.earned;
+    }), { gross: 0, fees: 0, earned: 0, paidOut: 0, pending: 0, balance: 0 });
+    // Phần nền tảng thực giữ = giá bán − phí cổng − phần giảng viên
+    totals.platformShare = totals.gross - totals.fees - totals.earned;
 
-    return res.json({ defaultCommission: defaultCommission(), totals, instructors: rows });
+    return res.json({
+      defaultCommission: defaultCommission(), paymentFeePercent: paymentFeePercent(), totals, instructors: rows,
+    });
   } catch (err) {
     console.error('[admin/payouts/summary]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });

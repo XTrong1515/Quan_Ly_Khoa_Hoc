@@ -31,8 +31,10 @@ export default function InstructorRevenuePage() {
   const s = data?.summary;
   const rangeEarned = (data?.series ?? []).reduce((t, d) => t + d.earned, 0);
   const cards = [
-    { label: 'Tổng bán (đã thanh toán)', value: s?.gross, icon: TrendingUp, hint: `${s?.sales ?? 0} lượt mua` },
-    { label: 'Thu nhập của bạn',          value: s?.earned, icon: Wallet, hint: `sau hoa hồng ${data?.commissionRate ?? '—'}%` },
+    { label: 'Tổng bán (đã thanh toán)', value: s?.gross, icon: TrendingUp,
+      hint: `${s?.sales ?? 0} lượt mua${s?.fees ? ` · phí cổng ${formatVND(s.fees)}` : ''}` },
+    { label: 'Thu nhập của bạn',          value: s?.earned, icon: Wallet,
+      hint: `sau phí cổng & hoa hồng ${data?.commissionRate ?? '—'}%` },
     { label: 'Đã nhận',                   value: s?.paidOut, icon: BadgeCheck },
     { label: 'Số dư chờ chi trả',          value: s ? s.balance + s.pending : undefined, icon: Hourglass,
       hint: s?.pending ? `${formatVND(s.pending)} đang được xử lý` : 'chuyển khoản khi quản trị viên đối soát' },
@@ -95,23 +97,24 @@ export default function InstructorRevenuePage() {
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="card overflow-x-auto">
           <p className="px-5 pt-4 pb-3 font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">Theo khóa học ({RANGES.find(([v]) => v === days)?.[1]})</p>
-          <table className="w-full min-w-[480px] text-[13px]">
+          <table className="w-full min-w-[540px] text-[13px]">
             <thead>
               <tr className="border-y border-line bg-bg-2">
-                {['Khóa học', 'Lượt mua', 'Doanh số', 'Thu nhập'].map((h) => (
+                {['Khóa học', 'Lượt mua', 'Doanh số', 'Phí cổng', 'Thu nhập'].map((h) => (
                   <th key={h} className="px-4 py-2 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {(data?.courses ?? []).length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-6 text-center font-mono text-[12px] text-ink-3">// Chưa có lượt mua trong khoảng này</td></tr>
+                <tr><td colSpan={5} className="px-4 py-6 text-center font-mono text-[12px] text-ink-3">// Chưa có lượt mua trong khoảng này</td></tr>
               )}
               {(data?.courses ?? []).map((c) => (
                 <tr key={c.id}>
                   <td className="px-4 py-2.5"><Link to={`/courses/${c.slug}`} className="text-ink hover:text-accent line-clamp-1">{c.title}</Link></td>
                   <td className="px-4 py-2.5 font-mono text-[12px] text-ink-2">{c.sales}</td>
                   <td className="px-4 py-2.5 font-mono text-[12px] text-ink-2">{formatVND(c.gross)}</td>
+                  <td className="px-4 py-2.5 font-mono text-[12px] text-ink-3">{c.fees ? `−${formatVND(c.fees)}` : '—'}</td>
                   <td className="px-4 py-2.5 font-mono text-[12px] text-success">{formatVND(c.earned)}</td>
                 </tr>
               ))}
@@ -147,7 +150,8 @@ export default function InstructorRevenuePage() {
       </div>
 
       <p className="mt-5 font-mono text-[11px] text-ink-3">
-        // Doanh thu chỉ tính đơn đã thanh toán; tỷ lệ hoa hồng được chốt tại thời điểm bán — thay đổi tỷ lệ sau này không ảnh hưởng đơn cũ.
+        // Doanh thu chỉ tính đơn đã thanh toán. Đơn trả qua cổng bị trừ phí cổng (hiện {data?.paymentFeePercent ?? 0}%) trước khi chia hoa hồng;
+        phí và tỷ lệ hoa hồng được chốt tại thời điểm bán — thay đổi sau này không ảnh hưởng đơn cũ.
       </p>
     </div>
   );

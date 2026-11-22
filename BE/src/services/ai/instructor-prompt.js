@@ -4,7 +4,7 @@
  */
 const pool = require('../../config/db');
 const revenue = require('../revenue');
-const { defaultCommission } = require('../orders');
+const { defaultCommission, paymentFeePercent } = require('../orders');
 
 /** Câu từ chối cố định → đo được tỷ lệ từ chối đúng khi đánh giá. */
 const REFUSAL = 'Xin lỗi, mình chỉ hỗ trợ việc giảng dạy trên Hoisted: soạn khóa học, bài giảng, quiz, bài tập JavaScript và vận hành khóa học.';
@@ -29,7 +29,11 @@ async function loadInstructorContext(userId) {
     name: user?.full_name ?? null,
     commissionPercent: user?.commission_rate === null || user?.commission_rate === undefined
       ? defaultCommission() : Number(user.commission_rate),
-    revenue: { earned: bal.earned, paidOut: bal.paidOut, pending: bal.pending, balance: bal.balance, sales: bal.sales },
+    paymentFeePercent: paymentFeePercent(),
+    revenue: {
+      gross: bal.gross, fees: bal.fees, earned: bal.earned, paidOut: bal.paidOut, pending: bal.pending,
+      balance: bal.balance, sales: bal.sales,
+    },
     courses: courses.map((c) => ({
       title: c.title,
       status: c.status,
@@ -68,7 +72,7 @@ QUY TRÌNH HOISTED (chỉ khẳng định những điều có ở đây)
 - Soạn bài ở mục "Khóa học của tôi" → "Nội dung bài học". Nội dung bài viết bằng Markdown. Mỗi bài có thể có video (tải lên, hệ thống tự mã hóa HLS AES-128), tài liệu PDF đính kèm, quiz và bài tập code.
 - Trong form bài học có nút AI soạn nháp nội dung và AI tạo câu hỏi quiz; bản nháp phải được giảng viên đọc lại trước khi lưu.
 - Bài tập code: chỉ JavaScript; giảng viên viết hàm cần cài đặt, code khởi đầu, lời giải và test case công khai / ẩn; hệ thống chạy lời giải để kiểm tra test trước khi lưu. Học viên không thấy test ẩn và lời giải.
-- Doanh thu: mỗi đơn đã thanh toán, nền tảng giữ lại commissionPercent %, phần còn lại là thu nhập của giảng viên (chốt theo tỷ lệ tại thời điểm bán). Số dư = đã kiếm − đã chi trả − đang chờ chi trả. Admin là người tạo và xác nhận các lần chi trả vào tài khoản ngân hàng giảng viên khai báo ở "Hồ sơ & nhận tiền". Xem chi tiết ở trang "Doanh thu".
+- Doanh thu: mỗi đơn thanh toán qua cổng (ZaloPay) bị trừ phí cổng paymentFeePercent % trước; trên phần còn lại nền tảng giữ commissionPercent %, phần còn lại là thu nhập của giảng viên (phí và tỷ lệ chốt tại thời điểm bán). Số dư = đã kiếm − đã chi trả − đang chờ chi trả. Admin là người tạo và xác nhận các lần chi trả vào tài khoản ngân hàng giảng viên khai báo ở "Hồ sơ & nhận tiền". Xem chi tiết ở trang "Doanh thu".
 - Câu hỏi về quy định khác không có ở đây (thời gian duyệt, chính sách hoàn tiền, thuế…): nói rõ là mình không có thông tin, đề nghị liên hệ quản trị viên. Không bịa.
 
 PHẠM VI — BẮT BUỘC TUÂN THỦ

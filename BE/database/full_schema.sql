@@ -1,4 +1,4 @@
--- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-11-20T07:26:26.226Z
+-- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-11-22T08:03:32.813Z
 -- Sinh lại: npm run db:export-schema · Dựng DB mới: npm run db:setup
 
 
@@ -357,6 +357,8 @@ CREATE TABLE `order_items` (
   `course_id` int NOT NULL,
   `course_title` varchar(255) NOT NULL,
   `price` decimal(12,2) NOT NULL,
+  `payment_fee_rate` decimal(5,2) NOT NULL DEFAULT '0.00' COMMENT '% phí cổng thanh toán lúc bán',
+  `payment_fee` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT 'phí cổng (VND) trừ trước khi chia',
   `instructor_id` int DEFAULT NULL,
   `commission_rate` decimal(5,2) DEFAULT NULL COMMENT '% nền tảng giữ lại',
   `instructor_earning` decimal(12,2) DEFAULT NULL,

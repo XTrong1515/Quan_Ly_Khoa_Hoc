@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const pool   = require('../config/db');
 const { createNotification } = require('./notificationController');
-const { markOrderPaid } = require('../services/orders');
+const { markOrderPaid, paymentFeePercent } = require('../services/orders');
 const zalopay = require('../services/payments/zalopay');
 
 const VNPAY_URL  = process.env.VNPAY_URL  || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
@@ -181,7 +181,11 @@ async function applyPaymentResult(order, { success, transactionId }) {
   }
 
   // markOrderPaid chỉ chuyển đơn còn PENDING → return URL và IPN đến cùng lúc không xử lý trùng
-  const { changed } = await markOrderPaid(order.id, { transactionId: transactionId ?? null });
+  // Tiền đi qua cổng thanh toán → trừ phí cổng trước khi chia cho giảng viên
+  const { changed } = await markOrderPaid(order.id, {
+    transactionId: transactionId ?? null,
+    paymentFeeRate: paymentFeePercent(),
+  });
   if (changed) {
     // Fire-and-forget notification — outside transaction so it never blocks payment
     setImmediate(() => {

@@ -198,7 +198,8 @@ describe('Doanh thu & chi trả giảng viên', () => {
 
     const summary = await request(app).get('/api/admin/payouts/summary').set(authHeader(admin));
     expect(summary.body.instructors.find((i) => i.id === teacher.id)).toMatchObject({ earned: 700000, paidOut: 400000, balance: 300000 });
-    expect(summary.body.totals.platformShare).toBe(summary.body.totals.gross - summary.body.totals.earned);
+    const { totals } = summary.body;
+    expect(totals.platformShare).toBe(totals.gross - totals.fees - totals.earned);
 
     const [[n]] = await pool.query("SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND type = 'payout_paid'", [teacher.id]);
     expect(n.n).toBe(1);
@@ -225,5 +226,65 @@ describe('Doanh thu & chi trả giảng viên', () => {
 
   it('chỉ admin xem đối soát; học viên / giảng viên → 403', async () => {
     expect((await request(app).get('/api/admin/payouts/summary').set(authHeader(teacher))).status).toBe(403);
+  });
+});
+
+describe('Phí cổng thanh toán — trừ TRƯỚC khi chia hoa hồng', () => {
+  let teacher; let admin; let course; let platformCourse;
+  const verifyMock = (user, order) => verify(user, { vnp_TxnRef: order.code, vnp_ResponseCode: '00', vnp_TransactionNo: `FEE${order.id}`, dev_mock: '1' });
+  const itemsOf = async (orderId) => (await pool.query(
+    'SELECT course_id, payment_fee_rate, payment_fee, commission_rate, instructor_earning FROM order_items WHERE order_id = ? ORDER BY course_id',
+    [orderId],
+  ))[0].map((i) => [Number(i.payment_fee_rate), Number(i.payment_fee), Number(i.commission_rate), Number(i.instructor_earning)]);
+
+  beforeAll(async () => {
+    teacher = await createUser({ role: 'INSTRUCTOR' });
+    admin = await createUser({ role: 'ADMIN' });
+    course = await createCourse({ instructor: teacher, status: 'PUBLISHED', price: 500000 });
+    platformCourse = await createCourse({ status: 'PUBLISHED', price: 200000 });
+  });
+  afterEach(() => { process.env.PAYMENT_FEE_PERCENT = '0'; });
+
+  it('thanh toán qua cổng: phí = giá × %, giảng viên nhận (giá − phí) × (100 − hoa hồng)%', async () => {
+    process.env.PAYMENT_FEE_PERCENT = '2';
+    const buyer = await createUser();
+    const order = await createOrder(buyer, [course.id, platformCourse.id]);
+    expect((await verifyMock(buyer, order)).body.status).toBe('PAID');
+    expect(await itemsOf(order.id)).toEqual([
+      [2, 10000, 30, 343000], // 500.000 − 10.000 = 490.000 → 70% = 343.000
+      [2, 4000, 100, 0],      // khóa của nền tảng: nền tảng chịu phí, giữ phần còn lại
+    ]);
+  });
+
+  it('tỷ lệ chụp lúc bán: đổi PAYMENT_FEE_PERCENT sau đó không làm đổi đơn cũ', async () => {
+    process.env.PAYMENT_FEE_PERCENT = '2';
+    const buyer = await createUser();
+    const order = await createOrder(buyer, [course.id]);
+    await verifyMock(buyer, order);
+    process.env.PAYMENT_FEE_PERCENT = '5';
+    const later = await createOrder(await createUser(), [course.id]);
+    await markOrderPaid(later.id, { paymentFeeRate: 5 });
+    expect(await itemsOf(order.id)).toEqual([[2, 10000, 30, 343000]]);
+    expect(await itemsOf(later.id)).toEqual([[5, 25000, 30, 332500]]);
+  });
+
+  it('không qua cổng (admin xác nhận chuyển khoản, seed) → không trừ phí', async () => {
+    process.env.PAYMENT_FEE_PERCENT = '2';
+    const order = await createOrder(await createUser(), [course.id]);
+    await markOrderPaid(order.id, { transactionId: 'BANK1' });
+    expect(await itemsOf(order.id)).toEqual([[0, 0, 30, 350000]]);
+  });
+
+  it('báo cáo: giảng viên thấy tổng phí; nền tảng thực giữ = giá bán − phí − phần giảng viên', async () => {
+    const res = await request(app).get('/api/instructor/revenue').set(authHeader(teacher));
+    // 4 khóa bán: phí 10.000 + 10.000 + 25.000 + 0
+    expect(res.body.summary).toMatchObject({ gross: 2000000, fees: 45000, earned: 343000 + 343000 + 332500 + 350000 });
+    expect(res.body.courses[0]).toMatchObject({ gross: 2000000, fees: 45000 });
+
+    const { body } = await request(app).get('/api/admin/payouts/summary').set(authHeader(admin));
+    const row = body.instructors.find((i) => i.id === teacher.id);
+    expect(row).toMatchObject({ gross: 2000000, fees: 45000, earned: 1368500 });
+    expect(body.totals.platformShare).toBe(body.totals.gross - body.totals.fees - body.totals.earned);
+    expect(body.paymentFeePercent).toBe(0);
   });
 });

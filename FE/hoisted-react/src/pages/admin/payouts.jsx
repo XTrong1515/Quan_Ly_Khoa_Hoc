@@ -43,6 +43,7 @@ export default function AdminPayoutsPage() {
   const t = summary?.totals;
   const cards = [
     ['Doanh thu khóa của giảng viên', t?.gross],
+    ['Phí cổng thanh toán', t?.fees],
     ['Phần nền tảng (hoa hồng)', t?.platformShare],
     ['Phải trả giảng viên', t?.earned],
     ['Đã chi trả', t?.paidOut],
@@ -54,10 +55,13 @@ export default function AdminPayoutsPage() {
       <div className="mb-6">
         <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ chi-trả</span></p>
         <h1 className="font-display font-bold text-[24px]">Đối soát & chi trả giảng viên</h1>
-        <p className="text-[13px] text-ink-3 mt-1">Hoa hồng mặc định {summary?.defaultCommission ?? '—'}% · số liệu chốt theo từng đơn tại thời điểm thanh toán.</p>
+        <p className="text-[13px] text-ink-3 mt-1">
+          Phí cổng {summary?.paymentFeePercent ?? '—'}% trừ trước khi chia · hoa hồng mặc định {summary?.defaultCommission ?? '—'}%
+          · số liệu chốt theo từng đơn tại thời điểm thanh toán.
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
         {cards.map(([label, value]) => (
           <div key={label} className="card p-4">
             <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.1em] mb-2">{label}</p>

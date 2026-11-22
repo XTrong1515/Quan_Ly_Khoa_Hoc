@@ -201,6 +201,8 @@ CREATE TABLE IF NOT EXISTS order_items (
   course_id    INT NOT NULL,
   course_title VARCHAR(255) NOT NULL,
   price        DECIMAL(12,2) NOT NULL,
+  payment_fee_rate   DECIMAL(5,2) NOT NULL DEFAULT 0,   -- % phí cổng lúc bán (fee_migration.js)
+  payment_fee        DECIMAL(12,2) NOT NULL DEFAULT 0,  -- trừ khỏi price TRƯỚC khi chia hoa hồng
   instructor_id      INT NULL,              -- chụp lúc thanh toán (Giai đoạn 5)
   commission_rate    DECIMAL(5,2) NULL,     -- % nền tảng giữ lại
   instructor_earning DECIMAL(12,2) NULL,
