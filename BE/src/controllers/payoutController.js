@@ -7,8 +7,8 @@ const { createNotification } = require('./notificationController');
 
 /* GET /api/instructor/revenue?from=YYYY-MM-DD&to=YYYY-MM-DD */
 async function myRevenue(req, res) {
-  const { from, to } = revenue.parseRange(req.query);
   try {
+    const { from, to } = revenue.parseRange(req.query, await revenue.dbToday());
     const [[me]] = await pool.query('SELECT commission_rate, bank_name, bank_account_number, bank_account_name FROM users WHERE id = ?', [req.user.id]);
     const [summary, series, courses, [payouts]] = await Promise.all([
       revenue.balanceOf(req.user.id),

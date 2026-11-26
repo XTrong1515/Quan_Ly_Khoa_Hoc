@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const admin = require('./adminController');
 const { createNotification } = require('./notificationController');
 const revenue = require('../services/revenue');
+const storage = require('../utils/storage');
 
 /*
  * Khu vực Giảng viên. Mọi route đã qua authMiddleware + requireRole('INSTRUCTOR');
@@ -129,12 +130,108 @@ async function updateMyCourse(req, res) {
   return admin.adminUpdateCourse(req, res);
 }
 
-/* ── DELETE /api/instructor/courses/:id ───────────────────────── */
+/** Khóa đã từng bán (có học viên hoặc dòng đơn hàng, kể cả đơn chưa thanh toán) → phải giữ để đối soát doanh thu. */
+async function _courseSales(courseId) {
+  const [[row]] = await pool.query(
+    `SELECT (SELECT COUNT(*) FROM enrollments WHERE course_id = ?) AS students,
+            (SELECT COUNT(*) FROM order_items WHERE course_id = ?) AS orderItems`,
+    [courseId, courseId],
+  );
+  return { students: Number(row.students), orderItems: Number(row.orderItems) };
+}
+
+async function _notifyAdmins(notification) {
+  const [admins] = await pool.query("SELECT id FROM users WHERE role = 'ADMIN' AND status = 'ACTIVE'");
+  await Promise.all(admins.map(({ id }) => createNotification(id, notification)));
+}
+
+/*
+ * ── DELETE /api/instructor/courses/:id ─────────────────────────
+ * Nháp / Bị từ chối / Lưu trữ mà CHƯA từng bán → xóa thật (bài học, quiz, bài tập… cascade; dọn file trên storage).
+ * Đã từng bán → không xóa: Nháp / Bị từ chối chuyển sang Lưu trữ, khóa đã Lưu trữ thì giữ nguyên (409).
+ * Đang chờ duyệt → rút yêu cầu trước; đang bán → dùng "Ngừng bán".
+ */
 async function deleteMyCourse(req, res) {
-  if (!['DRAFT', 'REJECTED'].includes(req.course.status)) {
-    return res.status(409).json({ message: 'Chỉ xóa được khóa học ở trạng thái Nháp hoặc Bị từ chối' });
+  const { courseId, status } = req.course;
+  if (status === 'PENDING_REVIEW') {
+    return res.status(409).json({ message: 'Khóa học đang chờ duyệt — rút yêu cầu duyệt trước khi xóa' });
   }
-  return admin.adminDeleteCourse(req, res);
+  if (status === 'PUBLISHED') {
+    return res.status(409).json({ message: 'Khóa học đang bán — dùng "Ngừng bán" thay vì xóa' });
+  }
+  const archive = async () => {
+    await pool.query("UPDATE courses SET status = 'ARCHIVED' WHERE id = ?", [courseId]);
+    return res.json({ ok: true, deleted: false, status: 'ARCHIVED' });
+  };
+  try {
+    const sales = await _courseSales(courseId);
+    if (sales.students || sales.orderItems) {
+      if (status === 'ARCHIVED') {
+        return res.status(409).json({
+          code: 'COURSE_HAS_SALES',
+          message: 'Khóa học đã có học viên / đơn hàng nên được giữ ở trạng thái Lưu trữ để đối soát doanh thu.',
+        });
+      }
+      return archive();
+    }
+    const [media] = await pool.query(
+      'SELECT video_key, attachment_key, hls_prefix FROM lessons WHERE course_id = ?', [courseId],
+    );
+    await pool.query('DELETE FROM courses WHERE id = ?', [courseId]); // FK cascade: sections, lessons, quiz, bài tập…
+    await Promise.all(media.flatMap((m) => [
+      storage.deleteObject(m.video_key), storage.deleteObject(m.attachment_key), storage.deletePrefix(m.hls_prefix),
+    ]));
+    return res.json({ ok: true, deleted: true });
+  } catch (err) {
+    // Có đơn hàng vừa được tạo giữa lúc kiểm tra và lúc xóa → FK chặn → lưu trữ thay vì xóa
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' && status !== 'ARCHIVED') return archive();
+    if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(409).json({ code: 'COURSE_HAS_SALES', message: 'Khóa học đã có dữ liệu bán hàng nên không xóa được.' });
+    }
+    console.error('[instructor/courses/delete]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+/*
+ * ── POST /api/instructor/courses/:id/archive ── Ngừng bán khóa đang xuất bản.
+ * Khóa rời danh mục, không mua được nữa; người đã mua vẫn học tiếp. Admin được báo.
+ * Bán lại: "Khôi phục" về Nháp rồi gửi duyệt như khóa mới.
+ */
+async function archiveMyCourse(req, res) {
+  const { courseId, status } = req.course;
+  if (status !== 'PUBLISHED') return res.status(409).json({ message: 'Chỉ ngừng bán được khóa học đang xuất bản' });
+  try {
+    const [r] = await pool.query("UPDATE courses SET status = 'ARCHIVED' WHERE id = ? AND status = 'PUBLISHED'", [courseId]);
+    if (!r.affectedRows) return res.status(409).json({ message: 'Khóa học không còn ở trạng thái xuất bản' });
+    const { students } = await _courseSales(courseId);
+    const [[course]] = await pool.query('SELECT title FROM courses WHERE id = ?', [courseId]);
+    await _notifyAdmins({
+      type: 'course_archived_by_instructor',
+      title: 'Giảng viên ngừng bán khóa học',
+      body: `"${course.title}" — ${req.user.email} · ${students} học viên đã mua vẫn học tiếp`,
+      link: '/admin/courses?status=ARCHIVED',
+    });
+    return res.json({ ok: true, status: 'ARCHIVED', students });
+  } catch (err) {
+    console.error('[instructor/courses/archive]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+/* ── POST /api/instructor/courses/:id/restore ── Lưu trữ → Nháp (muốn bán lại phải gửi duyệt). */
+async function restoreMyCourse(req, res) {
+  const { courseId, status } = req.course;
+  if (status !== 'ARCHIVED') return res.status(409).json({ message: 'Chỉ khôi phục được khóa học đã lưu trữ' });
+  try {
+    await pool.query(
+      "UPDATE courses SET status = 'DRAFT', submitted_at = NULL WHERE id = ? AND status = 'ARCHIVED'", [courseId],
+    );
+    return res.json({ ok: true, status: 'DRAFT' });
+  } catch (err) {
+    console.error('[instructor/courses/restore]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
 }
 
 /* ── POST /api/instructor/courses/:id/submit ──────────────────── */
@@ -218,6 +315,7 @@ async function requireOwnSection(req, res, next) {
 }
 
 module.exports = {
-  dashboard, listMyCourses, createMyCourse, updateMyCourse, deleteMyCourse, submitMyCourse, withdrawMyCourse,
+  dashboard, listMyCourses, createMyCourse, updateMyCourse, deleteMyCourse, archiveMyCourse, restoreMyCourse,
+  submitMyCourse, withdrawMyCourse,
   requireOwnSection,
 };

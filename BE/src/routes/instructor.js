@@ -34,6 +34,8 @@ router.put('/courses/:id',         ownCourse, ctrl.updateMyCourse);
 router.delete('/courses/:id',      ownCourse, ctrl.deleteMyCourse);
 router.post('/courses/:id/submit', ownCourse, ctrl.submitMyCourse);
 router.post('/courses/:id/withdraw', ownCourse, ctrl.withdrawMyCourse);
+router.post('/courses/:id/archive',  ownCourse, ctrl.archiveMyCourse);   // ngừng bán (người đã mua vẫn học)
+router.post('/courses/:id/restore',  ownCourse, ctrl.restoreMyCourse);   // lưu trữ → nháp
 
 // Bài học (reorder trước /:id). `editable`: khóa khi đang chờ duyệt / đã lưu trữ
 router.get('/courses/:courseId/lessons',  requireOwnership('course', 'courseId'), admin.adminListLessons);

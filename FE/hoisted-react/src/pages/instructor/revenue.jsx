@@ -13,7 +13,8 @@ const RANGES = [[7, '7 ngày'], [30, '30 ngày'], [90, '90 ngày'], [365, '12 th
 function rangeParams(days) {
   const to = new Date();
   const from = new Date(); from.setDate(to.getDate() - (days - 1));
-  const iso = (d) => d.toISOString().slice(0, 10);
+  // Ngày theo giờ máy người dùng (toISOString là UTC → 0h–7h giờ VN gửi nhầm "hôm qua")
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   return { from: iso(from), to: iso(to) };
 }
 

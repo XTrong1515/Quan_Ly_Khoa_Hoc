@@ -75,10 +75,19 @@ async function byCourse(instructorId, from, to) {
   return rows.map((r) => ({ ...r, sales: Number(r.sales), gross: money(r.gross), fees: money(r.fees), earned: money(r.earned) }));
 }
 
-/** Khoảng ngày hợp lệ từ query (?from=&to=), mặc định 30 ngày gần nhất, tối đa 366 ngày. */
-function parseRange(query) {
+/**
+ * "Hôm nay" theo đồng hồ của MySQL — cùng múi giờ với paid_at (ghi bằng NOW()).
+ * Trước đây lấy new Date().toISOString() (UTC): từ 0h–7h giờ Việt Nam ngày UTC vẫn là hôm qua
+ * → doanh thu của hôm nay rơi khỏi khoảng mặc định / biểu đồ.
+ */
+async function dbToday() {
+  const [[{ today }]] = await pool.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today");
+  return today;
+}
+
+/** Khoảng ngày hợp lệ từ query (?from=&to=), mặc định 30 ngày tính đến `today`, tối đa 366 ngày. */
+function parseRange(query, today) {
   const iso = /^\d{4}-\d{2}-\d{2}$/;
-  const today = new Date().toISOString().slice(0, 10);
   const to = iso.test(query.to ?? '') ? query.to : today;
   const defFrom = new Date(`${to}T00:00:00Z`); defFrom.setUTCDate(defFrom.getUTCDate() - 29);
   let from = iso.test(query.from ?? '') ? query.from : defFrom.toISOString().slice(0, 10);
@@ -88,4 +97,4 @@ function parseRange(query) {
   return { from, to };
 }
 
-module.exports = { balances, balanceOf, dailySeries, byCourse, parseRange, money };
+module.exports = { balances, balanceOf, dailySeries, byCourse, parseRange, dbToday, money };

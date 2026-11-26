@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, Send, ExternalLink, AlertTriangle, Clock,
+  Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, Send, ExternalLink, AlertTriangle, Clock, Archive, RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog.jsx';
 import { CourseBadge, CurriculumPanel, CourseModal, LEVEL_LABELS } from '@/components/course-editor.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
@@ -14,10 +15,12 @@ import { cn } from '@/lib/utils';
 const API = '/api/instructor';
 const FILTERS = [
   ['', 'Tất cả'], ['DRAFT', 'Nháp'], ['PENDING_REVIEW', 'Chờ duyệt'],
-  ['PUBLISHED', 'Đã xuất bản'], ['REJECTED', 'Bị từ chối'],
+  ['PUBLISHED', 'Đã xuất bản'], ['REJECTED', 'Bị từ chối'], ['ARCHIVED', 'Lưu trữ'],
 ];
 const EDITABLE = ['DRAFT', 'REJECTED', 'PUBLISHED'];
 const SUBMITTABLE = ['DRAFT', 'REJECTED'];
+// Xóa: chưa từng bán thì xóa thật, đã bán thì server chuyển Lưu trữ / giữ nguyên
+const DELETABLE = ['DRAFT', 'REJECTED', 'ARCHIVED'];
 
 function invalidate(qc) {
   for (const key of ['instructor-courses', 'instructor-dashboard', 'home', 'courses', 'course']) {
@@ -31,6 +34,7 @@ export default function InstructorCoursesPage() {
   const [status, setStatus]         = useState('');
   const [modal, setModal]           = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [confirm, setConfirm]       = useState(null); // { kind: 'delete' | 'archive' | 'withdraw', course }
 
   const { data, isLoading } = useQuery({
     queryKey: ['instructor-courses', { search, status }],
@@ -52,13 +56,29 @@ export default function InstructorCoursesPage() {
   });
   const withdrawMutation = useMutation({
     mutationFn: (id) => api.post(`${API}/courses/${id}/withdraw`),
-    onSuccess: () => { toast.success('Đã rút yêu cầu duyệt. Khóa học trở về Nháp để bạn chỉnh sửa.'); invalidate(qc); },
+    onSuccess: () => { setConfirm(null); toast.success('Đã rút yêu cầu duyệt. Khóa học trở về Nháp để bạn chỉnh sửa.'); invalidate(qc); },
     onError: (err) => toast.error(apiMessage(err, 'Chưa rút được yêu cầu duyệt. Thử lại sau giây lát.')),
   });
   const deleteMutation = useMutation({
-    mutationFn: (id) => api.delete(`${API}/courses/${id}`),
-    onSuccess: () => { toast.success('Đã chuyển khóa học sang Lưu trữ'); invalidate(qc); },
-    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu trữ được khóa học. Thử lại sau giây lát.')),
+    mutationFn: (id) => api.delete(`${API}/courses/${id}`).then((r) => r.data),
+    onSuccess: (res) => {
+      setConfirm(null);
+      toast.success(res.deleted
+        ? 'Đã xóa khóa học'
+        : 'Khóa học đã có đơn hàng / học viên nên được chuyển sang Lưu trữ thay vì xóa');
+      invalidate(qc);
+    },
+    onError: (err) => { setConfirm(null); toast.error(apiMessage(err, 'Chưa xóa được khóa học. Thử lại sau giây lát.')); },
+  });
+  const archiveMutation = useMutation({
+    mutationFn: (id) => api.post(`${API}/courses/${id}/archive`),
+    onSuccess: () => { setConfirm(null); toast.success('Đã ngừng bán. Học viên đã mua vẫn học tiếp.'); invalidate(qc); },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa ngừng bán được khóa học. Thử lại sau giây lát.')),
+  });
+  const restoreMutation = useMutation({
+    mutationFn: (id) => api.post(`${API}/courses/${id}/restore`),
+    onSuccess: () => { toast.success('Đã khôi phục về Nháp. Gửi duyệt khi muốn bán lại.'); invalidate(qc); },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa khôi phục được khóa học. Thử lại sau giây lát.')),
   });
 
   return (
@@ -148,12 +168,18 @@ export default function InstructorCoursesPage() {
                 )}
                 {c.status === 'PENDING_REVIEW' && (
                   <button
-                    onClick={() => { if (window.confirm(`Rút yêu cầu duyệt "${c.title}"?
-
-Khóa học trở về Nháp và bạn cần gửi duyệt lại sau khi sửa.`)) withdrawMutation.mutate(c.id); }}
+                    onClick={() => setConfirm({ kind: 'withdraw', course: c })}
                     disabled={withdrawMutation.isPending}
                     className="px-2.5 py-1.5 rounded-lg border-2 border-edge text-[12px] text-ink-2 hover:bg-bg-3 disabled:opacity-50">
                     Rút yêu cầu duyệt
+                  </button>
+                )}
+                {c.status === 'ARCHIVED' && (
+                  <button
+                    onClick={() => restoreMutation.mutate(c.id)}
+                    disabled={restoreMutation.isPending}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-bg-1 text-ink press border-2 border-edge text-[12px] font-semibold disabled:opacity-50">
+                    <RotateCcw className="w-3.5 h-3.5" /> Khôi phục
                   </button>
                 )}
                 {c.status === 'PUBLISHED' && (
@@ -173,13 +199,19 @@ Khóa học trở về Nháp và bạn cần gửi duyệt lại sau khi sửa.`
                   title={EDITABLE.includes(c.status) ? 'Chỉnh sửa' : 'Không thể sửa lúc này'}>
                   <Edit2 className="w-4 h-4" />
                 </button>
-                {SUBMITTABLE.includes(c.status) && (
+                {c.status === 'PUBLISHED' && (
                   <button
-                    onClick={() => { if (window.confirm(`Lưu trữ "${c.title}"?
-
-Khóa học chuyển sang trạng thái Lưu trữ và không gửi duyệt được nữa.`)) deleteMutation.mutate(c.id); }}
+                    onClick={() => setConfirm({ kind: 'archive', course: c })}
                     className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors"
-                    title="Lưu trữ khóa học" aria-label={`Lưu trữ khóa học "${c.title}"`}>
+                    title="Ngừng bán" aria-label={`Ngừng bán khóa học "${c.title}"`}>
+                    <Archive className="w-4 h-4" />
+                  </button>
+                )}
+                {DELETABLE.includes(c.status) && (
+                  <button
+                    onClick={() => setConfirm({ kind: 'delete', course: c })}
+                    className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors"
+                    title="Xóa khóa học" aria-label={`Xóa khóa học "${c.title}"`}>
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
@@ -194,6 +226,55 @@ Khóa học chuyển sang trạng thái Lưu trữ và không gửi duyệt đư
           </div>
         ))}
       </div>
+
+      {confirm?.kind === 'delete' && (
+        <ConfirmDialog
+          title="Xóa khóa học?"
+          confirmLabel="Xóa"
+          destructive
+          pending={deleteMutation.isPending}
+          onClose={() => setConfirm(null)}
+          onConfirm={() => deleteMutation.mutate(confirm.course.id)}>
+          <p>
+            <b className="text-ink">"{confirm.course.title}"</b> cùng toàn bộ bài học, video, tài liệu, quiz và bài tập
+            sẽ bị xóa vĩnh viễn.
+          </p>
+          <p className="mt-2">
+            {confirm.course.student_count > 0
+              ? `Khóa đã có ${confirm.course.student_count} học viên nên sẽ được giữ ở trạng thái Lưu trữ thay vì xóa.`
+              : 'Nếu khóa từng có đơn hàng, hệ thống giữ lại ở trạng thái Lưu trữ để đối soát doanh thu.'}
+          </p>
+        </ConfirmDialog>
+      )}
+
+      {confirm?.kind === 'archive' && (
+        <ConfirmDialog
+          title="Ngừng bán khóa học?"
+          confirmLabel="Ngừng bán"
+          destructive
+          pending={archiveMutation.isPending}
+          onClose={() => setConfirm(null)}
+          onConfirm={() => archiveMutation.mutate(confirm.course.id)}>
+          <p>
+            <b className="text-ink">"{confirm.course.title}"</b> rời trang công khai và không ai mua được nữa.
+            {confirm.course.student_count > 0 && <> {confirm.course.student_count} học viên đã mua <b className="text-ink">vẫn học tiếp</b>.</>}
+          </p>
+          <p className="mt-2">Quản trị viên sẽ được thông báo. Muốn bán lại: bấm Khôi phục rồi gửi duyệt.</p>
+        </ConfirmDialog>
+      )}
+
+      {confirm?.kind === 'withdraw' && (
+        <ConfirmDialog
+          title="Rút yêu cầu duyệt?"
+          confirmLabel="Rút yêu cầu"
+          pending={withdrawMutation.isPending}
+          onClose={() => setConfirm(null)}
+          onConfirm={() => withdrawMutation.mutate(confirm.course.id)}>
+          <p>
+            <b className="text-ink">"{confirm.course.title}"</b> trở về Nháp; bạn cần gửi duyệt lại sau khi sửa.
+          </p>
+        </ConfirmDialog>
+      )}
 
       {modal && (
         <CourseModal
