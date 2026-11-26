@@ -174,7 +174,7 @@ function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel, assistant }) 
           >
             <Menu className="w-4 h-4" />
           </button>
-          <p className="font-pixel font-extrabold text-[22px] leading-none text-ink">
+          <p className="font-pixel font-semibold text-[22px] leading-none text-ink">
             Hoisted<span className="font-mono text-[0.72em] tracking-[-0.06em] text-accent">()</span>
             <span className="font-mono font-bold uppercase tracking-[0.08em] text-ink-3 text-[11px] ml-2">{roleLabel}</span>
           </p>

@@ -64,7 +64,7 @@ export function AiQuizGenerator({ apiBase, lesson, quizId, onAdded }) {
   if (!open) {
     return (
       <button onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-accent/50 text-accent text-[12.5px] font-medium hover:bg-accent/5">
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-sm border-2 border-dashed border-edge text-ink text-[12.5px] font-bold hover:bg-pop hover:text-pop-ink hover:border-solid transition-colors">
         <Sparkles className="w-4 h-4" /> Tạo câu hỏi bằng AI
       </button>
     );

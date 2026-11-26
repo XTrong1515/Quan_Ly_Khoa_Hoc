@@ -16,7 +16,7 @@ export function Logo({ size = 17, onDark = false, to = '/', sub }) {
         </svg>
       </span>
       <span className="leading-none">
-        <span className="block font-pixel font-extrabold tracking-[0.02em]" style={{ fontSize: Math.round(size * 1.45) }}>
+        <span className="block font-pixel font-semibold tracking-[0.03em]" style={{ fontSize: Math.round(size * 1.45) }}>
           Hoisted<span className={`font-mono text-[0.72em] tracking-[-0.06em] ${onDark ? 'text-pop' : 'text-accent'}`}>()</span>
         </span>
         {sub && (

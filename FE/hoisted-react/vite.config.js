@@ -35,11 +35,29 @@ function robotsTxt(apiUrl) {
   };
 }
 
+/**
+ * og:image / twitter:image trong index.html là đường dẫn tương đối — Facebook, Zalo, Slack… không chạy JS nên
+ * cần URL tuyệt đối ngay trong HTML. Đặt VITE_SITE_URL (vd: https://hoisted.vn) khi build để ghép sẵn.
+ */
+function absoluteShareImage(siteUrl) {
+  const base = (siteUrl || '').replace(/\/$/, '');
+  return {
+    name: 'hoisted-absolute-share-image',
+    transformIndexHtml(html, ctx) {
+      if (!base) {
+        if (!ctx.server) console.warn('[hoisted] VITE_SITE_URL chưa đặt — og:image vẫn là đường dẫn tương đối (mạng xã hội sẽ không hiện ảnh).');
+        return html;
+      }
+      return html.replace(/(<meta (?:property="og:image"|name="twitter:image") content=")\//g, `$1${base}/`);
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   return {
-    plugins: [react(), robotsTxt(env.VITE_API_URL || 'http://localhost:3001')],
+    plugins: [react(), robotsTxt(env.VITE_API_URL || 'http://localhost:3001'), absoluteShareImage(env.VITE_SITE_URL)],
     resolve: {
       alias: { '@': path.resolve(__dirname, './src') },
     },

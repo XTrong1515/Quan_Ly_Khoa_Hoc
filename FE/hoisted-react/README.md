@@ -37,6 +37,10 @@ npm run build
 npm run preview
 ```
 
+Biến môi trường (`.env`): `VITE_API_URL` (API, mặc định `http://localhost:3001`) và `VITE_SITE_URL`
+(tên miền FE, vd `https://hoisted.vn`). Thiếu `VITE_SITE_URL` thì `og:image` / `twitter:image` trong
+`index.html` vẫn là đường dẫn tương đối và Facebook / Zalo / Slack sẽ không hiện ảnh chia sẻ — build sẽ cảnh báo.
+
 ---
 
 ## Folder structure

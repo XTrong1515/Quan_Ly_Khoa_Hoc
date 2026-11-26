@@ -33,13 +33,13 @@ export default function AdminInstructorApplicationsPage() {
       <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ đơn-giảng-viên</span></p>
       <h1 className="display text-[32px] mb-5">Đơn đăng ký giảng viên</h1>
 
-      <div className="flex items-center gap-1 mb-4 border-b border-line">
+      <div className="inline-flex flex-wrap gap-1 mb-5 border-2 border-edge rounded-sm p-1 bg-bg-1">
         {TABS.map(([v, l]) => (
-          <button key={v || 'all'} onClick={() => setStatus(v)}
-            className={cn('px-3 py-2 -mb-px border-b-2 text-[13px] font-medium flex items-center gap-2',
-              status === v ? 'border-accent text-accent' : 'border-transparent text-ink-2 hover:text-ink')}>
+          <button key={v || 'all'} onClick={() => setStatus(v)} aria-pressed={status === v}
+            className={cn('px-3 py-1 rounded-sm text-[13px] font-bold flex items-center gap-2 transition-colors',
+              status === v ? 'bg-accent text-accent-ink' : 'text-ink-2 hover:text-ink hover:bg-bg-2')}>
             {l}
-            {v === 'PENDING' && data?.pending > 0 && <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-sm bg-pop text-pop-ink ring-2 ring-inset ring-edge">{data.pending}</span>}
+            {v === 'PENDING' && data?.pending > 0 && <span className="font-mono text-[11px] px-1.5 rounded-sm bg-bg-1 text-ink border-2 border-edge">{data.pending}</span>}
           </button>
         ))}
       </div>

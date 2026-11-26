@@ -34,6 +34,9 @@ export function useChartColors() {
       };
 }
 
+// 1.2M / 9K — trục Y và nhãn trung bình (trước đây nhãn luôn tính theo M → "TB 0.0M" khi doanh thu nhỏ)
+const compactVND = (v) => (v >= 1_000_000 ? `${(v / 1_000_000).toFixed(v < 10_000_000 ? 1 : 0)}M` : `${(v / 1_000).toFixed(0)}K`);
+
 /** data: [{ date: 'YYYY-MM-DD', revenue }] */
 export function RevenueAreaChart({ data, chart, range, label = 'Doanh thu' }) {
   const id = `revGrad-${label.replace(/W/g, '')}`;
@@ -82,7 +85,7 @@ export function RevenueAreaChart({ data, chart, range, label = 'Doanh thu' }) {
         />
         <YAxis
           tick={{ fontSize: 10, fill: chart.tickFaint }}
-          tickFormatter={v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(v < 10_000_000 ? 1 : 0)}M` : `${(v / 1_000).toFixed(0)}K`}
+          tickFormatter={compactVND}
           axisLine={false} tickLine={false}
           width={44}
           domain={[0, 'auto']}
@@ -114,7 +117,7 @@ export function RevenueAreaChart({ data, chart, range, label = 'Doanh thu' }) {
             stroke={chart.tickFaint}
             strokeDasharray="6 4"
             label={{
-              value: `TB ${(avg / 1_000_000).toFixed(1)}M/ngày`,
+              value: `TB ${compactVND(avg)}/ngày`,
               position: 'insideTopRight',
               fontSize: 10,
               fill: chart.tick,

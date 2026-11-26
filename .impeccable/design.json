@@ -396,7 +396,7 @@
       },
       {
         "name": "The Pixel Words Rule",
-        "body": "Handjet sets words only: headings and the logotype. Never numbers — its dotted zero reads as an 8 (\"0%\" became \"8%\", \"399.000đ\" became \"399.888đ\") — and never code glyphs, where \"()\" reads as \"0\".",
+        "body": "Handjet sets words only: headings and the logotype. Never numbers — its dotted zero reads as an 8 (\"0%\" became \"8%\", \"399.000đ\" became \"399.888đ\") — and never code glyphs, where \"()\" reads as \"0\". Keep it at weight 600 or lighter: at 700+ the dot of \"i\" fuses with the stem (\"Holsted\", \"JavaScrlpt\").",
         "section": "typography"
       },
       {
@@ -430,7 +430,7 @@
       "Do keep text on status fills on `success-ink` / `danger-ink`, and pick navy or white on admin-chosen colours by luminance."
     ],
     "donts": [
-      "Don't set numbers or code glyphs in Handjet.",
+      "Don't set numbers or code glyphs in Handjet, or set Handjet heavier than 600.",
       "Don't use gradients, glows, blur, glass or soft shadows anywhere.",
       "Don't use pill shapes or circles for buttons, chips, avatars or tiles.",
       "Don't colour levels, categories or rankings with status green, red or amber, or give each list row its own decorative colour.",

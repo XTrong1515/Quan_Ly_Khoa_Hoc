@@ -56,6 +56,8 @@ export default function CartPage() {
     0,
   );
   const savings = Math.max(0, originalTotal - total);
+  // Giá chỉ biết khi đã tải xong — lúc đang tải / lỗi không hiện "Miễn phí" / "0đ" gây hiểu nhầm
+  const pricesKnown = !isLoading && !isError;
 
   const checkoutMutation = useMutation({
     mutationFn: () =>
@@ -194,7 +196,7 @@ export default function CartPage() {
                         {course.title}
                       </Link>
                       {isOwned ? (
-                        <p className="font-mono text-[12.5px] text-warn">
+                        <p className="text-[13px] font-medium text-warn">
                           Bạn đã đăng ký khóa học này
                         </p>
                       ) : (
@@ -232,7 +234,7 @@ export default function CartPage() {
                   return (
                     <div key={id} className="flex justify-between gap-3 text-[13px]">
                       <span className="text-ink-2 truncate flex-1">{c?.title ?? '…'}</span>
-                      <span className="font-mono text-ink shrink-0 tabular-nums">{formatPrice(c?.price ?? 0)}</span>
+                      <span className="font-mono text-ink shrink-0 tabular-nums">{c ? formatPrice(c.price) : '…'}</span>
                     </div>
                   );
                 })}
@@ -248,7 +250,7 @@ export default function CartPage() {
               <div className="border-t border-line pt-4 mb-5 flex items-end justify-between">
                 <span className="font-semibold text-ink">Tổng cộng</span>
                 <span className="font-mono font-extrabold tracking-tight text-[26px] text-ink leading-none tabular-nums">
-                  {formatVND(total)}
+                  {pricesKnown ? formatVND(total) : '…'}
                 </span>
               </div>
 
@@ -256,9 +258,9 @@ export default function CartPage() {
                 size="lg"
                 className={cn(
                   'w-full justify-center',
-                  !hasOwnedItem && !isLoading && 'shadow',
+                  !hasOwnedItem && pricesKnown && 'shadow',
                 )}
-                disabled={checkoutMutation.isPending || isLoading || hasOwnedItem}
+                disabled={checkoutMutation.isPending || !pricesKnown || hasOwnedItem}
                 onClick={handleCheckout}
               >
                 {checkoutMutation.isPending ? 'Đang tạo đơn hàng…' : (

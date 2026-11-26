@@ -190,7 +190,7 @@ html:not(.dark) {
 /* ── Component classes (small, semantic) ────────────────────── */
 @layer components {
   /* Tiêu đề pixel: Handjet hẹp ngang nên phóng theo chiều cao chữ thường cho cân với Space Grotesk */
-  .display       { @apply font-pixel font-extrabold leading-[1] tracking-[0.01em]; font-size-adjust: 0.56; }
+  .display       { @apply font-pixel font-semibold leading-[1] tracking-[0.015em]; font-size-adjust: 0.56; }
   .eyebrow       { @apply font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-ink-3; }
   .card          { @apply bg-bg-1 border-2 border-edge rounded shadow-lg; }
   .soft          { @apply bg-bg-2 border-2 border-edge/40 rounded; }
