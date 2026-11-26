@@ -86,9 +86,8 @@ export default function CartPage() {
       <>
         <Seo title="Giỏ hàng — Hoisted" />
         <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
           <div className="relative max-w-2xl mx-auto px-6 py-24 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-accent/10 text-accent grid place-items-center mx-auto mb-6">
+            <div className="w-16 h-16 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center mx-auto mb-6">
               <ShoppingCart className="w-7 h-7" aria-hidden="true" />
             </div>
             <p className="eyebrow mb-2">
@@ -110,12 +109,6 @@ export default function CartPage() {
       {/* Header band */}
       <header className="relative overflow-hidden border-b border-line">
         <div className="absolute inset-0 bg-bg-2" aria-hidden="true" />
-        <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{ backgroundImage: 'radial-gradient(ellipse 45% 90% at 15% 0%, rgb(var(--accent) / .10) 0%, transparent 60%)' }}
-        />
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-8 py-10">
           <p className="eyebrow mb-2">
             <span className="text-accent">~/hoisted</span> <span className="text-ink-3">/ giỏ-hàng</span>
@@ -180,7 +173,7 @@ export default function CartPage() {
                 <Reveal key={id} delay={i * 40}>
                   <div className={cn(
                     'card p-4 flex flex-col sm:flex-row gap-4 items-start transition-colors',
-                    isOwned ? 'opacity-70 ring-1 ring-warn/40' : 'hover:border-accent/30',
+                    isOwned ? 'opacity-70 ring-1 ring-warn/40' : 'hover:border-accent',
                   )}>
                     <Link to={`/courses/${course.slug}`} className="w-full sm:w-36 shrink-0">
                       <CourseThumb course={course} />
@@ -218,7 +211,7 @@ export default function CartPage() {
                     <button
                       onClick={() => { remove(id); toast.success('Đã xóa khỏi giỏ hàng'); }}
                       aria-label={`Xóa "${course.title}" khỏi giỏ hàng`}
-                      className="w-9 h-9 rounded-lg border border-line grid place-items-center text-ink-3 hover:text-danger hover:border-danger/40 hover:bg-danger/5 transition-colors cursor-pointer self-end sm:self-start"
+                      className="w-9 h-9 rounded-lg border-2 border-edge grid place-items-center text-ink-3 hover:text-danger hover:border-danger/40 hover:bg-danger/5 transition-colors cursor-pointer self-end sm:self-start"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -230,7 +223,7 @@ export default function CartPage() {
 
           {/* Order summary */}
           <aside className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-24">
-            <div className="card p-6 shadow-xl shadow-black/10">
+            <div className="card p-6 shadow-xl">
               <h2 className="font-display font-semibold text-[17px] mb-5">Tóm tắt đơn hàng</h2>
 
               <div className="space-y-2.5 mb-4">
@@ -254,7 +247,7 @@ export default function CartPage() {
 
               <div className="border-t border-line pt-4 mb-5 flex items-end justify-between">
                 <span className="font-semibold text-ink">Tổng cộng</span>
-                <span className="font-mono font-bold text-[24px] text-ink leading-none tabular-nums">
+                <span className="font-pixel font-extrabold text-[35px] text-ink leading-none tabular-nums">
                   {formatVND(total)}
                 </span>
               </div>
@@ -263,7 +256,7 @@ export default function CartPage() {
                 size="lg"
                 className={cn(
                   'w-full justify-center',
-                  !hasOwnedItem && !isLoading && 'shadow-[0_8px_24px_rgb(var(--accent)/0.3)]',
+                  !hasOwnedItem && !isLoading && 'shadow',
                 )}
                 disabled={checkoutMutation.isPending || isLoading || hasOwnedItem}
                 onClick={handleCheckout}

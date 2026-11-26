@@ -1,14 +1,16 @@
 import { cn } from '@/lib/utils';
 import { formatHours } from '@/lib/format';
 
-const GRADIENTS = {
-  yellow: 'from-[#F7DF1E] to-[#F59E0B]',
-  indigo: 'from-[#6366F1] to-[#312E81]',
-  rose:   'from-[#F43F5E] to-[#7F1D1D]',
-  green:  'from-[#34D399] to-[#064E3B]',
-  violet: 'from-[#A78BFA] to-[#4C1D95]',
-  sky:    'from-[#38BDF8] to-[#0C4A6E]',
+// Màu phẳng bão hòa (pixel neo-brutalism) — không gradient. Ký hiệu navy hoặc trắng tùy độ sáng nền.
+const SWATCHES = {
+  yellow: { bg: 'bg-[#FFCF33]', ink: 'text-[#0E1B3D]' },
+  indigo: { bg: 'bg-[#2547D0]', ink: 'text-white' },
+  rose:   { bg: 'bg-[#F2542D]', ink: 'text-white' },
+  green:  { bg: 'bg-[#1DB06B]', ink: 'text-[#0E1B3D]' },
+  violet: { bg: 'bg-[#7B5CFA]', ink: 'text-white' },
+  sky:    { bg: 'bg-[#29B6F6]', ink: 'text-[#0E1B3D]' },
 };
+const TAG = 'absolute top-2.5 left-2.5 bg-[#0E1B3D] border-2 border-[#0E1B3D] font-mono font-bold text-[10px] uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-sm';
 
 /**
  * priority: ảnh là ứng viên LCP (ảnh bìa đầu trang chi tiết khóa học) → tải ngay với
@@ -19,7 +21,7 @@ export function CourseThumb({ course, className, priority = false }) {
 
   if (thumbUrl) {
     return (
-      <div className={cn('relative aspect-video rounded-[10px] overflow-hidden bg-bg-3', className)}>
+      <div className={cn('relative aspect-video rounded-sm border-2 border-edge overflow-hidden bg-bg-3', className)}>
         <img
           src={thumbUrl}
           alt={course.title ?? ''}
@@ -29,10 +31,7 @@ export function CourseThumb({ course, className, priority = false }) {
           {...(priority ? { fetchpriority: 'high' } : { loading: 'lazy' })}
         />
         {course.tag && (
-          <span className={cn(
-            'absolute top-2.5 left-2.5 bg-[#0B0F19] font-mono font-semibold text-[10px] uppercase tracking-[0.06em] px-2 py-1 rounded',
-            course.tag === 'Free' ? 'text-accent' : 'text-white',
-          )}>
+          <span className={cn(TAG, course.tag === 'Free' ? 'text-[#FFCF33]' : 'text-white')}>
             {course.tag}
           </span>
         )}
@@ -40,26 +39,26 @@ export function CourseThumb({ course, className, priority = false }) {
     );
   }
 
+  const sw = SWATCHES[course.thumb] || SWATCHES.yellow;
   return (
     <div className={cn(
-      'relative aspect-video rounded-[10px] overflow-hidden bg-gradient-to-br',
-      GRADIENTS[course.thumb] || GRADIENTS.yellow,
+      'relative aspect-video rounded-sm border-2 border-edge overflow-hidden',
+      sw.bg,
       className,
     )}>
-      <div className="absolute inset-0 grid place-items-center font-mono font-extrabold text-[64px] leading-none text-black/30 tracking-tighter">
+      {/* lưới chấm pixel trên nền màu */}
+      <div className="absolute inset-0 opacity-25 [background-image:radial-gradient(#0E1B3D_1px,transparent_1.4px)] [background-size:12px_12px]" aria-hidden="true" />
+      <div className={cn('absolute inset-0 grid place-items-center font-pixel font-extrabold text-[72px] leading-none [text-shadow:4px_4px_0_rgb(14_27_61/0.35)]', sw.ink)}>
         {/* Khóa chưa đặt ký hiệu → lấy chữ cái đầu của tên, không để ô màu trống */}
         {course.glyph || (course.title ?? '').trim().slice(0, 2).toUpperCase()}
       </div>
-      <div className="absolute left-3 right-3 bottom-2.5 flex justify-between items-end font-mono font-semibold text-[11px] text-black/65">
+      <div className="absolute left-2.5 right-2.5 bottom-2.5 flex justify-between items-end font-mono font-bold text-[10.5px] text-[#0E1B3D]">
         {/* Một số payload (giỏ hàng…) không có số bài / thời lượng → không in "undefined lessons" hay "0.0h" */}
-        <span>{course.lessons != null ? `${course.lessons} bài học` : ''}</span>
-        <span>{Number(course.hours) > 0 ? formatHours(course.hours) : ''}</span>
+        {course.lessons != null ? <span className="bg-white border-2 border-[#0E1B3D] rounded-sm px-1.5">{course.lessons} bài học</span> : <span />}
+        {Number(course.hours) > 0 ? <span className="bg-white border-2 border-[#0E1B3D] rounded-sm px-1.5">{formatHours(course.hours)}</span> : <span />}
       </div>
       {course.tag && (
-        <span className={cn(
-          'absolute top-2.5 left-2.5 bg-[#0B0F19] font-mono font-semibold text-[10px] uppercase tracking-[0.06em] px-2 py-1 rounded',
-          course.tag === 'Free' ? 'text-accent' : 'text-white',
-        )}>{course.tag}</span>
+        <span className={cn(TAG, course.tag === 'Free' ? 'text-[#FFCF33]' : 'text-white')}>{course.tag}</span>
       )}
     </div>
   );

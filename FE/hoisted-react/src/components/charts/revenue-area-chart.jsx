@@ -9,24 +9,28 @@ export function useChartColors() {
   const mode = useTheme((s) => s.mode);
   return mode === 'dark'
     ? {
-        accent:    '#F7DF1E',
-        grid:      'rgba(255,255,255,0.09)',
-        tick:      '#6B7392',
-        tickFaint: '#3E4660',
-        bg:        '#0B0F19',
-        bg2:       '#161C2F',
-        ink:       '#F4F5F9',
-        ink2:      '#B6BCD0',
+        accent:    '#FFCF33',
+        grid:      'rgba(176,192,240,0.16)',
+        tick:      '#92A0CC',
+        tickFaint: '#5B6A99',
+        bg:        '#101C40',
+        bg2:       '#1B2A58',
+        ink:       '#F0F3FC',
+        ink2:      '#BEC8E6',
+        edge:      '#96AAE8',
+        shadow:    '#000000',
       }
     : {
-        accent:    '#4F46E5',
-        grid:      'rgba(15,23,42,0.08)',
-        tick:      '#475569',
-        tickFaint: '#94A3B8',
-        bg:        '#F8FAFC',
-        bg2:       '#F1F5F9',
-        ink:       '#0B0F19',
-        ink2:      '#475569',
+        accent:    '#2547D0',
+        grid:      'rgba(14,27,61,0.12)',
+        tick:      '#374469',
+        tickFaint: '#525F85',
+        bg:        '#FFFFFF',
+        bg2:       '#E5EAF7',
+        ink:       '#0E1B3D',
+        ink2:      '#374469',
+        edge:      '#0E1B3D',
+        shadow:    '#0E1B3D',
       };
 }
 
@@ -60,11 +64,11 @@ export function RevenueAreaChart({ data, chart, range, label = 'Doanh thu' }) {
     <ResponsiveContainer width="100%" height={220}>
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
         <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor={chart.accent} stopOpacity={0.35} />
-            <stop offset="60%"  stopColor={chart.accent} stopOpacity={0.08} />
-            <stop offset="100%" stopColor={chart.accent} stopOpacity={0} />
-          </linearGradient>
+          {/* Nền vùng phẳng (không gradient) + chấm pixel — hợp neo-brutalism */}
+          <pattern id={id} width="6" height="6" patternUnits="userSpaceOnUse">
+            <rect width="6" height="6" fill={chart.accent} fillOpacity={0.12} />
+            <rect width="2" height="2" fill={chart.accent} fillOpacity={0.45} />
+          </pattern>
         </defs>
 
         <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
@@ -88,11 +92,12 @@ export function RevenueAreaChart({ data, chart, range, label = 'Doanh thu' }) {
           cursor={{ stroke: chart.tick, strokeWidth: 1, strokeDasharray: '4 2' }}
           contentStyle={{
             background: chart.bg,
-            border: `1px solid ${chart.grid}`,
-            borderRadius: 10,
+            border: `2px solid ${chart.edge}`,
+            borderRadius: 3,
             fontSize: 12,
+            fontWeight: 600,
             color: chart.ink,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+            boxShadow: `4px 4px 0 0 ${chart.shadow}`,
           }}
           itemStyle={{ color: chart.ink2 }}
           formatter={v => [formatVND(v), label]}
@@ -119,13 +124,14 @@ export function RevenueAreaChart({ data, chart, range, label = 'Doanh thu' }) {
         )}
 
         <Area
-          type="monotone"
+          type="linear"
           dataKey="revenue"
           stroke={chart.accent}
-          strokeWidth={2.5}
+          strokeWidth={3}
+          strokeLinejoin="miter"
           fill={`url(#${id})`}
-          dot={showDots ? { r: 3.5, fill: chart.accent, strokeWidth: 2, stroke: chart.bg } : false}
-          activeDot={{ r: 5, fill: chart.accent, strokeWidth: 2, stroke: chart.bg }}
+          dot={showDots ? { r: 4, fill: chart.accent, strokeWidth: 2, stroke: chart.edge } : false}
+          activeDot={{ r: 6, fill: chart.accent, strokeWidth: 2, stroke: chart.edge }}
         />
       </AreaChart>
     </ResponsiveContainer>

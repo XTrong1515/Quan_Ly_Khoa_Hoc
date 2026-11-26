@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
 import { PageFallback } from '@/components/page-fallback.jsx';
 import { Dialog } from '@/components/ui/dialog.jsx';
+import { Logo } from '@/components/logo.jsx';
 import { ChatWidget } from '@/components/ai/chat-widget.jsx';
 import { ASSISTANTS } from '@/components/ai/assistants.js';
 
@@ -54,30 +55,23 @@ function getInitials(name) {
   return (name || '?').split(' ').map(w => w[0]).join('').slice(-2).toUpperCase();
 }
 
+// Sidebar luôn navy (cả hai giao diện) như bảng điều khiển pixel: mục đang mở là khối xanh viền đen + bóng cứng.
 function Sidebar({ pathname, user, logout, onNavigate, navGroups, home, consoleLabel, roleLabel }) {
   return (
-    <div className="flex flex-col h-full bg-bg-1">
+    <div className="flex flex-col h-full bg-navy text-white">
       {/* Brand */}
-      <Link to={home} onClick={onNavigate} className="flex items-center gap-3 px-5 h-16 border-b border-line">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-indigo grid place-items-center font-mono font-bold text-[13px] text-[#0B0F19] shadow-[0_4px_14px_rgb(var(--accent)/0.3)]">
-          {'{}'}
-        </div>
-        <div className="leading-tight">
-          <p className="font-mono font-extrabold text-[15px] text-ink tracking-tight">
-            Hoisted<span className="text-accent">()</span>
-          </p>
-          <p className="font-mono text-[9.5px] text-ink-3 uppercase tracking-[0.14em]">{consoleLabel}</p>
-        </div>
-      </Link>
+      <div className="flex items-center px-5 h-[72px] border-b-2 border-white/10" onClickCapture={onNavigate}>
+        <Logo to={home} size={16} onDark sub={consoleLabel} />
+      </div>
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-5 overflow-y-auto space-y-6" aria-label={`Điều hướng ${roleLabel}`}>
         {navGroups.map((group) => (
           <div key={group.label}>
-            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.14em] px-3 mb-2">
+            <p className="font-mono text-[10px] font-bold text-white/55 uppercase tracking-[0.14em] px-3 mb-2">
               {group.label}
             </p>
-            <div className="space-y-0.5">
+            <div className="space-y-1.5">
               {group.items.map(({ to, label, icon: Icon, exact }) => {
                 const active = exact ? pathname === to : pathname.startsWith(to);
                 return (
@@ -87,15 +81,12 @@ function Sidebar({ pathname, user, logout, onNavigate, navGroups, home, consoleL
                     onClick={onNavigate}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors',
+                      'flex items-center gap-3 px-3 py-2 rounded-sm border-2 text-[13px] font-bold transition-colors',
                       active
-                        ? 'bg-accent/10 text-accent'
-                        : 'text-ink-2 hover:bg-bg-2 hover:text-ink',
+                        ? 'bg-[#2547D0] text-white border-black shadow-[3px_3px_0_0_#000]'
+                        : 'border-transparent text-white/80 hover:bg-white/10 hover:text-white',
                     )}
                   >
-                    {active && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-accent" aria-hidden="true" />
-                    )}
                     <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
                     {label}
                   </Link>
@@ -107,29 +98,27 @@ function Sidebar({ pathname, user, logout, onNavigate, navGroups, home, consoleL
       </nav>
 
       {/* User footer */}
-      <div className="px-3 pb-4 border-t border-line pt-3">
-        <div className="flex items-center gap-2.5 px-2 py-2 mb-2">
-          <div className="p-[2px] rounded-full bg-gradient-to-br from-accent to-indigo shrink-0">
-            <div className="w-8 h-8 rounded-full bg-bg-1 grid place-items-center font-mono font-bold text-[11px] text-ink select-none">
-              {getInitials(user?.name ?? user?.email ?? 'A')}
-            </div>
+      <div className="px-3 pb-4 border-t-2 border-white/10 pt-3 space-y-2">
+        <div className="flex items-center gap-2.5 px-2 py-1.5">
+          <div className="w-9 h-9 shrink-0 rounded-sm border-2 border-black bg-pop text-navy grid place-items-center font-mono font-bold text-[11px] select-none">
+            {getInitials(user?.name ?? user?.email ?? 'A')}
           </div>
           <div className="min-w-0">
-            <p className="font-display font-semibold text-[12.5px] text-ink truncate">
+            <p className="font-semibold text-[12.5px] text-white truncate">
               {user?.name ?? user?.email}
             </p>
-            <p className="font-mono text-[10px] text-accent">{roleLabel}</p>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-pop">{roleLabel}</p>
           </div>
         </div>
         <Link
           to="/"
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors"
+          className="w-full flex items-center justify-center gap-2 h-9 rounded-sm border-2 border-black bg-white text-navy text-[12.5px] font-bold shadow-[2px_2px_0_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#000] transition-[transform,box-shadow]"
         >
           <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Về trang chủ
         </Link>
         <button
           onClick={logout}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] text-ink-3 hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 h-9 rounded-sm border-2 border-black bg-[#F2542D] text-white text-[12.5px] font-bold shadow-[2px_2px_0_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#000] transition-[transform,box-shadow] cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" aria-hidden="true" /> Đăng xuất
         </button>
@@ -145,9 +134,9 @@ function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel, assistant }) 
   const shell = { navGroups, home, consoleLabel, roleLabel };
 
   return (
-    <div className="flex min-h-dvh bg-bg">
+    <div className="flex min-h-dvh">
       {/* ── Sidebar (desktop) ── */}
-      <aside className="w-[236px] shrink-0 border-r border-line sticky top-0 h-dvh hidden lg:block">
+      <aside className="w-[240px] shrink-0 border-r-2 border-edge sticky top-0 h-dvh hidden lg:block">
         <Sidebar pathname={pathname} user={user} logout={logout} {...shell} />
       </aside>
 
@@ -155,12 +144,12 @@ function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel, assistant }) 
       {mobileOpen && (
         // overflow-visible: nút đóng nằm ngoài mép phải ngăn kéo
         <Dialog onClose={() => setMobileOpen(false)} aria-label="Menu điều hướng"
-          className="m-0 h-dvh max-h-none w-[260px] max-w-none rounded-none border-0 border-r overflow-visible">
+          className="m-0 h-dvh max-h-none w-[260px] max-w-none rounded-none border-0 border-r-2 shadow-none overflow-visible">
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
               aria-label="Đóng menu"
-              className="absolute top-4 -right-12 w-9 h-9 rounded-lg bg-bg-1 border border-line text-ink-2 grid place-items-center cursor-pointer"
+              className="absolute top-4 -right-12 w-9 h-9 rounded-sm bg-bg-1 border-2 border-edge shadow-sm text-ink grid place-items-center cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -177,17 +166,17 @@ function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel, assistant }) 
       {/* ── Main content ── */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Mobile top bar */}
-        <div className="lg:hidden sticky top-0 z-40 flex items-center gap-3 h-14 px-4 border-b border-line bg-bg/90 backdrop-blur">
+        <div className="lg:hidden sticky top-0 z-40 flex items-center gap-3 h-14 px-4 border-b-2 border-edge bg-bg-1">
           <button
             onClick={() => setMobileOpen(true)}
             aria-label="Mở menu"
-            className="w-9 h-9 rounded-lg border border-line text-ink-2 grid place-items-center cursor-pointer"
+            className="w-9 h-9 rounded-lg border-2 border-edge text-ink-2 grid place-items-center cursor-pointer"
           >
             <Menu className="w-4 h-4" />
           </button>
-          <p className="font-mono font-extrabold text-[14px] text-ink tracking-tight">
+          <p className="font-pixel font-extrabold text-[22px] leading-none text-ink">
             Hoisted<span className="text-accent">()</span>
-            <span className="font-normal text-ink-3 text-[11px] ml-2">{roleLabel}</span>
+            <span className="font-mono font-bold uppercase tracking-[0.08em] text-ink-3 text-[10px] ml-2">{roleLabel}</span>
           </p>
         </div>
 

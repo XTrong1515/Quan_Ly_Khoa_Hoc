@@ -10,7 +10,7 @@ import { ExerciseResults } from './exercise-results.jsx';
 
 const CodeEditor = lazy(() => import('./code-editor.jsx'));
 
-const inputCls = 'w-full px-3 py-2 text-[13px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
+const inputCls = 'w-full px-3 py-2 text-[13px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
 const labelCls = 'block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest';
 
 const EMPTY = {
@@ -113,11 +113,11 @@ export function ExerciseEditorModal({ apiBase, lesson, onClose }) {
               <div className="grid lg:grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Code mẫu cho học viên</label>
-                  <div className="border border-line rounded-lg overflow-hidden"><CodeEditor value={form.starterCode} onChange={set('starterCode')} height="160px" /></div>
+                  <div className="border-2 border-edge rounded-lg overflow-hidden"><CodeEditor value={form.starterCode} onChange={set('starterCode')} height="160px" /></div>
                 </div>
                 <div>
                   <label className={labelCls}>Lời giải (ẩn — dùng để kiểm tra đề)</label>
-                  <div className="border border-line rounded-lg overflow-hidden"><CodeEditor value={form.solutionCode} onChange={set('solutionCode')} height="160px" /></div>
+                  <div className="border-2 border-edge rounded-lg overflow-hidden"><CodeEditor value={form.solutionCode} onChange={set('solutionCode')} height="160px" /></div>
                 </div>
               </div>
             </Suspense>

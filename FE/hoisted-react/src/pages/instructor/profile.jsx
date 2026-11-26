@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { api, apiMessage } from '@/lib/api';
 
-const inputCls = 'w-full px-3 py-2 text-[13px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
+const inputCls = 'w-full px-3 py-2 text-[13px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
 const labelCls = 'block font-mono text-[10px] text-ink-3 mb-1.5 uppercase tracking-widest';
 
 /** Hồ sơ giảng viên: thông tin hiển thị trên trang khóa học + tài khoản nhận doanh thu. */
@@ -32,7 +32,7 @@ export default function InstructorProfilePage() {
   return (
     <div className="p-5 sm:p-8 max-w-3xl">
       <p className="eyebrow mb-1.5"><span className="text-accent">~/instructor</span> <span className="text-ink-3">/ hồ-sơ</span></p>
-      <h1 className="font-display font-bold text-[24px] mb-6">Hồ sơ giảng viên</h1>
+      <h1 className="display text-[32px] mb-6">Hồ sơ giảng viên</h1>
 
       {!form ? <p className="font-mono text-[12px] text-ink-3">Đang tải…</p> : (
         <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-6">

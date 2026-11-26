@@ -25,8 +25,8 @@ import { LessonContentEditor } from '@/components/ai/lesson-content-editor.jsx';
 
 /* ── Config ─────────────────────────────────────────────────────── */
 export const THUMB_COLORS = {
-  yellow: '#F7DF1E', indigo: '#6366F1', rose: '#F43F5E',
-  green:  '#10B981', violet: '#8B5CF6', sky:  '#06B6D4',
+  yellow: '#FFCF33', indigo: '#2547D0', rose: '#F2542D',
+  green:  '#1DB06B', violet: '#7B5CFA', sky:  '#29B6F6',
 };
 export const LEVELS       = ['BEGINNER','INTERMEDIATE','ADVANCED'];
 export const STATUSES     = ['DRAFT','PENDING_REVIEW','PUBLISHED','REJECTED','ARCHIVED'];
@@ -53,7 +53,7 @@ export function CourseBadge({ glyph, thumb, tag }) {
   const bg = THUMB_COLORS[thumb] ?? THUMB_COLORS.yellow;
   return (
     <div className="relative shrink-0">
-      <div className="w-12 h-12 rounded-lg grid place-items-center font-mono font-bold text-[14px] text-bg select-none"
+      <div className="w-12 h-12 rounded-sm border-2 border-edge grid place-items-center font-pixel font-extrabold text-[20px] text-navy select-none"
         style={{ background: bg }}>
         {glyph || 'JS'}
       </div>
@@ -165,7 +165,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
       {isLoading && <p className="font-mono text-[12px] text-ink-3 py-2">Đang tải...</p>}
 
       {/* Sections */}
-      <div className="border border-line rounded-lg overflow-hidden bg-bg">
+      <div className="border-2 border-edge rounded-lg overflow-hidden bg-bg">
         {grouped.map((section) => (
           <div key={section.id ?? 'root'}>
             {section.title && (
@@ -196,7 +196,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                   {l.title}
                 </span>
                 {!!l.is_preview && (
-                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-accent/10 text-accent uppercase shrink-0">
+                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-accent text-accent-ink ring-2 ring-inset ring-edge uppercase shrink-0">
                     Xem thử
                   </span>
                 )}
@@ -297,7 +297,7 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
   };
 
   return (
-    <div className="mb-3 px-4 py-3 bg-bg-2 border border-line rounded-lg">
+    <div className="mb-3 px-4 py-3 bg-bg-2 border-2 border-edge rounded-lg">
     <div className="flex flex-wrap gap-3 items-end">
       <div className="flex-1 min-w-[180px]">
         <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tên bài học *</label>
@@ -402,7 +402,7 @@ function MediaField({ apiBase, courseId, lesson, kind }) {
   };
 
   return (
-    <div className="p-3 rounded-lg border border-line bg-bg">
+    <div className="p-3 rounded-lg border-2 border-edge bg-bg">
       <p className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mb-1.5">{cfg.label}</p>
       {current ? (
         <p className="text-[12px] text-success truncate mb-2" title={name ?? current}>
@@ -614,8 +614,8 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors',
                     thumbMode === key
-                      ? 'bg-accent text-bg'
-                      : 'bg-bg border border-line text-ink-2 hover:bg-bg-3',
+                      ? 'bg-accent text-accent-ink press border-2 border-edge'
+                      : 'bg-bg border-2 border-edge text-ink-2 hover:bg-bg-3',
                   )}>
                   <Icon className="w-3.5 h-3.5" />
                   {label}
@@ -628,11 +628,11 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
               {/* Preview box */}
               <div className="shrink-0 w-[120px]">
                 {previewImg ? (
-                  <div className="aspect-video rounded-lg overflow-hidden bg-bg-3 border border-line">
+                  <div className="aspect-video rounded-lg overflow-hidden bg-bg-3 border-2 border-edge">
                     <img src={previewImg} className="w-full h-full object-cover" alt="preview" />
                   </div>
                 ) : (
-                  <div className="aspect-video rounded-lg grid place-items-center font-mono font-bold text-[18px] text-bg"
+                  <div className="aspect-video rounded-sm border-2 border-edge grid place-items-center font-pixel font-extrabold text-[32px] text-navy"
                     style={{ background: THUMB_COLORS[thumbVal] ?? THUMB_COLORS.yellow }}>
                     {glyphVal || 'JS'}
                   </div>
@@ -695,7 +695,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
 
           <div className="grid grid-cols-2 gap-4">
             {locked && (
-              <p className="col-span-2 font-mono text-[11px] text-accent bg-accent/10 rounded-lg px-3 py-2">
+              <p className="col-span-2 font-mono text-[11px] text-accent-ink ring-2 ring-inset ring-edge bg-accent rounded-lg px-3 py-2">
                 Khóa học đã xuất bản — không thể đổi tên, slug, giá, danh mục. Liên hệ quản trị viên nếu cần.
               </p>
             )}
@@ -774,8 +774,8 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
 const LOCKED_CLS = 'opacity-60 cursor-not-allowed';
 
 export const inputCls = (err) => cn(
-  'w-full px-3 py-2 text-[13px] bg-bg border rounded-lg text-ink placeholder:text-ink-3 focus:outline-none transition-colors',
-  err ? 'border-danger focus:border-danger' : 'border-line focus:border-accent',
+  'w-full px-3 py-2 text-[13px] bg-bg-3 border-2 rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:shadow-sm transition-[border-color,box-shadow]',
+  err ? 'border-danger focus:border-danger' : 'border-edge focus:border-accent',
 );
 
 /** Nhãn gắn với ô nhập (htmlFor/id) khi Field chỉ bọc một ô — trình đọc màn hình đọc đúng tên trường, bấm nhãn thì focus ô. */
@@ -951,7 +951,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
           {!isLoading && quiz && (
             <>
               {/* ── Settings ── */}
-              <div className="flex gap-3 items-end p-3 bg-bg-2 rounded-lg border border-line">
+              <div className="flex gap-3 items-end p-3 bg-bg-2 rounded-lg border-2 border-edge">
                 <div className="flex-1">
                   <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tiêu đề</label>
                   <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls()} />
@@ -975,7 +975,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
                 </p>
 
                 {quiz.questions.map((q, qi) => (
-                  <div key={q.id} className="border border-line rounded-lg p-3 bg-bg">
+                  <div key={q.id} className="border-2 border-edge rounded-lg p-3 bg-bg">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex gap-1.5 flex-1 min-w-0">
                         <span className="font-mono text-[13px] text-ink-3 leading-snug shrink-0">{qi + 1}.</span>

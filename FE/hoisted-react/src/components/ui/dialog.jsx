@@ -73,7 +73,7 @@ export function Dialog({ onClose, dismiss = 'any', onCancel, className, children
       onCancel={onCancel}
       className={cn(
         'w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] overflow-y-auto p-0',
-        'bg-bg text-ink border border-line rounded-xl shadow-2xl',
+        'bg-bg-1 text-ink border-2 border-edge rounded shadow-2xl',
         className,
       )}
       {...lightDismissFallback}

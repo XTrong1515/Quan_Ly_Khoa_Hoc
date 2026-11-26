@@ -333,7 +333,7 @@ export default function LessonPlayerPage() {
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
       <Seo title={`${lesson.title} — ${lesson.courseTitle} · Hoisted`} />
       {/* ── Top bar ── */}
-      <header className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[50px] border-b border-line bg-bg shrink-0">
+      <header className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[50px] border-b-2 border-edge bg-bg-1 shrink-0">
         <Link to={`/courses/${lesson.courseSlug}`}
           className="font-mono text-[12px] text-ink-3 hover:text-ink transition-colors flex items-center gap-1 min-w-0 flex-1 lg:flex-none lg:max-w-[220px]">
           <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
@@ -346,7 +346,7 @@ export default function LessonPlayerPage() {
 
         {/* Bộ chuyển khung xem — luôn ở cùng một chỗ, kèm trạng thái phần bắt buộc */}
         {views.length > 1 && (
-          <div role="tablist" aria-label="Nội dung bài học" className="flex shrink-0 rounded-lg border border-line bg-bg-1 p-0.5">
+          <div role="tablist" aria-label="Nội dung bài học" className="flex shrink-0 rounded-lg border-2 border-edge bg-bg-1 p-0.5">
             {views.map(({ id, label, Icon, done }) => {
               const active = mainView === id;
               return (
@@ -354,7 +354,7 @@ export default function LessonPlayerPage() {
                   title={label}
                   className={cn(
                     'flex items-center gap-1.5 h-7 px-2 md:px-2.5 rounded-md text-[12px] font-medium transition-colors',
-                    active ? 'bg-accent text-bg' : 'text-ink-2 hover:text-ink hover:bg-bg-2',
+                    active ? 'bg-accent text-accent-ink press border-2 border-edge' : 'text-ink-2 hover:text-ink hover:bg-bg-2',
                   )}>
                   <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                   <span className="sr-only md:not-sr-only">{label}</span>
@@ -402,7 +402,7 @@ export default function LessonPlayerPage() {
             title={sidebarOpen ? 'Ẩn danh sách bài học' : 'Hiện danh sách bài học'}
             aria-label={sidebarOpen ? 'Ẩn danh sách bài học' : 'Hiện danh sách bài học'}
             aria-expanded={sidebarOpen}
-            className="w-8 h-8 rounded border border-line grid place-items-center text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors ml-1"
+            className="w-8 h-8 rounded border-2 border-edge grid place-items-center text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors ml-1"
           >
             {sidebarOpen
               ? <PanelRightClose className="w-4 h-4" />
@@ -522,7 +522,7 @@ export default function LessonPlayerPage() {
           aria-label="Nội dung khóa học"
           style={{ width: sidebarOpen ? sidebarWidth : 0 }}
           className={cn(
-            'border-l border-line flex flex-col overflow-hidden shrink-0 transition-[width] duration-200 min-w-0 bg-bg',
+            'border-l-2 border-edge flex flex-col overflow-hidden shrink-0 transition-[width] duration-200 min-w-0 bg-bg-1',
             'max-lg:absolute max-lg:inset-y-0 max-lg:right-0 max-lg:z-30 max-lg:max-w-[85vw] max-lg:shadow-2xl',
             !sidebarOpen && 'invisible',
           )}>
@@ -592,7 +592,7 @@ function LessonDetails({
   let completion;
   if (isStaffView) {
     completion = (
-      <span className="text-[12px] text-accent bg-accent/10 rounded-md px-2.5 py-1.5">
+      <span className="text-[12px] text-accent-ink ring-2 ring-inset ring-edge bg-accent rounded-md px-2.5 py-1.5">
         Chế độ xem của giảng viên / admin — không ghi tiến độ
       </span>
     );
@@ -745,7 +745,7 @@ function SidebarSection({ section, currentLessonId, onSelect }) {
 
 /* ── Quiz Panel ───────────────────────────────────────────────── */
 const QUIZ_MODE = {
-  staff:  { text: 'Xem trước — kết quả không được lưu', cls: 'bg-accent/10 text-accent' },
+  staff:  { text: 'Xem trước — kết quả không được lưu', cls: 'bg-accent text-accent-ink ring-2 ring-inset ring-edge' },
   locked: { text: 'Bắt buộc để hoàn thành bài học',     cls: 'bg-warn/15 text-warn' },
   passed: { text: 'Đã đạt',                              cls: 'bg-success/15 text-success' },
 };
@@ -818,7 +818,7 @@ function QuizPanel({ quiz, mode = 'locked', onPassed }) {
           {quiz.questions.length} câu · cần đạt {quiz.passScore}% để hoàn thành bài học
         </p>
       </div>
-      <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-medium', modeInfo.cls)}>
+      <span className={cn('shrink-0 rounded-sm px-2.5 py-1 text-[11.5px] font-medium', modeInfo.cls)}>
         {modeInfo.text}
       </span>
     </div>
@@ -889,7 +889,7 @@ function QuizPanel({ quiz, mode = 'locked', onPassed }) {
                         'flex items-start gap-2.5 w-full text-left px-3 py-2 rounded-lg border text-[13px] leading-snug transition-colors',
                         selected
                           ? 'border-accent bg-accent/10 text-ink'
-                          : 'border-line bg-bg hover:border-accent/50 hover:bg-bg-1 text-ink-2',
+                          : 'border-line bg-bg hover:border-accent hover:bg-bg-1 text-ink-2',
                       )}>
                       <span aria-hidden="true" className={cn(
                         'mt-[2px] w-3.5 h-3.5 shrink-0 border grid place-items-center',
@@ -1045,8 +1045,8 @@ function CommentItem({ comment, currentUserId, canModerate, onReply, onDelete, o
     <div className="space-y-3">
       {/* Main comment */}
       <div className="flex gap-3">
-        <div className="shrink-0 w-7 h-7 rounded-full grid place-items-center font-mono font-bold text-[11px] text-[#0B0F19] mt-0.5"
-          style={{ background: avatar ? undefined : 'linear-gradient(135deg, #6366F1, #F7DF1E)' }}>
+        <div className="shrink-0 w-7 h-7 rounded-full grid place-items-center font-mono font-bold text-[11px] text-navy mt-0.5"
+          style={{ background: avatar ? undefined : 'rgb(var(--pop))' }}>
           {avatar
             ? <img src={avatar} alt="" className="w-7 h-7 rounded-full object-cover" />
             : initials}
@@ -1103,8 +1103,8 @@ function CommentItem({ comment, currentUserId, canModerate, onReply, onDelete, o
             const rInitials = r.author.name?.[0]?.toUpperCase() ?? '?';
             return (
               <div key={r.id} className="flex gap-2.5">
-                <div className="shrink-0 w-6 h-6 rounded-full grid place-items-center font-mono font-bold text-[10px] text-[#0B0F19] mt-0.5"
-                  style={{ background: r.author.avatar ? undefined : 'linear-gradient(135deg, #6366F1, #F7DF1E)' }}>
+                <div className="shrink-0 w-6 h-6 rounded-full grid place-items-center font-mono font-bold text-[10px] text-navy mt-0.5"
+                  style={{ background: r.author.avatar ? undefined : 'rgb(var(--pop))' }}>
                   {r.author.avatar
                     ? <img src={r.author.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
                     : rInitials}
@@ -1155,7 +1155,7 @@ function CommentForm({ placeholder, initialValue = '', onSubmit, onCancel, submi
         onChange={e => setValue(e.target.value)}
         placeholder={placeholder}
         rows={2}
-        className="w-full px-3 py-2 text-[13px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent resize-none"
+        className="w-full px-3 py-2 text-[13px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent resize-none"
         onKeyDown={e => {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSubmit();
         }}

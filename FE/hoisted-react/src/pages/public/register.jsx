@@ -94,23 +94,15 @@ export default function RegisterPage() {
       <Seo title="Tạo tài khoản miễn phí — Hoisted" />
 
       {/* ── Left: brand panel (always dark, like an editor) ──────── */}
-      <div className="hidden lg:flex flex-col p-12 relative overflow-hidden bg-[#0B0F19] text-[#F4F5F9]">
+      <div className="hidden lg:flex flex-col p-12 relative overflow-hidden bg-navy text-white border-r-2 border-black">
         <div
           className="absolute inset-0 pointer-events-none"
           aria-hidden="true"
           style={{
             backgroundImage:
-              'linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px)',
-            backgroundSize: '44px 44px',
+              'radial-gradient(rgb(255 255 255 / 0.16) 1.2px, transparent 1.5px)',
+            backgroundSize: '18px 18px',
             maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 80%, transparent)',
-          }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              'radial-gradient(ellipse 55% 50% at 20% 10%, rgb(247 223 30 / .10) 0%, transparent 60%), radial-gradient(ellipse 45% 45% at 90% 95%, rgb(99 102 241 / .12) 0%, transparent 60%)',
           }}
         />
 
@@ -119,7 +111,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="relative flex-1 flex flex-col justify-center max-w-[480px]">
-          <h1 className="display text-[36px] leading-[1.12] mb-3 text-[#F4F5F9]">
+          <h1 className="display text-[36px] leading-[1.12] mb-3 text-white">
             Khởi tạo tài khoản,<br />
             <span className="text-js">hoist</span> sự nghiệp lên.
           </h1>
@@ -129,12 +121,12 @@ export default function RegisterPage() {
           </p>
 
           {/* Terminal: account scaffold */}
-          <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur font-mono text-[12.5px] leading-[2] overflow-hidden mb-8 shadow-2xl shadow-black/40">
-            <div className="flex items-center gap-2 px-4 h-9 bg-white/[0.04] border-b border-white/10">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" aria-hidden="true" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" aria-hidden="true" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" aria-hidden="true" />
-              <span className="ml-2 text-[10.5px] text-slate-400">tài-khoản-mới — hoisted</span>
+          <div className="rounded border-2 border-black bg-[#081230] font-mono text-[12.5px] leading-[2] overflow-hidden mb-8 shadow-[6px_6px_0_0_#FFCF33]">
+            <div className="flex items-center gap-2 px-4 h-9 bg-[#F2542D] border-b-2 border-black text-white">
+              <span className="w-2.5 h-2.5 bg-black" aria-hidden="true" />
+              <span className="w-2.5 h-2.5 bg-[#FFCF33] border-2 border-black" aria-hidden="true" />
+              <span className="w-2.5 h-2.5 bg-white border-2 border-black" aria-hidden="true" />
+              <span className="ml-2 text-[10.5px] font-bold text-white">tài-khoản-mới — hoisted</span>
             </div>
             <div className="px-5 py-4 text-slate-300" aria-hidden="true">
               <p><span className="text-js">$</span> npx create-hoisted-account</p>
@@ -152,7 +144,7 @@ export default function RegisterPage() {
           {platformStats && (
           <div className="flex items-center gap-3.5">
             <div>
-              <div className="text-[13px] font-semibold text-[#F4F5F9]">
+              <div className="text-[13px] font-semibold text-white">
                 {Number(platformStats.newUsersThisWeek).toLocaleString('vi-VN')} tài khoản mới trong 7 ngày qua
               </div>
               {platformStats.totalReviews > 0 && (
@@ -266,8 +258,8 @@ export default function RegisterPage() {
                   return (
                     <span key={r.label} className={cn('flex items-center gap-1.5 font-mono text-[11px]',
                       ok ? 'text-success' : 'text-ink-3')}>
-                      <span className={cn('w-[13px] h-[13px] rounded-full grid place-items-center text-[#0B0F19]',
-                        ok ? 'bg-success' : 'border border-line')} aria-hidden="true">
+                      <span className={cn('w-[13px] h-[13px] rounded-full grid place-items-center text-navy',
+                        ok ? 'bg-success' : 'border-2 border-edge')} aria-hidden="true">
                         {ok && <Check className="w-2 h-2" strokeWidth={4} />}
                       </span>
                       {r.label}
@@ -295,7 +287,7 @@ export default function RegisterPage() {
             type="submit"
             size="lg"
             disabled={isSubmitting}
-            className="mt-6 justify-center shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+            className="mt-6 justify-center shadow"
           >
             {isSubmitting ? 'Đang tạo tài khoản…' : 'Tạo tài khoản →'}
           </Button>

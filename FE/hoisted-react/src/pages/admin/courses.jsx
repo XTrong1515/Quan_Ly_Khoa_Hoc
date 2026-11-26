@@ -111,19 +111,19 @@ export default function AdminCoursesPage() {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ khóa-học</span></p>
-          <h1 className="font-display font-bold text-[24px]">Quản lý khóa học</h1>
+          <h1 className="display text-[32px]">Quản lý khóa học</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => downloadCsv('/api/admin/courses/export', { search, status }, `courses_${Date.now()}.csv`)
               .then(() => toast.success('Đã xuất file CSV'))
               .catch(() => toast.error('Chưa xuất được file CSV. Thử lại sau giây lát.'))}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-edge text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
             <Download className="w-3.5 h-3.5" /> Export
           </button>
           <button
             onClick={() => setModal({ mode: 'create' })}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-bg text-[13px] font-semibold hover:opacity-90 transition-opacity">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-accent text-accent-ink press border-2 border-edge text-[13px] font-semibold">
             <Plus className="w-3.5 h-3.5" /> Tạo khóa mới
           </button>
         </div>
@@ -139,7 +139,7 @@ export default function AdminCoursesPage() {
             )}>
             {label}
             {value === 'PENDING_REVIEW' && pendingReview > 0 && (
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">{pendingReview}</span>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm bg-pop text-pop-ink ring-2 ring-inset ring-edge">{pendingReview}</span>
             )}
           </button>
         ))}
@@ -153,7 +153,7 @@ export default function AdminCoursesPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Tìm theo tên, instructor..."
-            className="w-full pl-9 pr-3 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent"
+            className="w-full pl-9 pr-3 py-2 text-[12px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent"
           />
         </div>
         {[
@@ -167,7 +167,7 @@ export default function AdminCoursesPage() {
             opts: [['manual', 'Thủ công'], ['newest', 'Mới nhất'], ['oldest', 'Cũ nhất'], ['students', 'Học viên']] },
         ].map(({ value, set, opts }, i) => (
           <select key={i} value={value} onChange={e => set(e.target.value)}
-            className="px-3 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink focus:outline-none focus:border-accent">
+            className="px-3 py-2 text-[12px] bg-bg-3 border-2 border-edge rounded-sm text-ink focus:outline-none focus:border-accent">
             {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         ))}
@@ -257,7 +257,7 @@ export default function AdminCoursesPage() {
                     <span className={cn(
                       'font-mono text-[10px] px-2 py-0.5 rounded uppercase',
                       c.level === 'BEGINNER'     ? 'bg-success/10 text-success' :
-                      c.level === 'INTERMEDIATE' ? 'bg-accent/10 text-accent' :
+                      c.level === 'INTERMEDIATE' ? 'bg-accent text-accent-ink ring-2 ring-inset ring-edge' :
                                                    'bg-danger/10 text-danger',
                     )}>
                       {LEVEL_LABELS[c.level] ?? c.level}
@@ -390,7 +390,7 @@ function StatusDropdown({ course }) {
       </button>
 
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 bg-bg border border-line rounded-lg shadow-2xl py-1 min-w-[136px]">
+        <div className="absolute z-50 top-full mt-1 left-0 bg-bg border-2 border-edge rounded-lg shadow-2xl py-1 min-w-[136px]">
           {STATUS_OPTIONS.map(opt => {
             const active = opt.value === course.status;
             return (

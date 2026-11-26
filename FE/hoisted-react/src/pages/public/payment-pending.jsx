@@ -56,7 +56,7 @@ function Stepper({ current }) {
             )}>
               <span className={cn(
                 'w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold',
-                done ? 'bg-accent/15 text-accent' : active ? 'bg-accent text-accent-ink' : 'border border-line',
+                done ? 'bg-pop text-pop-ink ring-2 ring-inset ring-edge' : active ? 'bg-accent text-accent-ink' : 'border-2 border-edge',
               )} aria-hidden="true">
                 {done ? <Check className="w-3 h-3" strokeWidth={3} /> : i + 1}
               </span>
@@ -73,12 +73,11 @@ function Stepper({ current }) {
 function StatusScreen({ tone, icon: Icon, title, children, actions }) {
   return (
     <div className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
       <div className="relative max-w-xl mx-auto px-6 py-24 text-center">
         <div className={cn(
           'w-20 h-20 rounded-2xl grid place-items-center mx-auto mb-6',
-          tone === 'success' ? 'bg-success/10 text-success shadow-[0_0_40px_rgb(52_211_153/0.25)]'
-                             : 'bg-danger/10 text-danger shadow-[0_0_40px_rgb(244_63_94/0.2)]',
+          tone === 'success' ? 'bg-success/10 text-success shadow'
+                             : 'bg-danger/10 text-danger shadow',
         )}>
           <Icon className="w-9 h-9" aria-hidden="true" />
         </div>
@@ -241,10 +240,6 @@ export default function PaymentPendingPage() {
       <Seo title={`Thanh toán đơn ${data.order_code} — Hoisted`} />
       <div className="absolute inset-x-0 top-0 h-[320px] pointer-events-none" aria-hidden="true">
         <div className="absolute inset-0 bg-grid mask-fade-y" />
-        <div
-          className="absolute inset-0"
-          style={{ backgroundImage: 'radial-gradient(ellipse 60% 80% at 50% 0%, rgb(var(--accent) / .08) 0%, transparent 60%)' }}
-        />
       </div>
 
       <div className="relative max-w-xl mx-auto px-5 sm:px-6 py-10">
@@ -269,15 +264,6 @@ export default function PaymentPendingPage() {
           'card p-6 sm:p-7 mb-5 text-center border-2 transition-colors relative overflow-hidden',
           urgency ? 'border-danger/40' : 'border-accent/30',
         )}>
-          <div
-            className="absolute inset-0 pointer-events-none"
-            aria-hidden="true"
-            style={{
-              background: urgency
-                ? 'radial-gradient(ellipse at 50% 0%, rgb(244 63 94 / .07) 0%, transparent 60%)'
-                : 'radial-gradient(ellipse at 50% 0%, rgb(var(--accent) / .07) 0%, transparent 60%)',
-            }}
-          />
           <div className="relative">
             <div className="flex items-center justify-center gap-1.5 mb-5">
               <Clock className={cn('w-4 h-4', urgency ? 'text-danger' : 'text-accent')} aria-hidden="true" />
@@ -309,7 +295,7 @@ export default function PaymentPendingPage() {
                       urgency ? 'border-danger/25' : 'border-line',
                     )}>
                       <span className={cn(
-                        'font-mono font-bold text-[38px] sm:text-[44px] leading-none tabular-nums',
+                        'font-pixel font-extrabold text-[55px] sm:text-[64px] leading-none tabular-nums',
                         urgency ? 'text-danger' : 'text-ink',
                       )}>{val}</span>
                     </div>
@@ -343,7 +329,7 @@ export default function PaymentPendingPage() {
           </div>
           <div className="border-t border-line mt-4 pt-4 flex justify-between items-end">
             <span className="font-semibold text-[14px]">Tổng cộng</span>
-            <span className="font-mono font-bold text-[24px] text-ink leading-none tabular-nums">
+            <span className="font-pixel font-extrabold text-[35px] text-ink leading-none tabular-nums">
               {formatVND(data.total_amount)}
             </span>
           </div>
@@ -352,7 +338,7 @@ export default function PaymentPendingPage() {
         {/* ── Actions ── */}
         <Button
           size="lg"
-          className="w-full justify-center mb-4 shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+          className="w-full justify-center mb-4 shadow"
           disabled={payMutation.isPending}
           onClick={() => payMutation.mutate()}
         >

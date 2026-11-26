@@ -19,20 +19,11 @@ export function AccountShell({ title, desc, action, children }) {
     <div>
       <header className="relative overflow-hidden border-b border-line">
         <div className="absolute inset-0 bg-bg-2" aria-hidden="true" />
-        <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              'radial-gradient(ellipse 45% 80% at 15% 0%, rgb(var(--accent) / .10) 0%, transparent 60%), radial-gradient(ellipse 35% 60% at 95% 100%, rgb(99 102 241 / .08) 0%, transparent 60%)',
-          }}
-        />
 
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-8 pt-10">
           <div className="flex flex-wrap items-center gap-5 mb-8">
             {/* Avatar */}
-            <div className="p-[3px] rounded-full bg-gradient-to-br from-accent to-indigo flex-shrink-0">
+            <div className="p-[3px] rounded-full bg-pop flex-shrink-0">
               {user?.avatar ? (
                 <img
                   src={user.avatar}

@@ -12,7 +12,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <App />
-        <Toaster richColors position="bottom-right" />
+        <Toaster
+          richColors
+          position="bottom-right"
+          // Neo-brutalism: viền đậm + bóng cứng cho toast (ghi đè style mặc định của sonner)
+          toastOptions={{ classNames: { toast: '!rounded-sm !border-2 !border-[rgb(var(--edge))] !shadow-[4px_4px_0_0_rgb(var(--shadow))] !font-sans !font-semibold' } }}
+        />
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

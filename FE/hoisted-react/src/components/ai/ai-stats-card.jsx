@@ -15,7 +15,7 @@ function Metric({ label, value, hint }) {
   return (
     <div className="min-w-0">
       <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{label}</p>
-      <p className="mt-1.5 font-mono font-bold text-[22px] leading-none tabular-nums text-ink">{value}</p>
+      <p className="mt-1.5 font-pixel font-extrabold text-[32px] leading-none tabular-nums text-ink">{value}</p>
       {hint && <p className="mt-1 text-[11.5px] text-ink-3">{hint}</p>}
     </div>
   );
@@ -38,7 +38,7 @@ export function AiStatsCard() {
         <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Trợ lý AI · 30 ngày</p>
         <p className="mt-3 text-[13px] text-ink-2">Chưa tải được thống kê trợ lý AI.</p>
         <button type="button" onClick={() => refetch()}
-          className="mt-2 inline-flex items-center gap-1.5 h-[30px] px-3 rounded-md border border-line text-[12.5px] font-semibold text-ink hover:bg-bg-2">
+          className="mt-2 inline-flex items-center gap-1.5 h-[30px] px-3 rounded-md border-2 border-edge text-[12.5px] font-semibold text-ink hover:bg-bg-2">
           <RotateCcw className="w-3.5 h-3.5" /> Tải lại
         </button>
       </div>

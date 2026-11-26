@@ -62,7 +62,7 @@ function SectionHead({ icon: Icon, title, desc, aside }) {
   return (
     <div className="flex items-start justify-between gap-4 mb-5">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-accent/10 text-accent grid place-items-center flex-shrink-0">
+        <div className="w-9 h-9 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center flex-shrink-0">
           <Icon className="w-[18px] h-[18px]" aria-hidden="true" />
         </div>
         <div>
@@ -126,8 +126,8 @@ function AvatarSection() {
           />
         ) : (
           <div
-            className="w-[62px] h-[62px] rounded-full grid place-items-center font-mono font-bold text-xl text-[#0B0F19] shrink-0"
-            style={{ background: 'linear-gradient(135deg, #6366F1, #F7DF1E)' }}
+            className="w-[62px] h-[62px] rounded-full grid place-items-center font-mono font-bold text-xl text-navy shrink-0"
+            style={{ background: 'rgb(var(--pop))' }}
           >
             {avatarLabel}
           </div>
@@ -460,8 +460,8 @@ function PwReqs({ password }) {
             key={r.label}
             className={cn('flex items-center gap-1.5 font-mono text-[11px]', ok ? 'text-success' : 'text-ink-3')}
           >
-            <span className={cn('w-3.5 h-3.5 rounded-full grid place-items-center shrink-0', ok ? 'bg-success' : 'border border-line')}>
-              {ok && <Check className="w-2 h-2 text-[#0B0F19]" strokeWidth={4} />}
+            <span className={cn('w-3.5 h-3.5 rounded-full grid place-items-center shrink-0', ok ? 'bg-success' : 'border-2 border-edge')}>
+              {ok && <Check className="w-2 h-2 text-navy" strokeWidth={4} />}
             </span>
             {r.label}
           </span>

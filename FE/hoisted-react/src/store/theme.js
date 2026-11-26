@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
 export const useTheme = create(
   persist(
     (set, get) => ({
-      mode: 'dark',         // 'dark' | 'light'
+      mode: 'light',        // 'dark' | 'light' — mặc định sáng (Pixel Neo-Brutalism)
       toggle: () => {
         const next = get().mode === 'dark' ? 'light' : 'dark';
         document.documentElement.classList.toggle('dark', next === 'dark');

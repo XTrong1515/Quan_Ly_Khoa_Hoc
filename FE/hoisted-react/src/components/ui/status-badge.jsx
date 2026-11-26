@@ -1,33 +1,32 @@
 import { cn } from '@/lib/utils';
 
 const MAP = {
-  paid:      { color: 'text-success bg-success/15',  label: 'Đã thanh toán' },
-  // Trạng thái chờ dùng accent (vàng ở dark, indigo ở light) — vàng `js` viết cứng không đọc được trên nền sáng
-  pending:   { color: 'text-accent bg-accent/15',    label: 'Đang chờ' },
-  failed:    { color: 'text-danger bg-danger/15',    label: 'Thất bại' },
-  cancelled: { color: 'text-ink-3 bg-bg-2',          label: 'Đã hủy' },
-  refund:    { color: 'text-ink-3 bg-bg-2',          label: 'Hoàn tiền' },
-  active:    { color: 'text-success bg-success/15',  label: 'Hoạt động' },
-  locked:    { color: 'text-danger bg-danger/15',    label: 'Khóa' },
-  published: { color: 'text-success bg-success/15',  label: 'Đã xuất bản' },
-  draft:     { color: 'text-ink-3 bg-bg-2',          label: 'Nháp' },
-  archived:  { color: 'text-ink-3 bg-bg-3',          label: 'Lưu trữ' },
-  visible:   { color: 'text-success bg-success/15',  label: 'Hiển thị' },
-  hidden:    { color: 'text-ink-3 bg-bg-2',          label: 'Đã ẩn' },
-  review:    { color: 'text-accent bg-accent/15',    label: 'Đang duyệt' },
-  pending_review: { color: 'text-accent bg-accent/15', label: 'Chờ duyệt' },
-  rejected:  { color: 'text-danger bg-danger/15',    label: 'Bị từ chối' },
+  paid:      { color: 'text-white bg-success',  label: 'Đã thanh toán' },
+  // Khối màu đặc kiểu tag pixel; trạng thái chờ dùng vàng pop (chữ navy, đọc được ở cả hai giao diện)
+  pending:   { color: 'text-pop-ink bg-pop',    label: 'Đang chờ' },
+  failed:    { color: 'text-white bg-danger',    label: 'Thất bại' },
+  cancelled: { color: 'text-ink-2 bg-bg-2',          label: 'Đã hủy' },
+  refund:    { color: 'text-ink-2 bg-bg-2',          label: 'Hoàn tiền' },
+  active:    { color: 'text-white bg-success',  label: 'Hoạt động' },
+  locked:    { color: 'text-white bg-danger',    label: 'Khóa' },
+  published: { color: 'text-white bg-success',  label: 'Đã xuất bản' },
+  draft:     { color: 'text-ink-2 bg-bg-2',          label: 'Nháp' },
+  archived:  { color: 'text-ink-2 bg-bg-2',          label: 'Lưu trữ' },
+  visible:   { color: 'text-white bg-success',  label: 'Hiển thị' },
+  hidden:    { color: 'text-ink-2 bg-bg-2',          label: 'Đã ẩn' },
+  review:    { color: 'text-pop-ink bg-pop',    label: 'Đang duyệt' },
+  pending_review: { color: 'text-pop-ink bg-pop', label: 'Chờ duyệt' },
+  rejected:  { color: 'text-white bg-danger',    label: 'Bị từ chối' },
 };
 
 export function StatusBadge({ status, className }) {
   const key = (status ?? '').toLowerCase();
-  const cfg = MAP[key] || { color: 'text-ink-3 bg-bg-2', label: status ?? '—' };
+  const cfg = MAP[key] || { color: 'text-ink-2 bg-bg-2', label: status ?? '—' };
   return (
     <span className={cn(
-      'inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap',
+      'inline-flex items-center gap-1.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.04em] px-1.5 py-0.5 rounded-sm border-2 border-edge whitespace-nowrap',
       cfg.color, className,
     )}>
-      <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
       {cfg.label}
     </span>
   );

@@ -23,7 +23,7 @@ export function CourseCard({ course }) {
   return (
     <Link
       to={`/courses/${course.slug ?? course.id}`}
-      className="card p-3 flex flex-col gap-3 hover:-translate-y-0.5 hover:shadow-lg transition relative group"
+      className="card p-3 flex flex-col gap-3 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-xl transition relative group"
     >
       <CourseThumb course={course} />
 
@@ -33,7 +33,7 @@ export function CourseCard({ course }) {
           onClick={handleWishlist}
           disabled={toggle.isPending}
           className={cn(
-            'absolute top-5 right-5 w-7 h-7 rounded-full bg-bg/80 backdrop-blur grid place-items-center transition-all',
+            'absolute top-5 right-5 w-8 h-8 rounded-sm border-2 border-edge bg-bg-1 shadow-sm grid place-items-center transition-all',
             'opacity-0 group-hover:opacity-100',
             isWishlisted && 'opacity-100',
           )}
@@ -53,7 +53,7 @@ export function CourseCard({ course }) {
           <Chip variant="line">{course.category}</Chip>
           <Chip variant="line">{levelLabel(course.level)}</Chip>
         </div>
-        <h3 className="font-display font-semibold text-[15.5px] tracking-tight2 mb-1 line-clamp-2">
+        <h3 className="font-display font-bold text-[15.5px] tracking-tight2 mb-1 line-clamp-2">
           {course.title}
         </h3>
         <p className="text-ink-3 text-xs mb-3">bởi {course.instructor}</p>
@@ -70,7 +70,7 @@ export function CourseCard({ course }) {
             )}
             <span className="text-ink-3">· {compactCount(course.students)} học viên</span>
           </div>
-          <div className={`font-mono font-bold text-[15px] ${Number(course.price) === 0 ? 'text-accent' : 'text-ink'}`}>
+          <div className={cn('font-mono font-bold text-[14px] shrink-0', Number(course.price) === 0 ? 'bg-success text-white border-2 border-edge rounded-sm px-1.5' : 'text-ink')}>
             {formatPrice(course.price)}
           </div>
         </div>

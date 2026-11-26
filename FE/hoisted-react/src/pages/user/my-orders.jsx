@@ -54,10 +54,10 @@ export default function MyOrdersPage() {
             onClick={() => handleStatusChange(s.value)}
             aria-pressed={status === s.value}
             className={cn(
-              'h-8 px-3.5 rounded-full font-mono text-[12.5px] border transition-colors cursor-pointer',
+              'h-8 px-3.5 rounded-sm font-mono text-[12.5px] border transition-colors cursor-pointer',
               status === s.value
                 ? 'bg-accent text-accent-ink border-accent font-semibold'
-                : 'border-line text-ink-2 hover:border-accent/40 hover:text-ink',
+                : 'border-line text-ink-2 hover:border-accent hover:text-ink',
             )}
           >
             {s.label}
@@ -87,7 +87,7 @@ export default function MyOrdersPage() {
         <div className="card relative overflow-hidden py-20 px-6 text-center">
           <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
           <div className="relative">
-            <div className="w-16 h-16 rounded-2xl bg-accent/10 text-accent grid place-items-center mx-auto mb-5">
+            <div className="w-16 h-16 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center mx-auto mb-5">
               <BookOpen className="w-7 h-7" aria-hidden="true" />
             </div>
             <h3 className="font-display font-bold text-[17px] mb-1.5">Chưa có đơn hàng nào</h3>
@@ -120,7 +120,7 @@ export default function MyOrdersPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
                 aria-label="Trang trước"
-                className="w-9 h-9 rounded-xl border border-line flex items-center justify-center text-ink-2 hover:bg-bg-2 hover:border-accent/40 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="w-9 h-9 rounded-xl border-2 border-edge flex items-center justify-center text-ink-2 hover:bg-bg-2 hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -133,7 +133,7 @@ export default function MyOrdersPage() {
                     'w-9 h-9 rounded-xl border text-[13px] font-mono transition-colors cursor-pointer',
                     pg === page
                       ? 'border-accent bg-accent text-accent-ink font-bold'
-                      : 'border-line text-ink-2 hover:bg-bg-2 hover:border-accent/40',
+                      : 'border-line text-ink-2 hover:bg-bg-2 hover:border-accent',
                   )}
                 >
                   {pg}
@@ -143,7 +143,7 @@ export default function MyOrdersPage() {
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 aria-label="Trang sau"
-                className="w-9 h-9 rounded-xl border border-line flex items-center justify-center text-ink-2 hover:bg-bg-2 hover:border-accent/40 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="w-9 h-9 rounded-xl border-2 border-edge flex items-center justify-center text-ink-2 hover:bg-bg-2 hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

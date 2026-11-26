@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi" class="dark">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,8 +9,8 @@
       content="Học JavaScript từ bản chất bằng tiếng Việt: execution context, closure, event loop, async. Video bài giảng, bài tập code chấm tự động ngay trên trình duyệt và trợ lý AI gợi ý khóa học."
     />
     <meta name="robots" content="index, follow" />
-    <meta name="theme-color" content="#0B0F19" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#F8FAFC" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#080F26" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F1F3FA" media="(prefers-color-scheme: light)" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
@@ -34,14 +34,16 @@
     />
     <meta name="twitter:image" content="/og-image.png" />
     <!-- Font tự host (xem src/index.css): preload subset latin + tiếng Việt dùng ngay ở màn hình đầu -->
-    <link rel="preload" href="/fonts/inter-tight-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/inter-tight-vietnamese-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/space-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/space-grotesk-vietnamese-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/handjet-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/handjet-vietnamese-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/jetbrains-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <!-- Áp giao diện đã lưu trước khi React chạy, tránh nháy tối → sáng -->
     <script>
       try {
         var t = JSON.parse(localStorage.getItem('hoisted.theme') || '{}');
-        if (t.state && t.state.mode === 'light') document.documentElement.classList.remove('dark');
+        if (t.state && t.state.mode === 'dark') document.documentElement.classList.add('dark');
       } catch (e) {}
     </script>
   </head>

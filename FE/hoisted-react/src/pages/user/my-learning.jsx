@@ -61,7 +61,7 @@ export default function MyLearningPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
             {stats.map(({ icon: Icon, n, l }) => (
               <div key={l} className="card p-4 flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent grid place-items-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center flex-shrink-0">
                   <Icon className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
@@ -163,11 +163,11 @@ function EnrollmentCard({ enrollment: e, isCompleted }) {
   const pct = Math.round(e.progress_percent);
 
   return (
-    <div className="card h-full flex flex-col overflow-hidden group hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 hover:shadow-lg hover:border-accent/30 transition-all duration-200">
+    <div className="card h-full flex flex-col overflow-hidden group hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:hover:translate-y-0 hover:shadow-lg transition-all duration-200">
       <Link to={`/courses/${e.slug}`} className="relative block">
         <CourseThumb course={course} className="rounded-none" />
         {isCompleted && (
-          <span className="absolute top-3 right-3 flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-bg/90 text-success ring-1 ring-success/40 font-mono text-[11px] font-bold shadow-lg">
+          <span className="absolute top-3 right-3 flex items-center gap-1.5 h-6 px-2.5 rounded-sm bg-bg/90 text-success ring-1 ring-success/40 font-mono text-[11px] font-bold shadow-lg">
             <CheckCircle className="w-3 h-3" aria-hidden="true" /> 100%
           </span>
         )}
@@ -236,7 +236,7 @@ function EmptyState({ tab, onShowAll }) {
     <div className="card relative overflow-hidden py-20 px-6 flex flex-col items-center text-center">
       <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
       <div className="relative">
-        <div className="w-16 h-16 rounded-2xl bg-accent/10 text-accent grid place-items-center mx-auto mb-5">
+        <div className="w-16 h-16 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center mx-auto mb-5">
           <BookOpen className="w-7 h-7" aria-hidden="true" />
         </div>
         <h3 className="font-display font-bold text-[17px] mb-1.5">Bạn chưa đăng ký khóa học nào</h3>

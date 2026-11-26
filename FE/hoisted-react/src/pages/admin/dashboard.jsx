@@ -126,13 +126,13 @@ export default function AdminDashboardPage() {
           <>
             <button
               onClick={exportCsv}
-              className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-line text-[13px] text-ink-2 hover:bg-bg-2 hover:border-accent/40 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 h-9 px-3 rounded-lg border-2 border-edge text-[13px] text-ink-2 hover:bg-bg-2 hover:border-accent transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" aria-hidden="true" /> Xuất CSV
             </button>
             <Link
               to="/admin/courses"
-              className="flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-accent text-accent-ink text-[13px] font-semibold hover:opacity-90 transition-opacity shadow-[0_4px_16px_rgb(var(--accent)/0.3)]"
+              className="flex items-center gap-1.5 h-9 px-3.5 rounded-sm bg-accent text-accent-ink text-[13px] font-semibold press border-2 border-edge"
             >
               <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Khóa mới
             </Link>
@@ -186,7 +186,7 @@ export default function AdminDashboardPage() {
             <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
               // Doanh thu · {rangeLabel}
             </p>
-            <div className="flex border border-line rounded-lg bg-bg-2 p-0.5" role="group" aria-label="Khoảng thời gian">
+            <div className="flex border-2 border-edge rounded-lg bg-bg-2 p-0.5" role="group" aria-label="Khoảng thời gian">
               {RANGE_TABS.map((t) => (
                 <button
                   key={t.value}
@@ -203,7 +203,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="flex items-end gap-3 mb-4">
-            <p className="font-mono font-bold text-[24px] leading-none tabular-nums">
+            <p className="font-pixel font-extrabold text-[35px] leading-none tabular-nums">
               {fmtCompact(rangeTotal)}đ
             </p>
             <span className="font-mono text-[11px] text-ink-3 pb-0.5">
@@ -297,7 +297,7 @@ export default function AdminDashboardPage() {
 
 function StatCard({ icon: Icon, label, value, delta, positive, sparkData, color }) {
   return (
-    <div className="card p-5 hover:border-accent/25 transition-colors">
+    <div className="card p-5 transition-colors">
       <div className="flex items-center justify-between mb-3">
         <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
         <div
@@ -308,7 +308,7 @@ function StatCard({ icon: Icon, label, value, delta, positive, sparkData, color 
           <Icon className="w-4 h-4" />
         </div>
       </div>
-      <p className="font-mono font-bold text-[24px] text-ink leading-none mb-1.5 tabular-nums">{value}</p>
+      <p className="font-pixel font-extrabold text-[35px] text-ink leading-none mb-1.5 tabular-nums">{value}</p>
       <p className={cn('font-mono text-[11px] mb-3', positive ? 'text-success' : 'text-danger')}>
         {positive ? '▲' : '▼'} {delta}
       </p>

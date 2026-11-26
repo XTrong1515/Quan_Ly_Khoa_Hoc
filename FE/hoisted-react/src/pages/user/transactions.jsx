@@ -30,21 +30,21 @@ export default function TransactionsPage() {
         <Reveal>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-7 max-w-xl">
             <div className="card p-5 flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-accent/10 text-accent grid place-items-center flex-shrink-0">
+              <div className="w-11 h-11 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center flex-shrink-0">
                 <Wallet className="w-5 h-5" aria-hidden="true" />
               </div>
               <div>
                 <p className="font-mono text-[11px] text-ink-3 uppercase tracking-wide mb-1">Tổng đã thanh toán</p>
-                <p className="font-mono font-bold text-[22px] text-ink leading-none tabular-nums">{formatVND(total)}</p>
+                <p className="font-pixel font-extrabold text-[32px] text-ink leading-none tabular-nums">{formatVND(total)}</p>
               </div>
             </div>
             <div className="card p-5 flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-indigo/10 text-indigo grid place-items-center flex-shrink-0">
+              <div className="w-11 h-11 rounded-sm border-2 border-edge bg-accent text-accent-ink grid place-items-center flex-shrink-0">
                 <Hash className="w-5 h-5" aria-hidden="true" />
               </div>
               <div>
                 <p className="font-mono text-[11px] text-ink-3 uppercase tracking-wide mb-1">Số giao dịch</p>
-                <p className="font-mono font-bold text-[22px] text-ink leading-none tabular-nums">{transactions.length}</p>
+                <p className="font-pixel font-extrabold text-[32px] text-ink leading-none tabular-nums">{transactions.length}</p>
               </div>
             </div>
           </div>
@@ -66,7 +66,7 @@ export default function TransactionsPage() {
         <div className="card relative overflow-hidden py-20 px-6 text-center">
           <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
           <div className="relative">
-            <div className="w-16 h-16 rounded-2xl bg-accent/10 text-accent grid place-items-center mx-auto mb-5">
+            <div className="w-16 h-16 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center mx-auto mb-5">
               <Receipt className="w-7 h-7" aria-hidden="true" />
             </div>
             <h3 className="font-display font-bold text-[17px] mb-1.5">Chưa có giao dịch nào</h3>

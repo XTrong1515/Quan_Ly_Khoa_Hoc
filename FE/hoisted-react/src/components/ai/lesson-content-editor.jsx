@@ -6,7 +6,7 @@ import { RichContent } from '@/components/rich-content.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-const inputCls = 'w-full px-3 py-2 text-[12.5px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
+const inputCls = 'w-full px-3 py-2 text-[12.5px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
 const LENGTHS = [['short', 'Ngắn (~400 từ)'], ['medium', 'Vừa (~750 từ)'], ['long', 'Dài (~1.200 từ)']];
 
 /**
@@ -47,7 +47,7 @@ export function LessonContentEditor({ apiBase, lesson, value, onChange }) {
         <label className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mr-2">Nội dung bài học (Markdown)</label>
         {[['edit', 'Soạn'], ['preview', 'Xem trước']].map(([k, l]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
-            className={cn('px-2 py-0.5 rounded text-[11px]', tab === k ? 'bg-accent/10 text-accent' : 'text-ink-3 hover:text-ink')}>
+            className={cn('px-2 py-0.5 rounded text-[11px]', tab === k ? 'bg-accent text-accent-ink ring-2 ring-inset ring-edge' : 'text-ink-3 hover:text-ink')}>
             {l}
           </button>
         ))}
@@ -78,7 +78,7 @@ export function LessonContentEditor({ apiBase, lesson, value, onChange }) {
           </div>
 
           {draft && (
-            <div className="rounded-lg border border-line bg-bg">
+            <div className="rounded-lg border-2 border-edge bg-bg">
               <div className="max-h-80 overflow-y-auto p-4"><RichContent content={draft} /></div>
               <div className="flex justify-end gap-2 px-3 py-2 border-t border-line">
                 <Button size="sm" variant="ghost" type="button" onClick={() => setDraft(null)}>Bỏ</Button>
@@ -96,7 +96,7 @@ export function LessonContentEditor({ apiBase, lesson, value, onChange }) {
           placeholder={'## Mục tiêu bài học\n\n- …\n\n```js\nconsole.log("Hello Hoisted");\n```'}
           className={cn(inputCls, 'font-mono resize-y')} />
       ) : (
-        <div className="min-h-[120px] max-h-96 overflow-y-auto p-4 rounded-lg border border-line bg-bg">
+        <div className="min-h-[120px] max-h-96 overflow-y-auto p-4 rounded-lg border-2 border-edge bg-bg">
           {value.trim() ? <RichContent content={value} /> : <p className="font-mono text-[12px] text-ink-3">// Chưa có nội dung</p>}
         </div>
       )}

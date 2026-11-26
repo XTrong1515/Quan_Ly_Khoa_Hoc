@@ -55,7 +55,7 @@ export default function InstructorDashboardPage() {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <p className="eyebrow mb-1.5"><span className="text-accent">~/instructor</span> <span className="text-ink-3">/ tổng-quan</span></p>
-          <h1 className="font-display font-bold text-[24px]">Xin chào, {user?.name ?? 'giảng viên'}</h1>
+          <h1 className="display text-[32px]">Xin chào, {user?.name ?? 'giảng viên'}</h1>
         </div>
         <Link to="/instructor/courses">
           <Button size="sm">Quản lý khóa học <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></Button>
@@ -76,7 +76,7 @@ export default function InstructorDashboardPage() {
               <Icon className="w-3.5 h-3.5 text-ink-3" aria-hidden="true" />
               <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
             </div>
-            <p className="font-mono font-bold text-[24px] text-ink leading-none tabular-nums">
+            <p className="font-pixel font-extrabold text-[35px] text-ink leading-none tabular-nums">
               {isLoading ? '…' : value}
             </p>
             {hint && !isLoading && <p className="mt-1.5 font-mono text-[10.5px] text-ink-3">{hint}</p>}
@@ -103,7 +103,7 @@ export default function InstructorDashboardPage() {
                 <dt className="flex items-center gap-2 mb-1.5 text-[12.5px] text-ink-2">
                   <Icon className="w-3.5 h-3.5 text-ink-3" aria-hidden="true" /> {label}
                 </dt>
-                <dd className="font-mono font-bold text-[20px] text-ink leading-none tabular-nums">{formatVND(value)}</dd>
+                <dd className="font-pixel font-extrabold text-[29px] text-ink leading-none tabular-nums">{formatVND(value)}</dd>
                 {hint && <dd className="mt-1.5 font-mono text-[10.5px] text-ink-3">{hint}</dd>}
               </div>
             ))}

@@ -19,7 +19,7 @@ const initials    = (name) => (name||'?').split(' ').map(w=>w[0]).join('').slice
 
 /* ── Role badge ─────────────────────────────────────────────────── */
 const ROLE_CFG = {
-  ADMIN:      { label: 'Admin',      color: 'text-accent bg-accent/10' },
+  ADMIN:      { label: 'Admin',      color: 'text-accent-ink ring-2 ring-inset ring-edge bg-accent' },
   INSTRUCTOR: { label: 'Giảng viên', color: 'text-indigo bg-indigo/10' },
   USER:       { label: 'Student',    color: 'text-ink-3 bg-bg-2'       },
 };
@@ -113,17 +113,17 @@ export default function AdminUsersPage() {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ người-dùng</span></p>
-          <h1 className="font-display font-bold text-[24px]">Quản lý người dùng</h1>
+          <h1 className="display text-[32px]">Quản lý người dùng</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-edge text-[13px] text-ink-2 hover:bg-bg-2 transition-colors">
             <Download className="w-3.5 h-3.5" /> Export
           </button>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-accent-ink text-[13px] font-semibold hover:opacity-90 transition-opacity">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-accent text-accent-ink text-[13px] font-semibold press border-2 border-edge">
             <Plus className="w-3.5 h-3.5" /> Mới người dùng
           </button>
         </div>
@@ -138,12 +138,12 @@ export default function AdminUsersPage() {
           { label: 'Admin',              value: stats.admins,        delta: null,    positive: true  },
           { label: 'Đã khóa',            value: stats.locked,        delta: null,    positive: false },
         ].map(({ label, value, positive }) => (
-          <div key={label} className="card p-5 hover:border-accent/25 transition-colors">
+          <div key={label} className="card p-5 transition-colors">
             <div className="flex items-center gap-1.5 mb-2">
               <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', positive ? 'bg-success' : 'bg-danger')} aria-hidden="true" />
               <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
             </div>
-            <p className="font-mono font-bold text-[24px] text-ink leading-none tabular-nums">
+            <p className="font-pixel font-extrabold text-[35px] text-ink leading-none tabular-nums">
               {value != null ? Number(value).toLocaleString() : '—'}
             </p>
           </div>
@@ -156,7 +156,7 @@ export default function AdminUsersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3" />
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Tìm tên, email..."
-            className="w-full pl-9 pr-3 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent" />
+            className="w-full pl-9 pr-3 py-2 text-[12px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent" />
         </div>
         {[
           { value: role,   set: v => { setRole(v); setPage(1); },   opts: [['','Mọi vai trò'], ...ROLE_OPTIONS] },
@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
           { value: sort,   set: v => { setSort(v); setPage(1); },   opts: [['newest','Mới nhất'],['oldest','Cũ nhất'],['name','Tên A-Z'],['spent','Chi nhiều nhất']] },
         ].map(({ value, set, opts }, i) => (
           <select key={i} value={value} onChange={e => set(e.target.value)}
-            className="px-3 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink focus:outline-none focus:border-accent">
+            className="px-3 py-2 text-[12px] bg-bg-3 border-2 border-edge rounded-sm text-ink focus:outline-none focus:border-accent">
             {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         ))}
@@ -173,13 +173,13 @@ export default function AdminUsersPage() {
 
       {/* Bulk action bar */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-bg-2 border border-line rounded-lg">
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-bg-2 border-2 border-edge rounded-lg">
           <span className="font-mono text-[12px] text-ink-2">{selected.size} đã chọn</span>
           <div className="flex items-center gap-2 ml-auto">
             <button
               disabled={bulkMutation.isPending}
               onClick={() => bulkMutation.mutate({ ids: selected, action: 'UNLOCK' })}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-[12px] text-ink-2 hover:bg-bg-3 transition-colors disabled:opacity-50">
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-edge text-[12px] text-ink-2 hover:bg-bg-3 transition-colors disabled:opacity-50">
               <Unlock className="w-3.5 h-3.5" /> Mở khóa
             </button>
             <button
@@ -308,7 +308,7 @@ function UserRow({ user: u, selected, expanded, onSelect, onToggleExpand, onTogg
             {showRoleMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowRoleMenu(false)} />
-                <div className="absolute left-0 top-full mt-1 z-20 bg-bg border border-line rounded-lg shadow-lg overflow-hidden min-w-[130px]">
+                <div className="absolute left-0 top-full mt-1 z-20 bg-bg border-2 border-edge rounded-lg shadow-lg overflow-hidden min-w-[130px]">
                   {ROLE_OPTIONS.map(([r, label]) => (
                     <button key={r}
                       onClick={() => { onChangeRole(r); setShowRoleMenu(false); }}
@@ -473,7 +473,7 @@ function UserEnrollmentsPanel({ userId }) {
   return (
     <div className="space-y-2">
       {enrollments.map(e => (
-        <div key={e.id} className="flex items-center gap-3 px-3 py-2 bg-bg rounded-lg border border-line">
+        <div key={e.id} className="flex items-center gap-3 px-3 py-2 bg-bg rounded-lg border-2 border-edge">
           <BookOpen className="w-3.5 h-3.5 text-ink-3 shrink-0" />
           <span className="flex-1 text-[13px] text-ink truncate">{e.courseTitle}</span>
           <div className="flex items-center gap-1.5 w-32 shrink-0">

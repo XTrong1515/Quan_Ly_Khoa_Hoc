@@ -27,8 +27,8 @@ function autoSlug(name) {
 }
 
 const inputCls = (err) => cn(
-  'w-full px-3 py-2 text-[13px] bg-bg border rounded-lg text-ink placeholder:text-ink-3 focus:outline-none transition-colors',
-  err ? 'border-danger' : 'border-line focus:border-accent',
+  'w-full px-3 py-2 text-[13px] bg-bg-3 border-2 rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:shadow-sm transition-[border-color,box-shadow]',
+  err ? 'border-danger' : 'border-edge focus:border-accent',
 );
 
 /* ── Page ───────────────────────────────────────────────────────── */
@@ -103,7 +103,7 @@ export default function AdminCategoriesPage() {
         <div>
           <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ danh-mục</span></p>
           <div className="flex items-center gap-3">
-            <h1 className="font-display font-bold text-[24px]">Quản lý danh mục</h1>
+            <h1 className="display text-[32px]">Quản lý danh mục</h1>
             {!isLoading && (
               <span className="font-mono text-[11px] text-ink-3">
                 {categories.length} danh mục · {totalCourses} khóa
@@ -113,7 +113,7 @@ export default function AdminCategoriesPage() {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-bg text-[13px] font-semibold hover:opacity-90 transition-opacity">
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-accent text-accent-ink press border-2 border-edge text-[13px] font-semibold">
           <Plus className="w-3.5 h-3.5" /> Thêm danh mục
         </button>
       </div>
@@ -293,7 +293,7 @@ Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu tr�
                       className={cn(
                         'w-9 h-9 rounded-lg font-mono text-[13px] font-bold transition-colors border',
                         form.icon === g
-                          ? 'bg-accent text-bg border-accent'
+                          ? 'bg-accent text-accent-ink press border-2 border-edge border-accent'
                           : 'bg-bg-2 text-ink border-line hover:border-ink-3',
                       )}>
                       {g}
@@ -302,7 +302,7 @@ Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu tr�
                   <input
                     value={form.icon}
                     onChange={set('icon')}
-                    className="w-16 px-2 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent"
+                    className="w-16 px-2 py-2 text-[12px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent"
                     placeholder="Tự nhập"
                   />
                 </div>

@@ -106,7 +106,6 @@ export default function CourseDetailPage() {
   if (isError || !data?.course) {
     return (
       <div className="py-24 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
         <div className="relative px-5">
           {notFound ? (
             <>
@@ -190,13 +189,6 @@ export default function CourseDetailPage() {
         <div className="absolute inset-x-0 top-0 h-[460px] overflow-hidden pointer-events-none" aria-hidden="true">
           <div className="absolute inset-0 bg-bg-2" />
           <div className="absolute inset-0 bg-grid mask-fade-y" />
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                'radial-gradient(ellipse 55% 65% at 20% 0%, rgb(var(--accent) / .13) 0%, transparent 60%), radial-gradient(ellipse 45% 55% at 95% 30%, rgb(99 102 241 / .10) 0%, transparent 60%)',
-            }}
-          />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-bg" />
         </div>
 
@@ -252,7 +244,7 @@ export default function CourseDetailPage() {
 
             {/* Instructor line */}
             <div className="flex items-center gap-3 mb-10">
-              <div className="p-[2px] rounded-full bg-gradient-to-br from-accent to-indigo">
+              <div className="p-[2px] rounded-full bg-pop">
                 <div className="w-9 h-9 rounded-full bg-bg-1 grid place-items-center font-bold text-[13px] text-ink">
                   {instructorName?.[0]?.toUpperCase()}
                 </div>
@@ -327,12 +319,12 @@ export default function CourseDetailPage() {
 
             {tab === 'instructor' && (
               <div className="card p-6 flex flex-col sm:flex-row gap-5 items-start">
-                <div className="p-[3px] rounded-2xl bg-gradient-to-br from-accent to-indigo flex-shrink-0">
+                <div className="p-[3px] rounded-2xl bg-pop flex-shrink-0">
                   {instructor?.avatar ? (
                     <img src={instructor.avatar} alt={instructorName} width="64" height="64" loading="lazy"
-                      className="w-16 h-16 rounded-[13px] object-cover bg-bg-1" />
+                      className="w-16 h-16 rounded object-cover bg-bg-1" />
                   ) : (
-                    <div className="w-16 h-16 rounded-[13px] bg-bg-1 grid place-items-center font-display font-bold text-[22px] text-ink">
+                    <div className="w-16 h-16 rounded bg-bg-1 grid place-items-center font-display font-bold text-[22px] text-ink">
                       {instructorName?.[0]?.toUpperCase()}
                     </div>
                   )}
@@ -368,18 +360,18 @@ export default function CourseDetailPage() {
 
           {/* ── Right: floating purchase card ─────────────────────── */}
           <aside className="mt-10 lg:mt-0 lg:sticky lg:top-20">
-            <div className="card overflow-hidden shadow-2xl shadow-black/20 lg:rounded-2xl">
+            <div className="card overflow-hidden shadow-2xl lg:rounded-2xl">
               <div className="relative">
                 <CourseThumb course={course} className="rounded-none" priority />
                 {discount > 0 && (
-                  <span className="absolute top-3 right-3 h-6 px-2.5 rounded-full bg-[#0B0F19] text-white font-mono text-[11.5px] font-bold grid place-items-center">
+                  <span className="absolute top-3 right-3 h-6 px-2.5 rounded-sm bg-[#0B0F19] text-white font-mono text-[11.5px] font-bold grid place-items-center">
                     -{discount}%
                   </span>
                 )}
               </div>
               <div className="p-5">
                 <div className="flex items-end gap-2.5 mb-5">
-                  <span className={cn('font-mono font-bold text-[28px] leading-none', isFree ? 'text-accent' : 'text-ink')}>
+                  <span className={cn('font-pixel font-extrabold text-[41px] leading-none', isFree ? 'text-accent' : 'text-ink')}>
                     {formatPrice(course.price)}
                   </span>
                   {discount > 0 && (
@@ -400,7 +392,7 @@ export default function CourseDetailPage() {
                 ) : isFree ? (
                   <Button
                     size="lg"
-                    className="w-full justify-center mb-2 shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+                    className="w-full justify-center mb-2 shadow"
                     disabled={enrollFreeMutation.isPending}
                     onClick={handleEnrollFree}
                   >
@@ -418,7 +410,7 @@ export default function CourseDetailPage() {
                     ) : (
                       <Button
                         size="lg"
-                        className="w-full justify-center mb-2 shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+                        className="w-full justify-center mb-2 shadow"
                         onClick={handleAddCart}
                       >
                         <ShoppingCart className="w-4 h-4" aria-hidden="true" /> Thêm vào giỏ
@@ -510,7 +502,7 @@ function SectionAccordion({ index, title, lessons, isEnrolled, onPreview }) {
               {l.is_preview ? (
                 <button
                   onClick={() => onPreview(l)}
-                  className="flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-accent/30 bg-accent/10 text-accent font-mono text-[11px] font-semibold hover:bg-accent/20 transition-colors flex-shrink-0 cursor-pointer"
+                  className="flex items-center gap-1.5 h-7 px-2.5 rounded-sm bg-accent text-accent-ink ring-2 ring-inset ring-edge font-mono text-[11px] font-semibold transition-colors flex-shrink-0 cursor-pointer"
                 >
                   <Play className="w-3 h-3" aria-hidden="true" /> Xem thử
                 </button>
@@ -548,7 +540,7 @@ function ReviewsList({ reviews, course }) {
       {/* Summary panel */}
       <div className="card p-6 mb-6 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-7 items-center">
         <div className="text-center sm:pr-7 sm:border-r sm:border-line">
-          <div className="font-mono font-bold text-[48px] text-ink leading-none tabular-nums">{Number(course.rating).toFixed(1)}</div>
+          <div className="font-pixel font-extrabold text-[70px] text-ink leading-none tabular-nums">{Number(course.rating).toFixed(1)}</div>
           <div className="flex gap-0.5 mt-2 justify-center" aria-label={`${Number(course.rating).toFixed(1)} trên 5 sao`}>
             {[1, 2, 3, 4, 5].map((s) => (
               <Star key={s} className={cn('w-4 h-4', s <= Math.round(course.rating) ? 'fill-accent text-accent' : 'text-line')} aria-hidden="true" />
@@ -562,7 +554,7 @@ function ReviewsList({ reviews, course }) {
               <span className="font-mono text-[11.5px] text-ink-3 w-6 text-right">{star}★</span>
               <div className="flex-1 h-2 rounded-full bg-bg-2 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-accent to-accent/70"
+                  className="h-full rounded-full bg-accent"
                   style={{ width: `${(n / reviews.length) * 100}%` }}
                 />
               </div>
@@ -577,8 +569,8 @@ function ReviewsList({ reviews, course }) {
         {reviews.map((r) => (
           <div key={r.id} className="card p-5 flex gap-4">
             <div
-              className="w-10 h-10 rounded-full grid place-items-center font-mono font-bold text-sm text-[#0B0F19] flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #6366F1, #F7DF1E)' }}
+              className="w-10 h-10 rounded-full grid place-items-center font-mono font-bold text-sm text-navy flex-shrink-0"
+              style={{ background: 'rgb(var(--pop))' }}
               aria-hidden="true"
             >
               {r.userName?.[0]?.toUpperCase() ?? '?'}
@@ -649,11 +641,6 @@ function WriteReviewSection({ courseId }) {
 
   return (
     <div className="card p-6 mb-6 border-accent/20 relative overflow-hidden">
-      <div
-        className="absolute inset-0 pointer-events-none"
-        aria-hidden="true"
-        style={{ background: 'radial-gradient(ellipse at 0% 0%, rgb(var(--accent) / .05) 0%, transparent 55%)' }}
-      />
       <div className="relative">
         <h3 className="font-display font-semibold text-[15px] mb-4">
           {existing ? 'Đánh giá của bạn' : 'Viết đánh giá'}
@@ -691,7 +678,7 @@ function WriteReviewSection({ courseId }) {
           maxLength={1000}
           rows={3}
           placeholder="Chia sẻ trải nghiệm của bạn về khóa học..."
-          className="w-full px-3.5 py-3 text-[13.5px] bg-bg border border-line rounded-xl text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent resize-none transition-colors mb-3"
+          className="w-full px-3.5 py-3 text-[13.5px] bg-bg border-2 border-edge rounded-xl text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent resize-none transition-colors mb-3"
         />
 
         <div className="flex items-center justify-between">
@@ -736,7 +723,7 @@ function PreviewModal({ lesson, onClose }) {
           <button
             onClick={onClose}
             aria-label="Đóng"
-            className="w-9 h-9 rounded-lg border border-line text-ink-3 hover:text-ink hover:bg-bg-2 grid place-items-center transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-lg border-2 border-edge text-ink-3 hover:text-ink hover:bg-bg-2 grid place-items-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-const inputCls = 'w-full px-2.5 py-1.5 text-[12.5px] bg-bg border border-line rounded-md text-ink focus:outline-none focus:border-accent';
+const inputCls = 'w-full px-2.5 py-1.5 text-[12.5px] bg-bg-3 border-2 border-edge rounded-sm text-ink focus:outline-none focus:border-accent';
 const DIFFICULTIES = [['easy', 'Dễ'], ['medium', 'Trung bình'], ['hard', 'Khó']];
 
 /**

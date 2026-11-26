@@ -17,23 +17,15 @@ const schema = z.object({
 /* Dark auth backdrop shared with login/register's brand panel */
 export function AuthScreen({ children }) {
   return (
-    <div className="min-h-dvh flex items-center justify-center p-6 relative overflow-hidden bg-[#0B0F19]">
+    <div className="min-h-dvh flex items-center justify-center p-6 relative overflow-hidden bg-navy">
       <div
         className="absolute inset-0 pointer-events-none"
         aria-hidden="true"
         style={{
           backgroundImage:
-            'linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px)',
-          backgroundSize: '44px 44px',
+            'radial-gradient(rgb(255 255 255 / 0.16) 1.2px, transparent 1.5px)',
+          backgroundSize: '18px 18px',
           maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 80%, transparent)',
-        }}
-      />
-      <div
-        className="absolute inset-0 pointer-events-none"
-        aria-hidden="true"
-        style={{
-          backgroundImage:
-            'radial-gradient(ellipse 50% 45% at 25% 5%, rgb(247 223 30 / .09) 0%, transparent 60%), radial-gradient(ellipse 45% 45% at 85% 95%, rgb(99 102 241 / .11) 0%, transparent 60%)',
         }}
       />
       <div className="relative w-full max-w-[440px]">{children}</div>
@@ -75,7 +67,7 @@ export default function ForgotPasswordPage() {
       </div>
 
       {!sent ? (
-        <div className="bg-bg rounded-2xl border border-line p-8 shadow-2xl shadow-black/40">
+        <div className="bg-bg rounded-2xl border-2 border-edge p-8 shadow-2xl">
           <p className="eyebrow mb-4">
             <span className="text-accent">~/hoisted</span> <span className="text-ink-3">/ quên-mật-khẩu</span>
           </p>
@@ -110,7 +102,7 @@ export default function ForgotPasswordPage() {
               type="submit"
               size="lg"
               disabled={isSubmitting}
-              className="justify-center shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+              className="justify-center shadow"
             >
               {isSubmitting ? 'Đang gửi…' : 'Gửi link đặt lại →'}
             </Button>
@@ -124,8 +116,8 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
       ) : (
-        <div className="bg-bg rounded-2xl border border-line p-8 text-center shadow-2xl shadow-black/40">
-          <div className="w-14 h-14 rounded-2xl bg-success/10 grid place-items-center mx-auto mb-5 shadow-[0_0_36px_rgb(52_211_153/0.2)]">
+        <div className="bg-bg rounded-2xl border-2 border-edge p-8 text-center shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-success/10 grid place-items-center mx-auto mb-5 shadow">
             <MailCheck className="w-6 h-6 text-success" aria-hidden="true" />
           </div>
           <h1 className="display text-[24px] mb-3">Kiểm tra hộp thư</h1>
@@ -133,7 +125,7 @@ export default function ForgotPasswordPage() {
             Nếu <span className="text-ink font-semibold">{getValues('email')}</span> tồn tại trong hệ thống,
             bạn sẽ nhận được email hướng dẫn trong vài phút. Link trong email có hiệu lực 1 giờ.
           </p>
-          <p className="font-mono text-[11.5px] text-ink-3 bg-bg-2 border border-line rounded-xl px-4 py-2.5 mb-6">
+          <p className="font-mono text-[11.5px] text-ink-3 bg-bg-2 border-2 border-edge rounded-xl px-4 py-2.5 mb-6">
             Không thấy email? Kiểm tra thư mục Spam hoặc gửi lại.
           </p>
           <button

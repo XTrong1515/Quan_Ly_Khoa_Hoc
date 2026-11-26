@@ -36,12 +36,12 @@ export default function AdminReviewsPage() {
     <div className="p-5 sm:p-8">
       <div className="mb-6">
         <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ đánh-giá</span></p>
-        <h1 className="font-display font-bold text-[24px]">Quản lý đánh giá</h1>
+        <h1 className="display text-[32px]">Quản lý đánh giá</h1>
       </div>
 
       {/* Filters */}
       <div className="flex gap-3 mb-5 flex-wrap">
-        <div className="flex gap-1 border border-line rounded-lg p-1 bg-bg-2">
+        <div className="flex gap-1 border-2 border-edge rounded-lg p-1 bg-bg-2">
           {[{ v: 'course', l: 'Khóa học' }, { v: 'site', l: 'Website' }].map(({ v, l }) => (
             <button key={v} onClick={() => { setType(v); setPage(1); }}
               className={cn(
@@ -53,7 +53,7 @@ export default function AdminReviewsPage() {
           ))}
         </div>
         <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}
-          className="px-3 py-2 text-[13px] bg-bg border border-line rounded-lg text-ink focus:outline-none focus:border-accent">
+          className="px-3 py-2 text-[13px] bg-bg-3 border-2 border-edge rounded-sm text-ink focus:outline-none focus:border-accent">
           <option value="">Tất cả</option>
           <option value="VISIBLE">Hiển thị</option>
           <option value="HIDDEN">Đã ẩn</option>
@@ -79,7 +79,7 @@ export default function AdminReviewsPage() {
           )}>
             {/* Avatar */}
             <div className="w-9 h-9 rounded-full grid place-items-center font-mono font-bold text-sm shrink-0"
-              style={{ background: 'linear-gradient(135deg, #6366F1, #F7DF1E)', color: '#0B0F19' }}>
+              style={{ background: 'rgb(var(--pop))', color: '#0B0F19' }}>
               {r.userName?.[0]?.toUpperCase() ?? '?'}
             </div>
 

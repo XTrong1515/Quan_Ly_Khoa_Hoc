@@ -35,7 +35,7 @@ export function ExerciseResults({ result, title }) {
         const tone = STATUS_LABELS[r.status]?.tone ?? 'danger';
         const Icon = r.hidden && !r.input ? Lock : tone === 'success' ? CheckCircle2 : tone === 'muted' ? MinusCircle : XCircle;
         return (
-          <div key={r.index} className="border border-line rounded-lg px-3 py-2 text-[12px]">
+          <div key={r.index} className="border-2 border-edge rounded-lg px-3 py-2 text-[12px]">
             <div className="flex items-center gap-2">
               <Icon className={cn('w-3.5 h-3.5 shrink-0',
                 tone === 'success' ? 'text-success' : tone === 'muted' ? 'text-ink-3' : 'text-danger')} />

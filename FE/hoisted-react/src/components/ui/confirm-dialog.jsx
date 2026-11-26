@@ -12,12 +12,12 @@ export function ConfirmDialog({ title, children, confirmLabel, onConfirm, onClos
   const titleId = useId();
   return (
     <Dialog onClose={onClose} aria-labelledby={titleId} className="max-w-[400px] p-5">
-      <h2 id={titleId} className="font-display font-semibold text-[17px] text-ink">{title}</h2>
+      <h2 id={titleId} className="font-display font-bold text-[24px] leading-none text-ink">{title}</h2>
       <div className="mt-2 text-[13.5px] leading-[1.6] text-ink-2">{children}</div>
       <div className="mt-5 flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose} disabled={pending} autoFocus>Hủy</Button>
         <Button onClick={onConfirm} disabled={pending}
-          className={cn(destructive && 'bg-danger text-white hover:brightness-110', pending && 'opacity-70')}>
+          className={cn(destructive && 'bg-danger text-white', pending && 'opacity-70')}>
           {pending ? 'Đang xử lý…' : confirmLabel}
         </Button>
       </div>

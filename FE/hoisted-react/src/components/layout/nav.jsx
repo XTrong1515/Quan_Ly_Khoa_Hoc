@@ -19,8 +19,8 @@ const LINKS = [
 ];
 
 const THUMB_COLORS = {
-  yellow: '#F7DF1E', indigo: '#6366F1', rose: '#F43F5E',
-  green:  '#10B981', violet: '#8B5CF6', sky:  '#06B6D4',
+  yellow: '#FFCF33', indigo: '#2547D0', rose: '#F2542D',
+  green:  '#1DB06B', violet: '#7B5CFA', sky:  '#29B6F6',
 };
 
 export function Nav() {
@@ -53,13 +53,14 @@ export function Nav() {
   const themeLabel = mode === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối';
 
   return (
-    <nav className="relative flex items-center gap-3 lg:gap-7 h-16 px-4 md:px-8 border-b border-line bg-bg/70 backdrop-blur sticky top-0 z-10">
+    <nav className="relative flex items-center gap-3 lg:gap-7 h-16 px-4 md:px-8 border-b-2 border-edge bg-bg-1 sticky top-0 z-10">
       <Logo />
-      <div className="hidden md:flex gap-5">
+      <div className="hidden md:flex gap-1.5">
         {LINKS.map((l) => (
           <NavLink key={l.to} to={l.to}
             className={({ isActive }) =>
-              `text-[13.5px] font-medium whitespace-nowrap ${isActive ? 'text-ink' : 'text-ink-2 hover:text-ink'}`}>
+              cn('h-[32px] px-2.5 inline-flex items-center rounded-sm border-2 text-[13.5px] font-bold whitespace-nowrap transition-colors',
+                isActive ? 'bg-pop text-pop-ink border-edge shadow-sm' : 'border-transparent text-ink-2 hover:text-ink hover:bg-bg-2')}>
             {l.label}
           </NavLink>
         ))}
@@ -78,7 +79,7 @@ export function Nav() {
         <Link to="/cart" className="relative" aria-label={items.length ? `Giỏ hàng (${items.length} khóa học)` : 'Giỏ hàng'}>
           <IconBtn title="Giỏ hàng" tabIndex={-1} aria-hidden="true"><ShoppingCart className="w-4 h-4" /></IconBtn>
           {items.length > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-accent text-accent-ink font-mono font-bold text-[9.5px] grid place-items-center border-2 border-bg">
+            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-sm bg-pop text-pop-ink font-mono font-bold text-[10px] grid place-items-center border-2 border-edge">
               {items.length}
             </span>
           )}
@@ -86,10 +87,10 @@ export function Nav() {
 
         {role === 'guest' ? (
           <div className="hidden sm:flex items-center gap-1.5">
-            <Link to="/login" className="h-[30px] px-3 inline-flex items-center text-[12.5px] font-semibold rounded-md border border-line text-ink hover:bg-bg-2 whitespace-nowrap">
+            <Link to="/login" className="press h-[32px] px-3 inline-flex items-center text-[12.5px] font-bold rounded-sm border-2 border-edge bg-bg-1 text-ink hover:bg-bg-2 whitespace-nowrap">
               Đăng nhập
             </Link>
-            <Link to="/register" className="h-[30px] px-3 inline-flex items-center text-[12.5px] font-semibold rounded-md bg-accent text-accent-ink hover:brightness-95 whitespace-nowrap">
+            <Link to="/register" className="press h-[32px] px-3 inline-flex items-center text-[12.5px] font-bold rounded-sm border-2 border-edge bg-pop text-pop-ink whitespace-nowrap">
               Đăng ký
             </Link>
           </div>
@@ -104,11 +105,10 @@ export function Nav() {
             >
               {user?.avatar ? (
                 <img src={user.avatar} alt={user.name} width="32" height="32"
-                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-line" />
+                  className="w-8 h-8 rounded-sm object-cover shrink-0 border-2 border-edge" />
               ) : (
                 <div
-                  className="w-8 h-8 rounded-full grid place-items-center font-mono font-bold text-xs text-[#0B0F19] shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #6366F1, #F7DF1E)' }}
+                  className="w-8 h-8 rounded-sm border-2 border-edge bg-pop grid place-items-center font-mono font-bold text-xs text-navy shrink-0"
                 >
                   {avatarLabel}
                 </div>
@@ -120,16 +120,15 @@ export function Nav() {
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-11 w-52 rounded-xl border border-line bg-bg-1 shadow-xl py-1.5 z-50">
+              <div className="absolute right-0 top-11 w-52 rounded-xl border-2 border-edge bg-bg-1 shadow-xl py-1.5 z-50">
                 <div className="px-4 py-3 border-b border-line">
                   <div className="flex items-center gap-2.5">
                     {user?.avatar ? (
                       <img src={user.avatar} alt={user.name} width="32" height="32" fetchpriority="low"
-                        className="w-8 h-8 rounded-full object-cover shrink-0 border border-line" />
+                        className="w-8 h-8 rounded-sm object-cover shrink-0 border-2 border-edge" />
                     ) : (
                       <div
-                        className="w-8 h-8 rounded-full grid place-items-center font-mono font-bold text-xs text-[#0B0F19] shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #6366F1, #F7DF1E)' }}
+                        className="w-8 h-8 rounded-sm border-2 border-edge bg-pop grid place-items-center font-mono font-bold text-xs text-navy shrink-0"
                       >
                         {avatarLabel}
                       </div>
@@ -197,13 +196,13 @@ export function Nav() {
       </div>
 
       {mobileOpen && (
-        <div id="mobile-nav" className="md:hidden absolute top-full inset-x-0 bg-bg border-b border-line shadow-xl p-4 space-y-2">
+        <div id="mobile-nav" className="md:hidden absolute top-full inset-x-0 bg-bg-1 border-b-2 border-edge p-4 space-y-2">
           <SearchBox className="w-full mb-2" />
           {LINKS.map((l) => (
             <NavLink key={l.to} to={l.to}
               className={({ isActive }) => cn(
-                'flex items-center h-11 px-3 rounded-lg text-[14px] font-medium hover:bg-bg-2',
-                isActive ? 'text-accent' : 'text-ink-2',
+                'flex items-center h-11 px-3 rounded-sm border-2 text-[14px] font-bold',
+                isActive ? 'bg-pop text-pop-ink border-edge shadow-sm' : 'border-transparent text-ink-2 hover:bg-bg-2',
               )}>
               {l.label}
             </NavLink>
@@ -217,10 +216,10 @@ export function Nav() {
           </button>
           {role === 'guest' && (
             <div className="sm:hidden grid grid-cols-2 gap-2 pt-2 border-t border-line">
-              <Link to="/login" className="h-11 inline-flex items-center justify-center text-[14px] font-semibold rounded-lg border border-line text-ink">
+              <Link to="/login" className="press h-11 inline-flex items-center justify-center text-[14px] font-bold rounded-sm border-2 border-edge bg-bg-1 text-ink">
                 Đăng nhập
               </Link>
-              <Link to="/register" className="h-11 inline-flex items-center justify-center text-[14px] font-semibold rounded-lg bg-accent text-accent-ink">
+              <Link to="/register" className="press h-11 inline-flex items-center justify-center text-[14px] font-bold rounded-sm border-2 border-edge bg-pop text-pop-ink">
                 Đăng ký
               </Link>
             </div>
@@ -287,17 +286,17 @@ function NotificationsBell() {
           <Bell className="w-4 h-4" />
         </IconBtn>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#E11D48] text-white font-mono font-bold text-[9.5px] grid place-items-center border-2 border-bg pointer-events-none">
+          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-sm bg-danger text-white font-mono font-bold text-[10px] grid place-items-center border-2 border-edge pointer-events-none">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </div>
 
       {open && (
-        <div className="fixed inset-x-3 top-[68px] sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-80 rounded-xl border border-line bg-bg shadow-2xl z-50 overflow-hidden">
+        <div className="fixed inset-x-3 top-[68px] sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-80 rounded-xl border-2 border-edge bg-bg shadow-2xl z-50 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
-            <p className="font-semibold text-[13px] text-ink">Thông báo</p>
+            <p className="font-bold text-[13px] text-ink">Thông báo</p>
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
@@ -326,7 +325,7 @@ function NotificationsBell() {
                 >
                   <div className="flex items-start gap-2.5">
                     {!n.isRead && (
-                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      <span className="mt-1.5 w-2 h-2 bg-accent shrink-0" />
                     )}
                     <div className={cn('flex-1 min-w-0', n.isRead && 'pl-4')}>
                       <p className="text-[12.5px] font-medium text-ink leading-snug line-clamp-1">
@@ -447,7 +446,7 @@ function SearchBox({ className }) {
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
-      <Search className="absolute left-3 top-2.5 w-4 h-4 text-ink-3 pointer-events-none z-10" />
+      <Search className="absolute left-3 top-3 w-4 h-4 text-ink-3 pointer-events-none z-10" />
       <input
         ref={inputRef}
         value={value}
@@ -463,17 +462,17 @@ function SearchBox({ className }) {
         <button
           onClick={() => { setValue(''); setOpen(false); inputRef.current?.focus(); }}
           aria-label="Xóa từ khóa tìm kiếm"
-          className="absolute right-9 top-2 p-0.5 text-ink-3 hover:text-ink transition-colors">
+          className="absolute right-3 top-[11px] p-0.5 text-ink-3 hover:text-ink transition-colors">
           <X className="w-3.5 h-3.5" />
         </button>
       ) : (
-        <span className="absolute right-2 top-2 font-mono text-[11px] text-ink-3 border border-line rounded px-1.5 py-0.5 pointer-events-none">
+        <span className="absolute right-2 top-[9px] font-mono text-[10.5px] font-bold text-ink-2 bg-bg-2 border-2 border-edge/40 rounded-sm px-1 leading-[16px] pointer-events-none">
           ⌘K
         </span>
       )}
 
       {showDropdown && (
-        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-bg border border-line rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-bg border-2 border-edge rounded-xl shadow-2xl overflow-hidden z-50">
           {isFetching && courses.length === 0 && (
             <p className="px-4 py-3 font-mono text-[12px] text-ink-3">Đang tìm…</p>
           )}
@@ -521,11 +520,11 @@ function SearchBox({ className }) {
 function MiniThumb({ course }) {
   const url = course.thumbnail_url || course.thumbnailUrl;
   if (url) {
-    return <img src={url} alt="" width="36" height="36" fetchpriority="low" className="w-9 h-9 rounded object-cover shrink-0 border border-line" />;
+    return <img src={url} alt="" width="36" height="36" fetchpriority="low" className="w-9 h-9 rounded object-cover shrink-0 border-2 border-edge" />;
   }
   const bg = THUMB_COLORS[course.thumb] ?? '#6366F1';
   return (
-    <div className="w-9 h-9 rounded shrink-0 grid place-items-center font-mono font-bold text-[13px] text-[#0B0F19]"
+    <div className="w-9 h-9 rounded shrink-0 grid place-items-center font-mono font-bold text-[13px] text-navy"
       style={{ background: bg }}>
       {course.glyph ?? course.title?.[0] ?? '?'}
     </div>
@@ -550,7 +549,7 @@ function MenuItem({ to, icon: Icon, onClick, accent, children }) {
 
 function IconBtn({ children, className, ...props }) {
   return (
-    <button className={cn('w-[34px] h-[34px] rounded-lg border border-line text-ink-2 hover:text-ink hover:bg-bg-2 grid place-items-center transition', className)}
+    <button className={cn('press w-[34px] h-[34px] rounded-sm border-2 border-edge bg-bg-1 text-ink hover:bg-bg-2 grid place-items-center', className)}
       {...props}>
       {children}
     </button>

@@ -9,7 +9,7 @@ import { api, apiMessage } from '@/lib/api';
 import { formatVND } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
-const inputCls = 'w-full px-3 py-2 text-[13px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
+const inputCls = 'w-full px-3 py-2 text-[13px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('vi-VN') : '—');
 
 function invalidate(qc) {
@@ -54,7 +54,7 @@ export default function AdminPayoutsPage() {
     <div className="p-5 sm:p-8">
       <div className="mb-6">
         <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ chi-trả</span></p>
-        <h1 className="font-display font-bold text-[24px]">Đối soát & chi trả giảng viên</h1>
+        <h1 className="display text-[32px]">Đối soát & chi trả giảng viên</h1>
         <p className="text-[13px] text-ink-3 mt-1">
           Phí cổng {summary?.paymentFeePercent ?? '—'}% trừ trước khi chia · hoa hồng mặc định {summary?.defaultCommission ?? '—'}%
           · số liệu chốt theo từng đơn tại thời điểm thanh toán.
@@ -114,7 +114,7 @@ export default function AdminPayoutsPage() {
       <div className="flex items-center gap-1 mb-3">
         {[['', 'Tất cả'], ['PENDING', 'Đang chờ'], ['PAID', 'Đã trả']].map(([v, l]) => (
           <button key={v || 'all'} onClick={() => setStatus(v)}
-            className={cn('px-3 py-1.5 rounded-lg text-[12px] font-medium', status === v ? 'bg-accent/10 text-accent' : 'text-ink-2 hover:bg-bg-2')}>
+            className={cn('px-3 py-1.5 rounded-lg text-[12px] font-medium', status === v ? 'bg-accent text-accent-ink ring-2 ring-inset ring-edge' : 'text-ink-2 hover:bg-bg-2')}>
             {l}
           </button>
         ))}

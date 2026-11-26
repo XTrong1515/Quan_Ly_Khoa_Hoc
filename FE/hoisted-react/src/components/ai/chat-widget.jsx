@@ -6,7 +6,7 @@ import { ASSISTANTS } from './assistants.js';
 // Widget nằm trên mọi trang → chỉ tải khung chat khi người dùng mở
 const ChatPanel = lazy(() => import('./chat-panel.jsx').then((m) => ({ default: m.ChatPanel })));
 
-const iconBtn = 'w-8 h-8 rounded-lg grid place-items-center text-ink-3 hover:text-ink hover:bg-bg-2 transition-colors';
+const iconBtn = 'w-8 h-8 rounded-sm border-2 border-transparent grid place-items-center text-pop-ink hover:border-[rgb(var(--pop-ink))] hover:bg-white/40 transition-colors';
 
 /**
  * Nút trợ lý AI nổi góc phải. Học viên: trên các trang công khai; giảng viên: trong Instructor studio.
@@ -48,12 +48,12 @@ export function ChatWidget({ assistant: signedIn = ASSISTANTS.learner }) {
     <>
       {open && (
         <section aria-label={assistant.name}
-          className="animate-chat-in fixed z-50 inset-0 sm:inset-auto sm:bottom-[88px] sm:right-5 sm:w-[400px] sm:h-[min(620px,calc(100dvh-7.5rem))] flex flex-col bg-bg sm:rounded-2xl sm:border border-line shadow-2xl shadow-black/40 overflow-hidden">
-          <header className="flex items-center gap-2.5 h-14 pl-4 pr-2 border-b border-line bg-bg-1 shrink-0">
-            <span className="w-7 h-7 rounded-lg border border-line bg-bg text-accent grid place-items-center" aria-hidden="true">
+          className="animate-chat-in fixed z-50 inset-0 sm:inset-auto sm:bottom-[88px] sm:right-5 sm:w-[400px] sm:h-[min(620px,calc(100dvh-7.5rem))] flex flex-col bg-bg sm:rounded sm:border-2 border-edge shadow-2xl overflow-hidden">
+          <header className="flex items-center gap-2.5 h-14 pl-4 pr-2 border-b-2 border-edge bg-pop text-pop-ink shrink-0">
+            <span className="w-7 h-7 rounded-sm border-2 border-edge bg-white text-navy grid place-items-center" aria-hidden="true">
               <Sparkles className="w-3.5 h-3.5" />
             </span>
-            <h2 className="flex-1 min-w-0 truncate font-display font-semibold text-[14.5px] text-ink">{assistant.name}</h2>
+            <h2 className="flex-1 min-w-0 truncate font-display font-bold text-[14.5px] text-pop-ink">{assistant.name}</h2>
             <button type="button" onClick={() => { setConversationId(null); setPanelKey((k) => k + 1); }}
               title="Hội thoại mới" aria-label="Bắt đầu hội thoại mới" className={iconBtn}>
               <Plus className="w-4 h-4" />
@@ -92,7 +92,7 @@ export function ChatWidget({ assistant: signedIn = ASSISTANTS.learner }) {
         onClick={() => (open ? close() : setOpen(true))}
         aria-label={open ? `Đóng ${assistant.name.toLowerCase()}` : 'Mở trợ lý AI'}
         aria-expanded={open}
-        className={`${open ? 'hidden sm:grid' : 'grid'} fixed z-50 bottom-5 right-5 w-[52px] h-[52px] rounded-full bg-accent text-accent-ink shadow-lg shadow-black/30 place-items-center transition hover:brightness-95 active:scale-95`}>
+        className={`${open ? 'hidden sm:grid' : 'grid'} fixed z-50 bottom-5 right-5 w-[52px] h-[52px] rounded-sm border-2 border-edge bg-pop text-pop-ink press shadow-md place-items-center`}>
         {open ? <X className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
       </button>
     </>

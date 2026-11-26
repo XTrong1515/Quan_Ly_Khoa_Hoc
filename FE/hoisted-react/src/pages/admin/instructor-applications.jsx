@@ -31,7 +31,7 @@ export default function AdminInstructorApplicationsPage() {
   return (
     <div className="p-5 sm:p-8">
       <p className="eyebrow mb-1.5"><span className="text-accent">~/admin</span> <span className="text-ink-3">/ đơn-giảng-viên</span></p>
-      <h1 className="font-display font-bold text-[24px] mb-5">Đơn đăng ký giảng viên</h1>
+      <h1 className="display text-[32px] mb-5">Đơn đăng ký giảng viên</h1>
 
       <div className="flex items-center gap-1 mb-4 border-b border-line">
         {TABS.map(([v, l]) => (
@@ -39,7 +39,7 @@ export default function AdminInstructorApplicationsPage() {
             className={cn('px-3 py-2 -mb-px border-b-2 text-[13px] font-medium flex items-center gap-2',
               status === v ? 'border-accent text-accent' : 'border-transparent text-ink-2 hover:text-ink')}>
             {l}
-            {v === 'PENDING' && data?.pending > 0 && <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">{data.pending}</span>}
+            {v === 'PENDING' && data?.pending > 0 && <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm bg-pop text-pop-ink ring-2 ring-inset ring-edge">{data.pending}</span>}
           </button>
         ))}
       </div>
@@ -99,7 +99,7 @@ function RejectModal({ application, onClose, onDone }) {
         <div className="p-5 space-y-3">
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={4} maxLength={500} autoFocus
             placeholder="Lý do — người nộp sẽ thấy để bổ sung và gửi lại"
-            className="w-full px-3 py-2 text-[13px] bg-bg border border-line rounded-lg text-ink focus:outline-none focus:border-accent resize-none" />
+            className="w-full px-3 py-2 text-[13px] bg-bg-3 border-2 border-edge rounded-sm text-ink focus:outline-none focus:border-accent resize-none" />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={onClose}>Hủy</Button>
             <Button size="sm" onClick={() => m.mutate()} disabled={!note.trim() || m.isPending}>Từ chối</Button>

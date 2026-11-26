@@ -40,7 +40,7 @@ function ConversationList({ query, activeId, onOpen, onDelete, deletingId, searc
       <div className="px-4 py-3">
         <p className="text-[12.5px] text-ink-2">Chưa tải được lịch sử.</p>
         <button type="button" onClick={() => query.refetch()}
-          className="mt-2 inline-flex items-center gap-1.5 h-[30px] px-3 rounded-md border border-line text-[12.5px] font-semibold text-ink hover:bg-bg-2">
+          className="mt-2 inline-flex items-center gap-1.5 h-[30px] px-3 rounded-md border-2 border-edge text-[12.5px] font-semibold text-ink hover:bg-bg-2">
           <RotateCcw className="w-3.5 h-3.5" /> Tải lại
         </button>
       </div>
@@ -151,12 +151,12 @@ export function AssistantWorkspace({ assistant, className }) {
       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3 pointer-events-none" aria-hidden="true" />
       <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Tìm hội thoại"
         placeholder="Tìm hội thoại…"
-        className="w-full h-[34px] pl-8 pr-2.5 rounded-lg border border-line bg-bg-3 text-[13px] text-ink placeholder:text-ink-3 outline-none focus:border-accent/60" />
+        className="w-full h-[34px] pl-8 pr-2.5 rounded-lg border-2 border-edge bg-bg-3 text-[13px] text-ink placeholder:text-ink-3 outline-none focus:border-accent/60" />
     </div>
   );
   const newButton = (
     <button type="button" onClick={() => open(null)}
-      className="w-full inline-flex items-center justify-center gap-1.5 h-[38px] px-3 rounded-lg border border-line text-[13px] font-semibold text-ink hover:bg-bg-2 transition-colors">
+      className="w-full inline-flex items-center justify-center gap-1.5 h-[38px] px-3 rounded-lg border-2 border-edge text-[13px] font-semibold text-ink hover:bg-bg-2 transition-colors">
       <Plus className="w-4 h-4" /> Hội thoại mới
     </button>
   );
@@ -177,7 +177,7 @@ export function AssistantWorkspace({ assistant, className }) {
       <section className="flex flex-col min-h-0 min-w-0 bg-bg" aria-label={assistant.name}>
         <header className="flex items-center gap-2 h-12 px-3 sm:px-5 border-b border-line shrink-0">
           <button type="button" onClick={() => setDrawer(true)} aria-label="Mở lịch sử hội thoại"
-            className="md:hidden w-9 h-9 rounded-lg border border-line text-ink-2 grid place-items-center hover:bg-bg-2">
+            className="md:hidden w-9 h-9 rounded-lg border-2 border-edge text-ink-2 grid place-items-center hover:bg-bg-2">
             <History className="w-4 h-4" />
           </button>
           {renaming !== null ? (
@@ -195,7 +195,7 @@ export function AssistantWorkspace({ assistant, className }) {
               </p>
               {current?.lessonId && current.lessonCourseId && (
                 <Link to={`/learn/${current.lessonCourseId}/${current.lessonId}`} title={`Mở bài: ${current.lessonTitle}`}
-                  className="hidden sm:inline-flex items-center gap-1 h-6 px-2 rounded-full border border-line text-[11.5px] text-ink-2 hover:text-ink hover:border-accent/40 max-w-[220px] shrink-0">
+                  className="hidden sm:inline-flex items-center gap-1 h-6 px-2 rounded-sm border-2 border-edge text-[11.5px] text-ink-2 hover:text-ink hover:border-accent max-w-[220px] shrink-0">
                   <BookOpen className="w-3 h-3 shrink-0" aria-hidden="true" />
                   <span className="truncate">{current.lessonTitle}</span>
                 </Link>
@@ -215,7 +215,7 @@ export function AssistantWorkspace({ assistant, className }) {
             </>
           )}
           <button type="button" onClick={() => open(null)} aria-label="Bắt đầu hội thoại mới"
-            className="md:hidden w-9 h-9 rounded-lg border border-line text-ink-2 grid place-items-center hover:bg-bg-2">
+            className="md:hidden w-9 h-9 rounded-lg border-2 border-edge text-ink-2 grid place-items-center hover:bg-bg-2">
             <Plus className="w-4 h-4" />
           </button>
         </header>
@@ -239,7 +239,7 @@ export function AssistantWorkspace({ assistant, className }) {
           <div className="flex items-center gap-2 px-4 pt-4 pb-3">
             <h2 className="flex-1 font-display font-semibold text-[16px] text-ink">{assistant.name}</h2>
             <button type="button" onClick={() => setDrawer(false)} aria-label="Đóng lịch sử"
-              className="w-9 h-9 rounded-lg border border-line text-ink-2 grid place-items-center hover:bg-bg-2">
+              className="w-9 h-9 rounded-lg border-2 border-edge text-ink-2 grid place-items-center hover:bg-bg-2">
               <X className="w-4 h-4" />
             </button>
           </div>

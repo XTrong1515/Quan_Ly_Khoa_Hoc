@@ -89,7 +89,7 @@ export function ExerciseWorkspace({ lessonId, onSolved }) {
         <div className="flex items-start justify-between gap-3 mb-3">
           <h2 className="font-display font-semibold text-[17px] leading-snug text-ink">{exercise.title}</h2>
           {exercise.solved && (
-            <span className="flex items-center gap-1 font-mono text-[10.5px] px-2 py-0.5 rounded-full bg-success/15 text-success shrink-0">
+            <span className="flex items-center gap-1 font-mono text-[10.5px] px-2 py-0.5 rounded-sm bg-success/15 text-success shrink-0">
               <Trophy className="w-3 h-3" /> Đã giải
             </span>
           )}

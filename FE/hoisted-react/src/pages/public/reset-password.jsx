@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
       <AuthScreen>
         <Seo title="Link không hợp lệ — Hoisted" />
         <div className="mb-8"><Logo size={18} onDark /></div>
-        <div className="bg-bg rounded-2xl border border-line p-8 text-center shadow-2xl shadow-black/40">
+        <div className="bg-bg rounded-2xl border-2 border-edge p-8 text-center shadow-2xl">
           <div className="w-14 h-14 rounded-2xl bg-danger/10 grid place-items-center mx-auto mb-5">
             <AlertTriangle className="w-6 h-6 text-danger" aria-hidden="true" />
           </div>
@@ -87,22 +87,22 @@ export default function ResetPasswordPage() {
       <div className="mb-8"><Logo size={18} onDark /></div>
 
       {done ? (
-        <div className="bg-bg rounded-2xl border border-line p-8 text-center shadow-2xl shadow-black/40">
-          <div className="w-14 h-14 rounded-2xl bg-success/10 grid place-items-center mx-auto mb-5 shadow-[0_0_36px_rgb(52_211_153/0.2)]">
+        <div className="bg-bg rounded-2xl border-2 border-edge p-8 text-center shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-success/10 grid place-items-center mx-auto mb-5 shadow">
             <ShieldCheck className="w-6 h-6 text-success" aria-hidden="true" />
           </div>
           <h1 className="display text-[24px] mb-2">Mật khẩu đã được đặt lại</h1>
           <p className="text-ink-3 text-[13.5px] mb-6">Bạn có thể đăng nhập bằng mật khẩu mới.</p>
           <Button
             size="lg"
-            className="w-full justify-center shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+            className="w-full justify-center shadow"
             onClick={() => navigate('/login')}
           >
             Đến trang đăng nhập →
           </Button>
         </div>
       ) : (
-        <div className="bg-bg rounded-2xl border border-line p-8 shadow-2xl shadow-black/40">
+        <div className="bg-bg rounded-2xl border-2 border-edge p-8 shadow-2xl">
           <p className="eyebrow mb-4">
             <span className="text-accent">~/hoisted</span> <span className="text-ink-3">/ đặt-lại-mật-khẩu</span>
           </p>
@@ -151,9 +151,9 @@ export default function ResetPasswordPage() {
                       )}>
                         <span className={cn(
                           'w-[13px] h-[13px] rounded-full grid place-items-center',
-                          ok ? 'bg-success' : 'border border-line',
+                          ok ? 'bg-success' : 'border-2 border-edge',
                         )} aria-hidden="true">
-                          {ok && <Check className="w-2 h-2 text-[#0B0F19]" strokeWidth={4} />}
+                          {ok && <Check className="w-2 h-2 text-navy" strokeWidth={4} />}
                         </span>
                         {r.label}
                       </span>
@@ -185,7 +185,7 @@ export default function ResetPasswordPage() {
               type="submit"
               size="lg"
               disabled={isSubmitting}
-              className="justify-center mt-1 shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+              className="justify-center mt-1 shadow"
             >
               {isSubmitting ? 'Đang lưu mật khẩu…' : 'Đặt mật khẩu mới →'}
             </Button>

@@ -59,23 +59,15 @@ export default function LoginPage() {
       <Seo title="Đăng nhập — Hoisted" />
 
       {/* ── Left: brand panel (always dark, like an editor) ──────── */}
-      <div className="hidden lg:flex flex-col p-12 relative overflow-hidden bg-[#0B0F19] text-[#F4F5F9]">
+      <div className="hidden lg:flex flex-col p-12 relative overflow-hidden bg-navy text-white border-r-2 border-black">
         <div
           className="absolute inset-0 pointer-events-none"
           aria-hidden="true"
           style={{
             backgroundImage:
-              'linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px)',
-            backgroundSize: '44px 44px',
+              'radial-gradient(rgb(255 255 255 / 0.16) 1.2px, transparent 1.5px)',
+            backgroundSize: '18px 18px',
             maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 80%, transparent)',
-          }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              'radial-gradient(ellipse 55% 50% at 20% 10%, rgb(247 223 30 / .10) 0%, transparent 60%), radial-gradient(ellipse 45% 45% at 90% 95%, rgb(99 102 241 / .12) 0%, transparent 60%)',
           }}
         />
 
@@ -84,7 +76,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative flex-1 flex flex-col justify-center max-w-[480px]">
-          <h1 className="display text-[36px] leading-[1.12] mb-3 text-[#F4F5F9]">
+          <h1 className="display text-[36px] leading-[1.12] mb-3 text-white">
             Tiếp tục hành trình,<br />
             <span className="text-js">nơi bạn dừng lại.</span>
           </h1>
@@ -93,12 +85,12 @@ export default function LoginPage() {
           </p>
 
           {/* Terminal: session restore */}
-          <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur font-mono text-[12.5px] leading-[2] overflow-hidden mb-8 shadow-2xl shadow-black/40">
-            <div className="flex items-center gap-2 px-4 h-9 bg-white/[0.04] border-b border-white/10">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" aria-hidden="true" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" aria-hidden="true" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" aria-hidden="true" />
-              <span className="ml-2 text-[10.5px] text-slate-400">phiên-học — hoisted</span>
+          <div className="rounded border-2 border-black bg-[#081230] font-mono text-[12.5px] leading-[2] overflow-hidden mb-8 shadow-[6px_6px_0_0_#FFCF33]">
+            <div className="flex items-center gap-2 px-4 h-9 bg-[#F2542D] border-b-2 border-black text-white">
+              <span className="w-2.5 h-2.5 bg-black" aria-hidden="true" />
+              <span className="w-2.5 h-2.5 bg-[#FFCF33] border-2 border-black" aria-hidden="true" />
+              <span className="w-2.5 h-2.5 bg-white border-2 border-black" aria-hidden="true" />
+              <span className="ml-2 text-[10.5px] font-bold text-white">phiên-học — hoisted</span>
             </div>
             <div className="px-5 py-4 text-slate-300" aria-hidden="true">
               <p><span className="text-js">$</span> hoisted resume</p>
@@ -121,7 +113,7 @@ export default function LoginPage() {
               `${Number(platformStats.totalUsers).toLocaleString('vi-VN')} tài khoản đã đăng ký trên Hoisted`,
             ] : []).map((t) => (
               <div key={t} className="flex items-center gap-3 text-sm text-[#B6BCD0]">
-                <span className="w-[22px] h-[22px] rounded-full shrink-0 grid place-items-center bg-js/15 text-js">
+                <span className="w-[22px] h-[22px] rounded-sm border-2 border-black shrink-0 grid place-items-center bg-[#FFCF33] text-navy">
                   <Check className="w-3 h-3" strokeWidth={3} aria-hidden="true" />
                 </span>
                 {t}
@@ -210,7 +202,7 @@ export default function LoginPage() {
             type="submit"
             size="lg"
             disabled={isSubmitting}
-            className="justify-center shadow-[0_8px_24px_rgb(var(--accent)/0.3)]"
+            className="justify-center shadow"
           >
             {isSubmitting ? 'Đang đăng nhập…' : 'Đăng nhập →'}
           </Button>

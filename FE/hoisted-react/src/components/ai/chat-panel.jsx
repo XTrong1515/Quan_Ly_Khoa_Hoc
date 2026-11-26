@@ -62,7 +62,7 @@ function CodeBlock({ node, children }) {
   const source = (code?.children ?? []).map((c) => c.value ?? '').join('').replace(/\n$/, '');
   const highlighted = useMemo(() => highlightJs(source, lang), [source, lang]);
   return (
-    <div className="my-3 rounded-[10px] overflow-hidden border border-white/10 bg-[#0d1117]">
+    <div className="my-3 rounded overflow-hidden border border-white/10 bg-[#0d1117]">
       <div className="flex items-center justify-between h-8 pl-3 pr-1 border-b border-white/10">
         <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase text-slate-400">{lang || 'code'}</span>
         <button type="button" onClick={() => copy(source)} aria-label={copied ? 'Đã sao chép code' : 'Sao chép code'}
@@ -103,7 +103,7 @@ const markdownComponents = {
   pre: CodeBlock,
   // Bảng (GFM) cuộn ngang trong khung hẹp thay vì làm tràn khung chat
   table: ({ children }) => (
-    <div className="my-3 overflow-x-auto rounded-[10px] border border-line">
+    <div className="my-3 overflow-x-auto rounded border-2 border-edge">
       <table className="w-full border-collapse">{children}</table>
     </div>
   ),
@@ -113,7 +113,7 @@ const remarkPlugins = [remarkGfm];
 function CourseCard({ course }) {
   return (
     <Link to={`/courses/${course.slug}`}
-      className="group flex min-w-0 items-center gap-3 p-2.5 rounded-[10px] border border-line bg-bg-1 hover:border-accent/40 hover:bg-bg-2 transition-colors">
+      className="group flex min-w-0 items-center gap-3 p-2.5 rounded border-2 border-edge bg-bg-1 hover:border-accent hover:bg-bg-2 transition-colors">
       <span className="w-10 h-10 rounded-lg grid place-items-center font-mono font-bold text-[11px] text-bg shrink-0"
         style={{ background: THUMB_COLORS[course.thumb] ?? THUMB_COLORS.yellow }} aria-hidden="true">
         {course.glyph || 'JS'}
@@ -180,7 +180,7 @@ function Message({ m, onRetry, onFeedback, wide }) {
   if (m.role === 'user') {
     return (
       <div className="flex justify-end pl-10">
-        <div className="max-w-full px-3.5 py-2.5 rounded-2xl rounded-br-md bg-bg-3 border border-line text-ink text-[14px] leading-[1.6] whitespace-pre-wrap break-words">
+        <div className="max-w-full px-3.5 py-2.5 rounded-2xl rounded-br-md bg-bg-3 border-2 border-edge text-ink text-[14px] leading-[1.6] whitespace-pre-wrap break-words">
           {m.content}
         </div>
       </div>
@@ -189,7 +189,7 @@ function Message({ m, onRetry, onFeedback, wide }) {
   const waiting = m.streaming && !m.content;
   return (
     <div className="flex gap-3">
-      <span className="w-7 h-7 rounded-lg border border-line bg-bg-1 text-accent grid place-items-center shrink-0" aria-hidden="true">
+      <span className="w-7 h-7 rounded-lg border-2 border-edge bg-bg-1 text-accent grid place-items-center shrink-0" aria-hidden="true">
         <Sparkles className="w-3.5 h-3.5" />
       </span>
       <div className="min-w-0 flex-1 pt-[3px]">
@@ -208,7 +208,7 @@ function Message({ m, onRetry, onFeedback, wide }) {
           </p>
         )}
         {m.limit && (
-          <Link to="/login" className="mt-2 inline-flex items-center h-[30px] px-3 rounded-md bg-accent text-accent-ink text-[12.5px] font-semibold hover:brightness-95">
+          <Link to="/login" className="mt-2 inline-flex items-center h-[30px] px-3 rounded-sm bg-accent text-accent-ink text-[12.5px] font-semibold press border-2 border-edge">
             Đăng nhập để hỏi tiếp
           </Link>
         )}
@@ -228,7 +228,7 @@ function EmptyState({ assistant, onPick, wide }) {
   return (
     <div className="h-full flex flex-col justify-center py-6">
       {wide && (
-        <span className="w-10 h-10 rounded-xl border border-line bg-bg-1 text-accent grid place-items-center mb-4" aria-hidden="true">
+        <span className="w-10 h-10 rounded-xl border-2 border-edge bg-bg-1 text-accent grid place-items-center mb-4" aria-hidden="true">
           <Sparkles className="w-[18px] h-[18px]" />
         </span>
       )}
@@ -237,7 +237,7 @@ function EmptyState({ assistant, onPick, wide }) {
       <div className={cn('mt-5 grid gap-1.5', wide && 'sm:grid-cols-2')}>
         {assistant.suggestions.map(({ icon: Icon, text }) => (
           <button key={text} type="button" onClick={() => onPick(text)}
-            className="group flex items-start gap-2.5 text-left px-3 py-2.5 rounded-[10px] border border-line bg-bg-1 text-[13px] leading-snug text-ink-2 hover:text-ink hover:border-accent/40 hover:bg-bg-2 transition-colors">
+            className="group flex items-start gap-2.5 text-left px-3 py-2.5 rounded border-2 border-edge bg-bg-1 text-[13px] leading-snug text-ink-2 hover:text-ink hover:border-accent hover:bg-bg-2 transition-colors">
             <Icon className="w-4 h-4 shrink-0 mt-px text-ink-3 group-hover:text-accent transition-colors" />
             {text}
           </button>
@@ -419,7 +419,7 @@ export function ChatPanel({
           <p className="text-[14px] font-semibold text-ink">Không tìm thấy hội thoại này</p>
           <p className="mt-1 text-[13px] text-ink-3">Có thể nó đã bị xóa. Bạn có thể bắt đầu hội thoại mới.</p>
           <button type="button" onClick={() => onConversationChange?.(null)}
-            className="mt-4 h-[30px] px-3 rounded-md border border-line text-[12.5px] font-semibold text-ink hover:bg-bg-2">
+            className="mt-4 h-[30px] px-3 rounded-md border-2 border-edge text-[12.5px] font-semibold text-ink hover:bg-bg-2">
             Hội thoại mới
           </button>
         </div>
@@ -432,7 +432,7 @@ export function ChatPanel({
           <p className="text-[14px] font-semibold text-ink">Chưa tải được hội thoại</p>
           <p className="mt-1 text-[13px] text-ink-3">Kiểm tra kết nối rồi thử lại.</p>
           <button type="button" onClick={() => history.refetch()}
-            className="mt-4 inline-flex items-center gap-1.5 h-[30px] px-3 rounded-md border border-line text-[12.5px] font-semibold text-ink hover:bg-bg-2">
+            className="mt-4 inline-flex items-center gap-1.5 h-[30px] px-3 rounded-md border-2 border-edge text-[12.5px] font-semibold text-ink hover:bg-bg-2">
             <RotateCcw className="w-3.5 h-3.5" /> Tải lại
           </button>
         </div>
@@ -462,7 +462,7 @@ export function ChatPanel({
       <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="relative px-3 sm:px-5 pt-2 pb-3">
         {!atBottom && messages.length > 0 && (
           <button type="button" onClick={toBottom} aria-label="Cuộn xuống tin nhắn mới nhất"
-            className="absolute left-1/2 -translate-x-1/2 -top-10 z-10 w-8 h-8 rounded-full border border-line bg-bg-1 text-ink-2 hover:text-ink shadow-lg shadow-black/20 grid place-items-center">
+            className="absolute left-1/2 -translate-x-1/2 -top-10 z-10 w-8 h-8 rounded-full border-2 border-edge bg-bg-1 text-ink-2 hover:text-ink shadow-lg grid place-items-center">
             <ArrowDown className="w-4 h-4" />
           </button>
         )}
@@ -483,12 +483,12 @@ export function ChatPanel({
             />
             {streaming ? (
               <button type="button" onClick={() => abortRef.current?.abort()} aria-label="Dừng trả lời"
-                className="w-9 h-9 rounded-xl border border-line bg-bg-1 text-ink grid place-items-center shrink-0 hover:bg-bg-2">
+                className="w-9 h-9 rounded-xl border-2 border-edge bg-bg-1 text-ink grid place-items-center shrink-0 hover:bg-bg-2">
                 <Square className="w-3.5 h-3.5 fill-current" />
               </button>
             ) : (
               <button type="submit" disabled={!input.trim()} aria-label="Gửi câu hỏi"
-                className="w-9 h-9 rounded-xl bg-accent text-accent-ink grid place-items-center shrink-0 transition hover:brightness-95 disabled:bg-bg-2 disabled:text-ink-3 disabled:hover:brightness-100">
+                className="w-9 h-9 rounded-sm bg-accent text-accent-ink grid place-items-center shrink-0 disabled:bg-bg-2 disabled:text-ink-3 disabled:hover:brightness-100 press border-2 border-edge">
                 <ArrowUp className="w-4 h-4" />
               </button>
             )}

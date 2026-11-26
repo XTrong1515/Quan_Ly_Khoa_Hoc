@@ -166,7 +166,8 @@ Mỗi stub đã có route hoạt động, gradient placeholder và link "← v�
 ## Vibe / brand check
 
 - **Logo**: `Hoisted()` — chữ thường, dấu ngoặc đơn như function call, mũi tên hoist lên ở icon.
-- **Font system**: Inter Tight (display + body) + JetBrains Mono (code, eyebrows, labels).
-- **Palette**: deep ink `#0B0F19` background · JS yellow `#F7DF1E` accent (dark) · indigo `#4F46E5` (light) · `#34D399` success · `#F43F5E` danger.
-- **Motif**: IDE chrome (3 dots + filename tab) xuất hiện ở hero, login, lesson player.
+- **Style**: Pixel Neo-Brutalism — viền đậm 2px, bóng cứng lệch không blur (`shadow-*` trong Tailwind đã được ghi đè), góc gần vuông, màu phẳng, nền lưới chấm. Nút bấm dùng `.press` (lún về phía bóng khi hover/nhấn).
+- **Font system**: Handjet (pixel, chỉ cho tiêu đề lớn qua `.display` / `font-pixel`, số liệu lớn) + Space Grotesk (body, `font-sans` / `font-display`) + JetBrains Mono (code, eyebrows, labels).
+- **Palette**: navy `#0E1B3D` (chữ, viền, bóng, sidebar console) · nền `#F1F3FA` · xanh `#2547D0` (`accent`, light) · vàng `#FFCF33` (`pop` — CTA chính; cũng là `accent` ở dark) · đỏ cam `#F2542D` · xanh lá `#05804E`. Token: `edge` = viền khối, `line` = đường chia mảnh, `pop`/`pop-ink`.
+- **Motif**: cửa sổ code navy với thanh tiêu đề đỏ cam + ô vuông pixel, xuất hiện ở hero, login, lesson player.
 - **Eyebrow comments**: `// section name` style — gắn vào mọi heading nhỏ để giữ vibe coder.

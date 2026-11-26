@@ -66,11 +66,11 @@ export default function InstructorCoursesPage() {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <p className="eyebrow mb-1.5"><span className="text-accent">~/instructor</span> <span className="text-ink-3">/ khóa-học</span></p>
-          <h1 className="font-display font-bold text-[24px]">Khóa học của tôi</h1>
+          <h1 className="display text-[32px]">Khóa học của tôi</h1>
         </div>
         <button
           onClick={() => setModal({ mode: 'create' })}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-bg text-[13px] font-semibold hover:opacity-90 transition-opacity">
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-accent text-accent-ink press border-2 border-edge text-[13px] font-semibold">
           <Plus className="w-3.5 h-3.5" /> Tạo khóa mới
         </button>
       </div>
@@ -80,14 +80,14 @@ export default function InstructorCoursesPage() {
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm theo tên khóa học..."
-            className="w-full pl-9 pr-3 py-2 text-[12px] bg-bg border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent" />
+            className="w-full pl-9 pr-3 py-2 text-[12px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent" />
         </div>
         <div className="flex gap-1 flex-wrap">
           {FILTERS.map(([value, label]) => (
             <button key={value || 'all'} onClick={() => setStatus(value)}
               className={cn(
                 'px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors',
-                status === value ? 'bg-accent/10 text-accent' : 'text-ink-2 hover:bg-bg-2',
+                status === value ? 'bg-accent text-accent-ink ring-2 ring-inset ring-edge' : 'text-ink-2 hover:bg-bg-2',
               )}>
               {label}
             </button>
@@ -142,7 +142,7 @@ export default function InstructorCoursesPage() {
                   <button
                     onClick={() => submitMutation.mutate(c.id)}
                     disabled={submitMutation.isPending}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-accent text-bg text-[12px] font-semibold hover:opacity-90 disabled:opacity-50">
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-accent text-accent-ink press border-2 border-edge text-[12px] font-semibold disabled:opacity-50">
                     <Send className="w-3.5 h-3.5" /> Gửi duyệt
                   </button>
                 )}
@@ -152,7 +152,7 @@ export default function InstructorCoursesPage() {
 
 Khóa học trở về Nháp và bạn cần gửi duyệt lại sau khi sửa.`)) withdrawMutation.mutate(c.id); }}
                     disabled={withdrawMutation.isPending}
-                    className="px-2.5 py-1.5 rounded-lg border border-line text-[12px] text-ink-2 hover:bg-bg-3 disabled:opacity-50">
+                    className="px-2.5 py-1.5 rounded-lg border-2 border-edge text-[12px] text-ink-2 hover:bg-bg-3 disabled:opacity-50">
                     Rút yêu cầu duyệt
                   </button>
                 )}

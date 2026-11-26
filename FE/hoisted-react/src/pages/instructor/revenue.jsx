@@ -45,7 +45,7 @@ export default function InstructorRevenuePage() {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <p className="eyebrow mb-1.5"><span className="text-accent">~/instructor</span> <span className="text-ink-3">/ doanh-thu</span></p>
-          <h1 className="font-display font-bold text-[24px]">Doanh thu</h1>
+          <h1 className="display text-[32px]">Doanh thu</h1>
         </div>
       </div>
 
@@ -64,7 +64,7 @@ export default function InstructorRevenuePage() {
               <Icon className="w-3.5 h-3.5 text-ink-3" aria-hidden="true" />
               <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
             </div>
-            <p className="font-mono font-bold text-[20px] text-ink leading-none tabular-nums">
+            <p className="font-pixel font-extrabold text-[29px] text-ink leading-none tabular-nums">
               {isLoading || value === undefined ? '…' : formatVND(value)}
             </p>
             {hint && <p className="mt-1.5 font-mono text-[10.5px] text-ink-3">{hint}</p>}
@@ -82,7 +82,7 @@ export default function InstructorRevenuePage() {
             {RANGES.map(([v, l]) => (
               <button key={v} onClick={() => setDays(v)}
                 className={cn('px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors',
-                  days === v ? 'bg-accent/10 text-accent' : 'text-ink-3 hover:text-ink hover:bg-bg-2')}>
+                  days === v ? 'bg-accent text-accent-ink ring-2 ring-inset ring-edge' : 'text-ink-3 hover:text-ink hover:bg-bg-2')}>
                 {l}
               </button>
             ))}

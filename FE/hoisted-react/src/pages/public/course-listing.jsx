@@ -142,7 +142,7 @@ export default function CourseListingPage() {
         <span className="flex items-center gap-2 font-mono text-[12px] font-semibold text-ink-3 uppercase tracking-[0.08em]">
           <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" /> Bộ lọc
           {activeFilterCount > 0 && (
-            <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-accent-ink text-[10px] font-bold grid place-items-center">
+            <span className="min-w-[18px] h-[18px] px-1 rounded-sm bg-accent text-accent-ink text-[10px] font-bold grid place-items-center press border-2 border-edge">
               {activeFilterCount}
             </span>
           )}
@@ -187,8 +187,8 @@ export default function CourseListingPage() {
               className={cn(
                 'h-8 px-3 rounded-lg border font-mono text-[12px] transition-colors cursor-pointer',
                 minRating === String(r.value)
-                  ? 'border-accent bg-accent/15 text-accent font-semibold'
-                  : 'border-line text-ink-2 hover:border-accent/40 hover:text-ink',
+                  ? 'border-accent bg-pop text-pop-ink font-semibold'
+                  : 'border-line text-ink-2 hover:border-accent hover:text-ink',
               )}
             >
               {r.label}
@@ -209,15 +209,6 @@ export default function CourseListingPage() {
 
       {/* ── Catalog hero ─────────────────────────────────────────── */}
       <header className="relative overflow-hidden border-b border-line">
-        <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              'radial-gradient(ellipse 50% 70% at 30% 0%, rgb(var(--accent) / .10) 0%, transparent 60%), radial-gradient(ellipse 40% 60% at 90% 100%, rgb(99 102 241 / .08) 0%, transparent 60%)',
-          }}
-        />
         <div className="relative max-w-[1280px] mx-auto px-5 sm:px-8 pt-12 pb-10">
           <p className="eyebrow mb-2">
             <span className="text-accent">~/hoisted</span> <span className="text-ink-3">/ khóa-học</span>
@@ -239,7 +230,7 @@ export default function CourseListingPage() {
 
             {/* Từ md trở lên đã có ô tìm kiếm trên thanh điều hướng → chỉ hiện ô này trên điện thoại, tránh 2 ô cùng việc */}
             <form onSubmit={handleSearchSubmit} role="search" className="w-full md:hidden">
-              <div className="relative flex items-center rounded-2xl border border-line bg-bg-1/80 backdrop-blur p-1.5 shadow-lg shadow-black/5 focus-within:border-accent/50 transition-colors">
+              <div className="relative flex items-center rounded-2xl border-2 border-edge bg-bg-1 p-1.5 shadow-lg focus-within:border-accent/50 transition-colors">
                 <Search className="ml-3 w-4 h-4 text-ink-3 pointer-events-none flex-shrink-0" aria-hidden="true" />
                 <label htmlFor="catalog-search" className="sr-only">Tìm khóa học</label>
                 <input
@@ -264,10 +255,10 @@ export default function CourseListingPage() {
                 onClick={() => { setCategory([]); setPage(1); }}
                 aria-pressed={category.length === 0}
                 className={cn(
-                  'h-8 px-3.5 rounded-full border font-mono text-[12px] whitespace-nowrap transition-colors cursor-pointer flex-shrink-0',
+                  'h-8 px-3.5 rounded-sm border font-mono text-[12px] whitespace-nowrap transition-colors cursor-pointer flex-shrink-0',
                   category.length === 0
                     ? 'border-accent bg-accent text-accent-ink font-semibold'
-                    : 'border-line text-ink-2 hover:border-accent/40 hover:text-ink',
+                    : 'border-line text-ink-2 hover:border-accent hover:text-ink',
                 )}
               >
                 Tất cả
@@ -278,10 +269,10 @@ export default function CourseListingPage() {
                   onClick={() => toggleFilter(setCategory)(c.slug)}
                   aria-pressed={category.includes(c.slug)}
                   className={cn(
-                    'h-8 px-3.5 rounded-full border font-mono text-[12px] whitespace-nowrap transition-colors cursor-pointer flex-shrink-0',
+                    'h-8 px-3.5 rounded-sm border font-mono text-[12px] whitespace-nowrap transition-colors cursor-pointer flex-shrink-0',
                     category.includes(c.slug)
                       ? 'border-accent bg-accent text-accent-ink font-semibold'
-                      : 'border-line text-ink-2 hover:border-accent/40 hover:text-ink',
+                      : 'border-line text-ink-2 hover:border-accent hover:text-ink',
                   )}
                 >
                   {c.name}
@@ -309,7 +300,7 @@ export default function CourseListingPage() {
                   type="button"
                   onClick={() => setSidebarOpen(false)}
                   aria-label="Đóng bộ lọc"
-                  className="absolute top-4 right-4 w-9 h-9 rounded-lg border border-line text-ink-3 hover:text-ink hover:bg-bg-2 grid place-items-center cursor-pointer"
+                  className="absolute top-4 right-4 w-9 h-9 rounded-lg border-2 border-edge text-ink-3 hover:text-ink hover:bg-bg-2 grid place-items-center cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -334,11 +325,11 @@ export default function CourseListingPage() {
               <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden flex items-center gap-2 h-9 px-3 rounded-lg border border-line text-sm text-ink-2 hover:bg-bg-2 cursor-pointer"
+                  className="lg:hidden flex items-center gap-2 h-9 px-3 rounded-lg border-2 border-edge text-sm text-ink-2 hover:bg-bg-2 cursor-pointer"
                 >
                   <SlidersHorizontal className="w-4 h-4" aria-hidden="true" /> Bộ lọc
                   {activeFilterCount > 0 && (
-                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-accent-ink text-[10px] font-bold grid place-items-center">
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-sm bg-accent text-accent-ink text-[10px] font-bold grid place-items-center press border-2 border-edge">
                       {activeFilterCount}
                     </span>
                   )}
@@ -380,7 +371,7 @@ export default function CourseListingPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" aria-hidden="true">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="card p-3 animate-pulse motion-reduce:animate-none">
-                    <div className="aspect-video rounded-[10px] bg-bg-3 mb-3" />
+                    <div className="aspect-video rounded bg-bg-3 mb-3" />
                     <div className="px-1 pb-2 space-y-2">
                       <div className="h-3 bg-bg-3 rounded w-full" />
                       <div className="h-3 bg-bg-3 rounded w-2/3" />
@@ -399,7 +390,7 @@ export default function CourseListingPage() {
               <div className="card py-20 px-6 text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
                 <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-accent/10 text-accent grid place-items-center mx-auto mb-4">
+                  <div className="w-14 h-14 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center mx-auto mb-4">
                     <LayoutGrid className="w-6 h-6" aria-hidden="true" />
                   </div>
                   {hasFilters ? (
@@ -436,7 +427,7 @@ export default function CourseListingPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                   aria-label="Trang trước"
-                  className="w-9 h-9 rounded-xl border border-line flex items-center justify-center text-ink-2 hover:bg-bg-2 hover:border-accent/40 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  className="w-9 h-9 rounded-xl border-2 border-edge flex items-center justify-center text-ink-2 hover:bg-bg-2 hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -451,8 +442,8 @@ export default function CourseListingPage() {
                       className={cn(
                         'w-9 h-9 rounded-xl border text-[13px] font-mono transition-colors cursor-pointer',
                         pg === page
-                          ? 'border-accent bg-accent text-accent-ink font-bold shadow-[0_4px_16px_rgb(var(--accent)/0.3)]'
-                          : 'border-line text-ink-2 hover:bg-bg-2 hover:border-accent/40',
+                          ? 'border-accent bg-accent text-accent-ink font-bold shadow'
+                          : 'border-line text-ink-2 hover:bg-bg-2 hover:border-accent',
                       )}
                     >
                       {pg}
@@ -464,7 +455,7 @@ export default function CourseListingPage() {
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                   aria-label="Trang sau"
-                  className="w-9 h-9 rounded-xl border border-line flex items-center justify-center text-ink-2 hover:bg-bg-2 hover:border-accent/40 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  className="w-9 h-9 rounded-xl border-2 border-edge flex items-center justify-center text-ink-2 hover:bg-bg-2 hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -510,7 +501,7 @@ function FilterCheckbox({ label, count, checked, onChange }) {
 
 function ActiveChip({ label, onRemove }) {
   return (
-    <span className="inline-flex items-center gap-1.5 h-[28px] pl-3 pr-1.5 rounded-full border border-accent/30 bg-accent/10 text-accent font-mono text-[12px]">
+    <span className="inline-flex items-center gap-1.5 h-[28px] pl-3 pr-1.5 rounded-full border bg-accent text-accent-ink ring-2 ring-inset ring-edge font-mono text-[12px]">
       {label}
       <button
         onClick={onRemove}

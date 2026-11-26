@@ -13,7 +13,7 @@ const LEVELS = [
 function FooterColumn({ title, children }) {
   return (
     <nav aria-label={title}>
-      <h2 className="font-display font-semibold text-[13px] text-ink mb-3.5">{title}</h2>
+      <h2 className="font-mono font-bold uppercase tracking-[0.1em] text-[11px] text-ink mb-3.5">{title}</h2>
       <ul className="space-y-0.5 text-[13.5px] text-ink-2">{children}</ul>
     </nav>
   );
@@ -38,7 +38,7 @@ export function Footer() {
   const categories = (data?.categories ?? []).filter((c) => Number(c.count) > 0).slice(0, 6);
 
   return (
-    <footer className="border-t border-line bg-bg-1">
+    <footer className="border-t-2 border-edge bg-bg-1">
       <div className="px-5 sm:px-8 lg:px-16 py-12 grid gap-10 grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div className="col-span-2 md:col-span-1 max-w-xs">
           <Logo />

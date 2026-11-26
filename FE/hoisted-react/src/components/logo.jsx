@@ -1,17 +1,30 @@
 import { Link } from 'react-router-dom';
 
-/** onDark: logo nằm trên nền luôn tối (panel đăng nhập) — không đổi màu theo giao diện sáng / tối. */
-export function Logo({ size = 17, onDark = false }) {
-  const accent = onDark ? 'text-[#F7DF1E]' : 'text-accent';
+/**
+ * Logo pixel: ô vàng viền navy + bóng cứng, chữ Handjet.
+ * onDark: logo nằm trên nền luôn tối (panel đăng nhập, sidebar console) — không đổi màu theo giao diện sáng / tối.
+ */
+export function Logo({ size = 17, onDark = false, to = '/', sub }) {
   return (
-    <Link to="/"
-      className={`inline-flex items-center gap-2 font-mono font-semibold ${onDark ? 'text-[#F4F5F9] hover:text-[#F4F5F9]' : 'text-ink hover:text-ink'}`}
-      style={{ fontSize: size }}>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={accent}>
-        <path d="M12 19V6M12 6l-5 5M12 6l5 5" />
-      </svg>
-      <span>Hoisted<b className={`${accent} font-bold`}>()</b></span>
+    <Link to={to}
+      className={`inline-flex items-center gap-2.5 ${onDark ? 'text-white hover:text-white' : 'text-ink hover:text-ink'}`}>
+      <span className={`grid place-items-center w-8 h-8 shrink-0 rounded-sm border-2 bg-pop text-navy
+        ${onDark ? 'border-black shadow-[2px_2px_0_0_#000]' : 'border-edge shadow-sm'}`}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true">
+          <path d="M12 20V6M12 6l-6 6M12 6l6 6" />
+        </svg>
+      </span>
+      <span className="leading-none">
+        <span className="block font-pixel font-extrabold tracking-[0.02em]" style={{ fontSize: Math.round(size * 1.45) }}>
+          Hoisted<span className={onDark ? 'text-pop' : 'text-accent'}>()</span>
+        </span>
+        {sub && (
+          <span className={`block mt-0.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.14em] ${onDark ? 'text-pop' : 'text-ink-3'}`}>
+            {sub}
+          </span>
+        )}
+      </span>
     </Link>
   );
 }

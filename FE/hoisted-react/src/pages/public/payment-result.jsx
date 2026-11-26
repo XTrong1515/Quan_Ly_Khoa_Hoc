@@ -13,23 +13,15 @@ import { cn } from '@/lib/utils';
 /* Centered result screen with grid backdrop and glowing status icon */
 function ResultScreen({ tone, icon: Icon, title, children, actions }) {
   const toneClass = {
-    success: 'bg-success/10 text-success shadow-[0_0_50px_rgb(52_211_153/0.25)]',
-    danger:  'bg-danger/10 text-danger shadow-[0_0_50px_rgb(244_63_94/0.2)]',
-    neutral: 'bg-bg-2 text-ink-3',
+    success: 'bg-success text-white border-2 border-edge shadow-md',
+    danger:  'bg-danger text-white border-2 border-edge shadow-md',
+    neutral: 'bg-bg-2 text-ink-2 border-2 border-edge',
   }[tone];
 
   return (
     <div className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
-      {tone === 'success' && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{ backgroundImage: 'radial-gradient(ellipse 50% 50% at 50% 20%, rgb(52 211 153 / .07) 0%, transparent 60%)' }}
-        />
-      )}
       <div className="relative max-w-lg mx-auto px-6 py-24 text-center">
-        <div className={cn('w-20 h-20 rounded-2xl grid place-items-center mx-auto mb-6', toneClass)}>
+        <div className={cn('w-20 h-20 rounded-sm grid place-items-center mx-auto mb-6', toneClass)}>
           <Icon className="w-9 h-9" aria-hidden="true" />
         </div>
         <h1 className="display text-[30px] mb-4">{title}</h1>
@@ -123,7 +115,6 @@ export default function PaymentResultPage() {
       <>
         <Seo title="Đang xác thực thanh toán — Hoisted" />
         <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none" aria-hidden="true" />
           <div className="relative flex flex-col items-center justify-center py-36 gap-5">
             <div className="w-16 h-16 rounded-2xl bg-accent/10 grid place-items-center">
               <Loader2 className="w-8 h-8 text-accent animate-spin motion-reduce:animate-none" aria-hidden="true" />
@@ -145,7 +136,7 @@ export default function PaymentResultPage() {
           title="Chúc mừng, khóa học đã mở!"
           actions={
             <>
-              <Link to={startHref ?? '/me'}><Button size="lg" className="shadow-[0_8px_24px_rgb(var(--accent)/0.3)]">Vào học →</Button></Link>
+              <Link to={startHref ?? '/me'}><Button size="lg" className="shadow">Vào học →</Button></Link>
               <Link to="/courses"><Button size="lg" variant="ghost">Xem thêm khóa học</Button></Link>
             </>
           }
