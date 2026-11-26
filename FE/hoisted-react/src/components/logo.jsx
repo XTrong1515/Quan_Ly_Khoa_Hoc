@@ -12,7 +12,7 @@ export function Logo({ size = 17, onDark = false, to = '/', sub }) {
         ${onDark ? 'border-black shadow-[2px_2px_0_0_#000]' : 'border-edge shadow-sm'}`}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true">
-          <path d="M12 20V6M12 6l-6 6M12 6l6 6" />
+          <path d="M12 20V8M6 12l6-6 6 6" />
         </svg>
       </span>
       <span className="leading-none">

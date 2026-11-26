@@ -124,7 +124,7 @@ export default function CartPage() {
 
       <div className="max-w-[1100px] mx-auto px-5 sm:px-8 py-8">
         {isError && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 mb-6 bg-danger/10 border border-danger/30 rounded-xl text-[13px] text-ink-2" role="alert">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 mb-6 bg-bg-1 border-2 border-danger rounded-sm shadow-sm text-[13px] text-ink-2" role="alert">
             <AlertCircle className="w-4 h-4 text-danger shrink-0" aria-hidden="true" />
             <span className="flex-1">Không tải được thông tin khóa học trong giỏ. Kiểm tra kết nối rồi thử lại.</span>
             <Button size="sm" variant="ghost" onClick={() => refetch()}>Thử lại</Button>
@@ -132,7 +132,7 @@ export default function CartPage() {
         )}
 
         {hasOwnedItem && (
-          <div className="flex items-start gap-2.5 px-4 py-3 mb-6 bg-warn/10 border border-warn/30 rounded-xl text-[13px] text-ink-2" role="alert">
+          <div className="flex items-start gap-2.5 px-4 py-3 mb-6 bg-bg-1 border-2 border-warn rounded-sm shadow-sm text-[13px] text-ink-2" role="alert">
             <AlertCircle className="w-4 h-4 text-warn shrink-0 mt-0.5" aria-hidden="true" />
             <span>Giỏ hàng có khóa học bạn đã sở hữu. Xóa các khóa có nhãn "Đã sở hữu" để tiếp tục thanh toán.</span>
           </div>
@@ -182,7 +182,7 @@ export default function CartPage() {
                       <div className="flex gap-2 mb-1.5 flex-wrap">
                         <Chip variant="line" className="text-[11px]">{course.instructor}</Chip>
                         {isOwned && (
-                          <Chip className="text-[11px] bg-warn/15 text-warn border-warn/30">
+                          <Chip className="text-[11px] bg-pop text-pop-ink border-edge">
                             Đã sở hữu
                           </Chip>
                         )}

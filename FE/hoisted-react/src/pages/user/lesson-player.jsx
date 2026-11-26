@@ -746,8 +746,8 @@ function SidebarSection({ section, currentLessonId, onSelect }) {
 /* ── Quiz Panel ───────────────────────────────────────────────── */
 const QUIZ_MODE = {
   staff:  { text: 'Xem trước — kết quả không được lưu', cls: 'bg-accent text-accent-ink ring-2 ring-inset ring-edge' },
-  locked: { text: 'Bắt buộc để hoàn thành bài học',     cls: 'bg-warn/15 text-warn' },
-  passed: { text: 'Đã đạt',                              cls: 'bg-success/15 text-success' },
+  locked: { text: 'Bắt buộc để hoàn thành bài học',     cls: 'bg-pop text-pop-ink border-2 border-edge' },
+  passed: { text: 'Đã đạt',                              cls: 'bg-success text-success-ink border-2 border-edge' },
 };
 
 function QuizPanel({ quiz, mode = 'locked', onPassed }) {
@@ -832,7 +832,7 @@ function QuizPanel({ quiz, mode = 'locked', onPassed }) {
         {header}
         <div className={cn(
           'max-w-5xl flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border-2 px-5 py-4',
-          passed ? 'border-success/40 bg-success/10' : 'border-edge bg-bg-1',
+          passed ? 'border-success bg-bg-1 shadow-md' : 'border-edge bg-bg-1 shadow-md',
         )}>
           <p className={cn('font-display text-[32px] font-bold leading-none tabular-nums', passed ? 'text-success' : 'text-ink')}>
             {showResult.score}%

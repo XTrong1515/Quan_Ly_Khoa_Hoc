@@ -50,7 +50,7 @@ export default function InstructorRevenuePage() {
       </div>
 
       {data && !data.bankReady && (
-        <div className="flex items-center gap-2 mb-5 px-4 py-3 rounded-lg bg-accent/10 text-accent text-[13px]">
+        <div className="flex items-center gap-2 mb-5 px-4 py-3 rounded-sm border-2 border-edge bg-pop text-pop-ink font-medium shadow-sm text-[13px]">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <span className="flex-1">Bạn chưa cập nhật tài khoản ngân hàng — Hoisted chưa thể chi trả doanh thu.</span>
           <Link to="/instructor/profile" className="font-semibold underline">Cập nhật ngay</Link>

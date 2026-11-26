@@ -177,7 +177,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
             {section.title && (
               <div className="flex items-center gap-3 px-4 py-2.5 bg-bg-2 border-b border-line">
                 <GripVertical className="w-3.5 h-3.5 text-ink-3" />
-                <span className="font-mono text-[12px] font-semibold text-ink">{section.title}</span>
+                <span className="text-[13px] font-semibold text-ink">{section.title}</span>
                 <span className="font-mono text-[11px] text-ink-3 ml-auto">{section.items.length} bài</span>
               </div>
             )}
@@ -207,12 +207,12 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                   </span>
                 )}
                 {l.video_key && (
-                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-success/10 text-success uppercase shrink-0" title="Video lưu trên storage">
+                  <span className="font-mono text-[11px] font-bold px-1.5 py-px rounded-sm border-2 border-edge bg-bg-1 text-ink-2 uppercase shrink-0" title="Video lưu trên storage">
                     Video
                   </span>
                 )}
                 {l.attachment_key && (
-                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-indigo/10 text-indigo uppercase shrink-0" title={l.attachment_name ?? 'PDF'}>
+                  <span className="font-mono text-[11px] font-bold px-1.5 py-px rounded-sm border-2 border-edge bg-bg-1 text-ink-2 uppercase shrink-0" title={l.attachment_name ?? 'PDF'}>
                     PDF
                   </span>
                 )}
@@ -1003,7 +1003,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
                       {q.options.map(o => (
                         <div key={o.id} className={cn(
                           'flex items-center gap-2 text-[12px] px-2 py-1 rounded',
-                          o.isCorrect ? 'text-success bg-success/10' : 'text-ink-3',
+                          o.isCorrect ? 'bg-success text-success-ink font-semibold' : 'text-ink-3',
                         )}>
                           <span>{o.isCorrect ? '✓' : '○'}</span>
                           <span>{o.text}</span>

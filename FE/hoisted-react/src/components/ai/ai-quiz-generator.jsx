@@ -71,7 +71,7 @@ export function AiQuizGenerator({ apiBase, lesson, quizId, onAdded }) {
   }
 
   return (
-    <div className="border border-accent/40 rounded-lg p-3 space-y-3 bg-accent/5">
+    <div className="border-2 border-edge rounded-sm p-3 space-y-3 bg-bg-2">
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-accent" />
         <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest flex-1">AI soạn bản nháp — bạn duyệt trước khi lưu</p>

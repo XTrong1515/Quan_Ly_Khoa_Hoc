@@ -60,7 +60,7 @@ export function LessonContentEditor({ apiBase, lesson, value, onChange }) {
       </div>
 
       {aiOpen && (
-        <div className="mb-3 p-3 rounded-lg border border-accent/40 bg-accent/5 space-y-2">
+        <div className="mb-3 p-3 rounded-sm border-2 border-edge bg-bg-2 space-y-2">
           <textarea value={outline} onChange={(e) => setOutline(e.target.value.slice(0, 2000))} rows={3}
             placeholder="Dàn ý / ý chính muốn có (tuỳ chọn) — vd: var vs let/const, TDZ, ví dụ thực tế với vòng lặp"
             className={cn(inputCls, 'resize-y')} />

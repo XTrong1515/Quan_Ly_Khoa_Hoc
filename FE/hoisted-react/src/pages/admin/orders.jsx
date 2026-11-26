@@ -125,7 +125,7 @@ export default function AdminOrdersPage() {
                 {cnt != null && (
                   <span className={cn(
                     'text-[11px] px-1.5 py-0.5 rounded-sm',
-                    activeTab === value ? 'bg-accent/20 text-accent' : 'bg-bg-3 text-ink-3',
+                    activeTab === value ? 'bg-pop text-pop-ink font-bold' : 'bg-bg-3 text-ink-2',
                   )}>
                     {cnt}
                   </span>

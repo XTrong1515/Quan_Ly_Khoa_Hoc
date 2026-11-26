@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-11-26T13:57:14.317Z",
+        "reason": "assistant decision: body face chosen in the Pixel Neo-Brutalism restyle to match the user's reference screenshot; one of few grotesks with a Vietnamese subset (mirrors repo-root config)"
+      },
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "src/index.css"
+        ],
+        "createdAt": "2026-11-26T13:57:14.438Z",
+        "reason": "assistant verified false positive: .ide-bar border-b-2 is the neutral navy divider under the code-window title bar, not an accent stripe on a rounded card (mirrors repo-root config)"
+      }
+    ]
+  }
+}

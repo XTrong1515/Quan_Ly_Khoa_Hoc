@@ -134,7 +134,7 @@ export default function BecomeInstructorPage() {
     body = (
       <div className="space-y-4">
         {application?.status === 'REJECTED' && (
-          <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-danger/10 text-danger text-[13px]">
+          <div className="flex items-start gap-3 px-4 py-3 rounded-sm border-2 border-danger bg-bg-1 text-danger font-medium shadow-sm text-[13px]">
             <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <p><b>Đơn trước chưa được duyệt.</b> Lý do: {application.adminNote || 'không ghi lý do'} — bổ sung thông tin bên dưới rồi gửi lại.</p>
           </div>

@@ -113,13 +113,13 @@ export default function InstructorCoursesPage() {
         {courses.map((c) => (
           <div key={c.id} className="card overflow-hidden">
             {c.status === 'REJECTED' && c.reject_reason && (
-              <div className="flex items-start gap-2 px-4 py-2.5 bg-danger/10 border-b border-danger/20 text-[12.5px] text-danger">
+              <div className="flex items-start gap-2 px-4 py-2.5 bg-danger border-b-2 border-edge text-[12.5px] font-medium text-danger-ink">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <p><span className="font-semibold">Bị từ chối:</span> {c.reject_reason} — chỉnh sửa rồi gửi duyệt lại.</p>
               </div>
             )}
             {c.status === 'PENDING_REVIEW' && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border-b border-accent/20 text-[12px] text-accent">
+              <div className="flex items-center gap-2 px-4 py-2 bg-pop border-b-2 border-edge text-[12px] font-medium text-pop-ink">
                 <Clock className="w-3.5 h-3.5 shrink-0" />
                 Đang chờ quản trị viên duyệt{c.submitted_at ? ` · gửi lúc ${new Date(c.submitted_at).toLocaleString('vi-VN')}` : ''}.
                 Nội dung khóa học tạm khóa chỉnh sửa — rút yêu cầu duyệt nếu cần sửa.

@@ -75,9 +75,9 @@ function StatusScreen({ tone, icon: Icon, title, children, actions }) {
     <div className="relative overflow-hidden">
       <div className="relative max-w-xl mx-auto px-6 py-24 text-center">
         <div className={cn(
-          'w-20 h-20 rounded-2xl grid place-items-center mx-auto mb-6',
-          tone === 'success' ? 'bg-success/10 text-success shadow'
-                             : 'bg-danger/10 text-danger shadow',
+          'w-20 h-20 rounded-sm border-2 border-edge grid place-items-center mx-auto mb-6 shadow-lg',
+          tone === 'success' ? 'bg-success text-success-ink'
+                             : 'bg-danger text-danger-ink',
         )}>
           <Icon className="w-9 h-9" aria-hidden="true" />
         </div>

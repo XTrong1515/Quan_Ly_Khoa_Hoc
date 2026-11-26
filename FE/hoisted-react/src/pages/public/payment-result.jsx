@@ -116,8 +116,8 @@ export default function PaymentResultPage() {
         <Seo title="Đang xác thực thanh toán — Hoisted" />
         <div className="relative overflow-hidden">
           <div className="relative flex flex-col items-center justify-center py-36 gap-5">
-            <div className="w-16 h-16 rounded-2xl bg-accent/10 grid place-items-center">
-              <Loader2 className="w-8 h-8 text-accent animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            <div className="w-16 h-16 rounded-sm border-2 border-edge bg-pop shadow-md grid place-items-center">
+              <Loader2 className="w-8 h-8 text-navy animate-spin motion-reduce:animate-none" aria-hidden="true" />
             </div>
             <p className="font-mono text-ink-3 text-sm" aria-live="polite">Đang xác thực thanh toán với ZaloPay…</p>
           </div>

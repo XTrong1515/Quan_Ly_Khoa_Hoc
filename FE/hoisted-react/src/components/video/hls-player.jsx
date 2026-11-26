@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { api, BASE_URL } from '@/lib/api';
 
 /*
- * Phát video HLS mã hóa AES-128 bằng hls.js (tải động — chỉ trang có video HLS mới tải thư viện).
+ * Phát video HLS mã hóa AES-128 bằng hls.js (tải động — chỉ trang có video HLS mới tải thư viện, bản light).
  * - Playlist + khóa đi qua API của mình → gắn Authorization; đoạn .ts là presigned URL của storage
  *   → KHÔNG gắn header (sai chữ ký + không lộ token sang domain khác).
  * - Lỗi mạng nghiêm trọng (link đoạn hết hạn / token hết hạn) → refresh token nếu cần, tải lại playlist
@@ -73,7 +73,8 @@ export const HlsPlayer = forwardRef(function HlsPlayer(
     let recoveries = 0;
     const MAX_RECOVERIES = 2;
 
-    import('hls.js').then(({ default: Hls }) => {
+    // Bản light (≈ 370 kB thay vì ≈ 600 kB): đủ HLS + giải mã AES-128; bỏ phụ đề, audio phụ, DRM/EME — Hoisted không dùng
+    import('hls.js/light').then(({ default: Hls }) => {
       if (cancelled) return;
       if (!Hls.isSupported()) { callbacks.current.onUnsupported?.(); return; }
 

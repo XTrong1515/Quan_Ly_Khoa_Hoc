@@ -477,49 +477,77 @@ export default function HomePage() {
           desc="Mọi bài học đều đi từ cách JavaScript thật sự hoạt động bên dưới — không phải chỉ cú pháp bề mặt."
           id="why-heading"
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {/* Large feature card */}
-          <Reveal className="md:col-span-2 xl:row-span-2">
-            <div className="card p-7 h-full flex flex-col relative overflow-hidden group transition-colors">
-              <div className="relative">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+          {/* Thẻ lớn: luận điểm + một "console" chứng minh bằng output thật của event loop */}
+          <Reveal className="xl:col-span-3 h-full">
+            <div className="card p-6 sm:p-7 h-full grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] items-start xl:items-center">
+              <div>
                 <div className="w-11 h-11 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center mb-5">
                   <Terminal className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <h3 className="font-display font-bold text-[19px] mb-2">Hiểu engine, không đoán mò</h3>
-                <p className="text-sm text-ink-2 leading-[1.7] mb-6 max-w-md">
+                <p className="text-sm text-ink-2 leading-[1.7] mb-6">
                   Execution context, hoisting, event loop, closure — bạn sẽ đọc được code
                   như cách V8 đọc nó. Phỏng vấn hay debug production đều không còn là may rủi.
                 </p>
-                <div className="soft p-4 font-mono text-[12px] leading-[1.9] text-ink-2 overflow-x-auto">
-                  <div><span className="text-ink-3">{'// bạn sau khóa học:'}</span></div>
-                  <div>Promise.resolve().then(A); setTimeout(B);</div>
-                  <div>
-                    <span className="text-ink-3">{'// → biết chắc A chạy trước B, và giải thích được vì sao ✓'}</span>
-                  </div>
-                </div>
-                <ul className="mt-6 space-y-2.5">
+                <ul className="space-y-2.5">
                   {['Video, tài liệu PDF và quiz trong cùng một bài học', 'Bài tập code chấm bằng test ẩn', 'Thảo luận với giảng viên ngay dưới bài học'].map((s) => (
-                    <li key={s} className="flex items-center gap-2.5 text-sm text-ink-2">
-                      <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0" aria-hidden="true" />
+                    <li key={s} className="flex items-start gap-2.5 text-sm text-ink-2">
+                      <CheckCircle2 className="w-4 h-4 mt-0.5 text-accent flex-shrink-0" aria-hidden="true" />
                       {s}
                     </li>
                   ))}
                 </ul>
               </div>
+
+              {/* Luôn tối như hero — một cửa sổ console, không phải panel trang trí */}
+              <figure className="rounded border-2 border-edge bg-[#0E1B3D] shadow-lg overflow-hidden font-mono text-[11.5px] sm:text-[12.5px] leading-[1.85] [font-variant-ligatures:none]">
+                <div className="flex items-center gap-2 px-3 h-9 bg-pop border-b-2 border-edge">
+                  <span className="w-2.5 h-2.5 bg-[#0E1B3D]" aria-hidden="true" />
+                  <span className="text-[11px] font-bold text-navy">console</span>
+                  <span className="ml-auto text-[11px] font-bold text-navy">event-loop.js</span>
+                </div>
+                <pre className="px-4 pt-3.5 pb-2 text-slate-200 overflow-x-auto"><code>
+                  <span className="text-[#FFCF33]">{'>'}</span> Promise.resolve().then(() =&gt; log(<span className="text-emerald-300">'A'</span>)){'\n'}
+                  <span className="text-[#FFCF33]">{'>'}</span> setTimeout(() =&gt; log(<span className="text-emerald-300">'B'</span>)){'\n'}
+                  <span className="text-[#FFCF33]">{'>'}</span> log(<span className="text-emerald-300">'C'</span>)
+                </code></pre>
+                <ol className="mx-4 mb-4 border-t-2 border-dashed border-white/25 pt-2.5 space-y-1.5 text-white">
+                  {[['C', 'đồng bộ, chạy ngay'], ['A', 'microtask'], ['B', 'macrotask']].map(([out, why]) => (
+                    <li key={out} className="flex items-center gap-3">
+                      <span className="w-4 font-bold">{out}</span>
+                      <span className="text-[11px] font-bold px-1.5 border-2 border-[#FFCF33] text-[#FFCF33] rounded-sm">{why}</span>
+                    </li>
+                  ))}
+                </ol>
+                <figcaption className="px-4 py-2.5 border-t-2 border-edge bg-[#16275A] font-sans text-[12.5px] text-slate-200">
+                  Sau khóa học, bạn đoán đúng thứ tự này và giải thích được vì sao.
+                </figcaption>
+              </figure>
             </div>
           </Reveal>
 
-          {BENTO_SMALL.map(({ icon: Icon, title, desc }, i) => (
-            <Reveal key={title} delay={80 + i * 60}>
-              <div className="card p-6 h-full group hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:hover:translate-y-0 transition-all duration-200">
-                <div className="w-10 h-10 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <Icon className="w-5 h-5" aria-hidden="true" />
-                </div>
-                <h3 className="font-display font-semibold text-[15px] mb-1.5">{title}</h3>
-                <p className="text-[13px] text-ink-3 leading-[1.65]">{desc}</p>
-              </div>
-            </Reveal>
-          ))}
+          {/* Một bảng thông số thay vì 4 thẻ giống hệt nhau */}
+          <Reveal className="xl:col-span-2 h-full" delay={80}>
+            <div className="card h-full flex flex-col overflow-hidden">
+              <p className="px-6 h-10 flex items-center bg-bg-2 border-b-2 border-edge font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-ink-2">
+                Có sẵn trong mọi khóa học
+              </p>
+              <ul className="flex-1 flex flex-col">
+                {BENTO_SMALL.map(({ icon: Icon, title, desc }) => (
+                  <li key={title} className="flex-1 flex items-start gap-4 px-6 py-5 border-b-2 border-dashed border-line last:border-b-0">
+                    <span className="w-10 h-10 shrink-0 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center">
+                      <Icon className="w-5 h-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="font-display font-semibold text-[15px] mb-1">{title}</h3>
+                      <p className="text-[13px] text-ink-2 leading-[1.6]">{desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
         </div>
       </section>
 

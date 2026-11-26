@@ -65,9 +65,9 @@ export default function ResetPasswordPage() {
       <AuthScreen>
         <Seo title="Link không hợp lệ — Hoisted" />
         <div className="mb-8"><Logo size={18} onDark /></div>
-        <div className="bg-bg rounded-2xl border-2 border-edge p-8 text-center shadow-2xl">
-          <div className="w-14 h-14 rounded-2xl bg-danger/10 grid place-items-center mx-auto mb-5">
-            <AlertTriangle className="w-6 h-6 text-danger" aria-hidden="true" />
+        <div className="bg-bg rounded-lg border-2 border-black p-8 text-center shadow-[8px_8px_0_0_#000]">
+          <div className="w-14 h-14 rounded-sm border-2 border-edge bg-danger grid place-items-center mx-auto mb-5 shadow-md">
+            <AlertTriangle className="w-6 h-6 text-danger-ink" aria-hidden="true" />
           </div>
           <h1 className="display text-[24px] mb-2">Link không hợp lệ</h1>
           <p className="text-ink-2 text-[13.5px] leading-relaxed mb-6">
@@ -87,9 +87,9 @@ export default function ResetPasswordPage() {
       <div className="mb-8"><Logo size={18} onDark /></div>
 
       {done ? (
-        <div className="bg-bg rounded-2xl border-2 border-edge p-8 text-center shadow-2xl">
-          <div className="w-14 h-14 rounded-2xl bg-success/10 grid place-items-center mx-auto mb-5 shadow">
-            <ShieldCheck className="w-6 h-6 text-success" aria-hidden="true" />
+        <div className="bg-bg rounded-lg border-2 border-black p-8 text-center shadow-[8px_8px_0_0_#000]">
+          <div className="w-14 h-14 rounded-sm border-2 border-edge bg-success grid place-items-center mx-auto mb-5 shadow-md">
+            <ShieldCheck className="w-6 h-6 text-success-ink" aria-hidden="true" />
           </div>
           <h1 className="display text-[24px] mb-2">Mật khẩu đã được đặt lại</h1>
           <p className="text-ink-3 text-[13.5px] mb-6">Bạn có thể đăng nhập bằng mật khẩu mới.</p>
@@ -102,12 +102,12 @@ export default function ResetPasswordPage() {
           </Button>
         </div>
       ) : (
-        <div className="bg-bg rounded-2xl border-2 border-edge p-8 shadow-2xl">
+        <div className="bg-bg rounded-lg border-2 border-black p-8 shadow-[8px_8px_0_0_#000]">
           <p className="eyebrow mb-4">
             <span className="text-accent">~/hoisted</span> <span className="text-ink-3">/ đặt-lại-mật-khẩu</span>
           </p>
-          <div className="w-11 h-11 rounded-xl bg-accent/10 grid place-items-center mb-4">
-            <KeyRound className="w-5 h-5 text-accent" aria-hidden="true" />
+          <div className="w-11 h-11 rounded-sm border-2 border-edge bg-pop shadow-sm grid place-items-center mb-4">
+            <KeyRound className="w-5 h-5 text-navy" aria-hidden="true" />
           </div>
           <h1 className="display text-[24px] mb-1.5">Đặt lại mật khẩu</h1>
           <p className="text-ink-3 text-[13.5px] mb-6">Tạo mật khẩu mới cho tài khoản của bạn.</p>

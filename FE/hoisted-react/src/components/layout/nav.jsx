@@ -332,7 +332,7 @@ function NotificationsBell() {
                         {n.title}
                       </p>
                       {n.body && (
-                        <p className="font-mono text-[11px] text-ink-3 mt-0.5 line-clamp-2 leading-snug">
+                        <p className="text-[12px] text-ink-2 mt-0.5 line-clamp-2 leading-snug">
                           {n.body}
                         </p>
                       )}

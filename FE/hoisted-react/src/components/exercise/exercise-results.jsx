@@ -28,7 +28,7 @@ export function ExerciseResults({ result, title }) {
       </div>
 
       {result.error && (
-        <pre className="font-mono text-[12px] text-danger bg-danger/5 rounded-lg px-3 py-2 whitespace-pre-wrap">{result.error}</pre>
+        <pre className="font-mono text-[12px] text-danger bg-bg-1 border-2 border-danger rounded-sm px-3 py-2 whitespace-pre-wrap">{result.error}</pre>
       )}
 
       {result.results?.map((r) => {
