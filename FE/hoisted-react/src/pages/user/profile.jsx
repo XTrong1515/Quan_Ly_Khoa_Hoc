@@ -235,7 +235,7 @@ function InfoSection() {
               {...register('name')}
               autoComplete="name"
               className="input h-[42px] text-sm"
-              placeholder="Phạm Khang"
+              placeholder="vd: Nguyễn Văn An"
             />
           </Field>
 
@@ -244,7 +244,7 @@ function InfoSection() {
               {...register('username')}
               autoComplete="username"
               className="input h-[42px] text-sm font-mono"
-              placeholder="@khang.hoisted"
+              placeholder="vd: @ten.cua.ban"
             />
           </Field>
 
@@ -263,7 +263,7 @@ function InfoSection() {
               type="tel"
               autoComplete="tel"
               className="input h-[42px] text-sm"
-              placeholder="0987 654 321"
+              placeholder="vd: 0912 345 678"
             />
           </Field>
         </div>
@@ -275,7 +275,7 @@ function InfoSection() {
               {...register('bio')}
               className="input py-2.5 h-auto text-sm resize-none"
               rows={3}
-              placeholder="Frontend dev, đang học sâu về async và event loop."
+              placeholder="vd: Frontend dev, đang học sâu về async và event loop"
             />
           </Field>
         </div>

@@ -20,6 +20,21 @@
         "value": "inter",
         "createdAt": "2026-11-17T09:22:24.816Z",
         "reason": "Claude: Inter Tight is the documented brand typeface in DESIGN.md (Typography + 'Two typefaces' rule); only its loading moved from Google Fonts into index.css"
+      },
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-11-26T09:04:51.357Z",
+        "reason": "assistant decision: body face chosen in the Pixel Neo-Brutalism restyle to match the user's reference screenshot; one of few grotesks with a Vietnamese subset"
+      },
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "FE/hoisted-react/src/index.css"
+        ],
+        "createdAt": "2026-11-26T09:04:51.550Z",
+        "reason": "assistant verified false positive: .ide-bar border-b-2 uses the neutral navy edge token as the title-bar divider of the code window, not an accent stripe on a rounded card"
       }
     ]
   }

@@ -1,408 +1,274 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-20T07:28:50+00:00",
+  "generatedAt": "2026-11-26T13:40:31.828Z",
   "title": "Design System: Hoisted",
   "extensions": {
     "colorMeta": {
-      "ink-night": {
-        "role": "neutral",
-        "displayName": "Ink Night",
-        "canonical": "#0B0F19",
+      "pixel-yellow": {
+        "role": "primary",
+        "displayName": "Pixel Yellow",
         "tonalRamp": [
-          "#1C2230",
-          "#2D3853",
-          "#3D4E7B",
-          "#4C66A9",
-          "#758ABD",
-          "#A1AECE",
-          "#CBD1E1",
-          "#EFF1F5"
+          "#4D3A00",
+          "#7A5C00",
+          "#A67F00",
+          "#D4A300",
+          "#FFCF33",
+          "#FFDB66",
+          "#FFE899",
+          "#FFF4CC"
         ]
       },
-      "panel-night": {
-        "role": "neutral",
-        "displayName": "Panel Night",
-        "canonical": "#0F1525",
+      "signal-blue": {
+        "role": "primary",
+        "displayName": "Signal Blue",
         "tonalRamp": [
-          "#1B2131",
-          "#2B3655",
-          "#3A4C7E",
-          "#4863AD",
-          "#7287C0",
-          "#9FADD0",
-          "#CAD1E2",
-          "#EFF1F5"
+          "#0B1A4D",
+          "#122A7A",
+          "#1A3AA6",
+          "#2547D0",
+          "#4F6BDB",
+          "#7A90E6",
+          "#A6B4F0",
+          "#D3DAF7"
         ]
       },
-      "well-night": {
-        "role": "neutral",
-        "displayName": "Well Night",
-        "canonical": "#161C2F",
+      "flare-orange": {
+        "role": "secondary",
+        "displayName": "Flare Orange",
         "tonalRamp": [
-          "#1D2130",
-          "#2E3652",
-          "#3F4D79",
-          "#4F64A6",
-          "#7788BB",
-          "#A3ADCC",
-          "#CCD1E0",
-          "#F0F1F5"
+          "#4D1206",
+          "#7A1D0B",
+          "#A62A11",
+          "#D33D1C",
+          "#F2542D",
+          "#F57F61",
+          "#F9AA96",
+          "#FCD4CA"
         ]
       },
-      "raised-night": {
+      "ember-red": {
+        "role": "secondary",
+        "displayName": "Ember Red",
+        "tonalRamp": []
+      },
+      "ink-navy": {
         "role": "neutral",
-        "displayName": "Raised Night",
-        "canonical": "#1E263D",
+        "displayName": "Ink Navy",
         "tonalRamp": [
-          "#1D222F",
-          "#2F3851",
-          "#404F77",
-          "#5167A3",
-          "#798AB9",
-          "#A4AECB",
-          "#CDD2E0",
-          "#F0F1F5"
+          "#060C1C",
+          "#0E1B3D",
+          "#1E2E5C",
+          "#374469",
+          "#525F85",
+          "#8A96B8",
+          "#C2CAE2",
+          "#E5EAF7"
         ]
       },
-      "hairline-night": {
+      "dot-paper": {
         "role": "neutral",
-        "displayName": "Hairline Night",
-        "canonical": "rgba(255, 255, 255, 0.09)"
+        "displayName": "Dot Paper",
+        "tonalRamp": []
       },
-      "ink-bright": {
+      "panel-white": {
         "role": "neutral",
-        "displayName": "Ink Bright",
-        "canonical": "#F4F5F9",
-        "tonalRamp": [
-          "#1F222E",
-          "#31374E",
-          "#444E73",
-          "#57659E",
-          "#7E89B4",
-          "#A7ADC8",
-          "#CED1DF",
-          "#F0F1F4"
-        ]
+        "displayName": "Panel White",
+        "tonalRamp": []
+      },
+      "well-periwinkle": {
+        "role": "neutral",
+        "displayName": "Well Periwinkle",
+        "tonalRamp": []
       },
       "ink-muted": {
         "role": "neutral",
         "displayName": "Ink Muted",
-        "canonical": "#B6BCD0",
-        "tonalRamp": [
-          "#21232C",
-          "#353A4A",
-          "#4A526D",
-          "#606C94",
-          "#858EAD",
-          "#ABB1C4",
-          "#D0D3DC",
-          "#F1F1F4"
-        ]
+        "tonalRamp": []
       },
       "ink-faint": {
         "role": "neutral",
         "displayName": "Ink Faint",
-        "canonical": "#8B92AF",
-        "tonalRamp": [
-          "#22242A",
-          "#383B47",
-          "#4F5568",
-          "#686F8D",
-          "#8B91A7",
-          "#AFB2C0",
-          "#D2D4DB",
-          "#F1F2F3"
-        ]
+        "tonalRamp": []
       },
-      "js-yellow": {
-        "role": "primary",
-        "displayName": "JS Yellow",
-        "canonical": "#F7DF1E",
-        "tonalRamp": [
-          "#3F390E",
-          "#6E6412",
-          "#A79611",
-          "#EAD20A",
-          "#EFDC43",
-          "#EDE182",
-          "#F1EBBC",
-          "#F9F8EB"
-        ]
-      },
-      "paper-day": {
+      "night-deep": {
         "role": "neutral",
-        "displayName": "Paper Day",
-        "canonical": "#F8FAFC",
-        "tonalRamp": [
-          "#1C2631",
-          "#2C4054",
-          "#3C5C7C",
-          "#4A7AAA",
-          "#7499BE",
-          "#A1B8CF",
-          "#CBD6E2",
-          "#EFF2F5"
-        ]
+        "displayName": "Night Deep",
+        "tonalRamp": []
       },
-      "panel-day": {
+      "night-panel": {
         "role": "neutral",
-        "displayName": "Panel Day",
-        "canonical": "#FFFFFF",
-        "tonalRamp": [
-          "#262626",
-          "#404040",
-          "#5C5C5C",
-          "#7A7A7A",
-          "#999999",
-          "#B8B8B8",
-          "#D6D6D6",
-          "#F2F2F2"
-        ]
+        "displayName": "Night Panel",
+        "tonalRamp": []
       },
-      "well-day": {
+      "night-well": {
         "role": "neutral",
-        "displayName": "Well Day",
-        "canonical": "#F1F5F9",
-        "tonalRamp": [
-          "#1C2631",
-          "#2C4054",
-          "#3C5C7C",
-          "#4A7AAA",
-          "#7499BE",
-          "#A1B8CF",
-          "#CBD6E2",
-          "#EFF2F5"
-        ]
+        "displayName": "Night Well",
+        "tonalRamp": []
       },
-      "hairline-day": {
+      "night-input": {
         "role": "neutral",
-        "displayName": "Hairline Day",
-        "canonical": "rgba(15, 23, 42, 0.10)"
+        "displayName": "Night Input",
+        "tonalRamp": []
       },
-      "ink-day-muted": {
+      "night-ink": {
         "role": "neutral",
-        "displayName": "Ink Day Muted",
-        "canonical": "#475569",
-        "tonalRamp": [
-          "#21252B",
-          "#363E49",
-          "#4C596B",
-          "#637692",
-          "#8796AB",
-          "#ADB6C3",
-          "#D1D5DC",
-          "#F1F2F4"
-        ]
+        "displayName": "Night Ink",
+        "tonalRamp": []
       },
-      "ink-day-faint": {
+      "night-ink-muted": {
         "role": "neutral",
-        "displayName": "Ink Day Faint",
-        "canonical": "#5B6B82",
-        "tonalRamp": [
-          "#21252C",
-          "#363E4A",
-          "#4C596C",
-          "#627693",
-          "#8696AC",
-          "#ACB6C3",
-          "#D0D5DC",
-          "#F1F2F4"
-        ]
+        "displayName": "Night Ink Muted",
+        "tonalRamp": []
+      },
+      "night-ink-faint": {
+        "role": "neutral",
+        "displayName": "Night Ink Faint",
+        "tonalRamp": []
+      },
+      "night-edge": {
+        "role": "neutral",
+        "displayName": "Night Edge",
+        "tonalRamp": []
       },
       "pass-green-day": {
         "role": "status",
-        "displayName": "Pass Green Day",
-        "canonical": "#047857",
-        "tonalRamp": [
-          "#0F3D30",
-          "#147056",
-          "#14A87E",
-          "#0FE6A9",
-          "#3EF4C0",
-          "#7FF0D0",
-          "#BAF2E2",
-          "#EBFAF6"
-        ]
+        "displayName": "Pass Green (day)",
+        "tonalRamp": []
       },
-      "fail-rose-day": {
+      "fail-red-day": {
         "role": "status",
-        "displayName": "Fail Rose Day",
-        "canonical": "#D61942",
-        "tonalRamp": [
-          "#3A131B",
-          "#691C2C",
-          "#9D203B",
-          "#D52047",
-          "#E64C6D",
-          "#E7889D",
-          "#EEBEC9",
-          "#F9ECEF"
-        ]
+        "displayName": "Fail Red (day)",
+        "tonalRamp": []
       },
       "caution-amber-day": {
         "role": "status",
-        "displayName": "Caution Amber Day",
-        "canonical": "#B45309",
-        "tonalRamp": [
-          "#3C2310",
-          "#6F3C16",
-          "#A65517",
-          "#E26C13",
-          "#F18D41",
-          "#EEB081",
-          "#F1D3BB",
-          "#FAF1EB"
-        ]
+        "displayName": "Caution Amber (day)",
+        "tonalRamp": []
       },
-      "indigo-signal": {
-        "role": "primary",
-        "displayName": "Indigo Signal",
-        "canonical": "#4F46E5",
-        "tonalRamp": [
-          "#15133A",
-          "#1F1B65",
-          "#261F98",
-          "#2A20D5",
-          "#5B53DF",
-          "#918CE3",
-          "#C3C1EC",
-          "#EDEDF8"
-        ]
-      },
-      "indigo-glow": {
-        "role": "secondary",
-        "displayName": "Indigo Glow",
-        "canonical": "#6366F1",
-        "tonalRamp": [
-          "#10113C",
-          "#161869",
-          "#191C9F",
-          "#161ADF",
-          "#4B4FE7",
-          "#888AE7",
-          "#BFC0EE",
-          "#ECECF9"
-        ]
-      },
-      "pass-green": {
+      "pass-green-night": {
         "role": "status",
-        "displayName": "Pass Green",
-        "canonical": "#34D399",
-        "tonalRamp": [
-          "#15372B",
-          "#206048",
-          "#288F6A",
-          "#2DC88F",
-          "#5DD5A9",
-          "#93DCC2",
-          "#C4E8DB",
-          "#EDF7F4"
-        ]
+        "displayName": "Pass Green (night)",
+        "tonalRamp": []
       },
-      "fail-rose": {
+      "fail-red-night": {
         "role": "status",
-        "displayName": "Fail Rose",
-        "canonical": "#F43F5E",
-        "tonalRamp": [
-          "#3E0F17",
-          "#6C1423",
-          "#A3142D",
-          "#E60F34",
-          "#EC4663",
-          "#EB8596",
-          "#EFBDC6",
-          "#F9EBEE"
-        ]
+        "displayName": "Fail Red (night)",
+        "tonalRamp": []
       },
-      "caution-amber": {
+      "caution-amber-night": {
         "role": "status",
-        "displayName": "Caution Amber",
-        "canonical": "#F59E0B",
-        "tonalRamp": [
-          "#3E2C0E",
-          "#6D4B12",
-          "#A66F12",
-          "#E9970C",
-          "#EFAF43",
-          "#ECC583",
-          "#F0DDBC",
-          "#F9F4EB"
-        ]
+        "displayName": "Caution Amber (night)",
+        "tonalRamp": []
+      },
+      "swatch-violet": {
+        "role": "decorative",
+        "displayName": "Swatch Violet (course thumbnails only)",
+        "tonalRamp": []
+      },
+      "swatch-sky": {
+        "role": "decorative",
+        "displayName": "Swatch Sky (course thumbnails only)",
+        "tonalRamp": []
+      },
+      "swatch-green": {
+        "role": "decorative",
+        "displayName": "Swatch Green (course thumbnails only)",
+        "tonalRamp": []
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "One hero headline per public page (.display)."
+        "purpose": "Home hero and public page H1s. Words only, never numbers or code glyphs. font-size-adjust 0.56."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Public section titles (26–32px) and console page titles (24px)."
+        "purpose": "Console page titles, section headings, dialog titles."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Card, modal and course titles."
+        "purpose": "Card titles and panel headers; course titles reserve two lines in multi-column grids."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "15px public reading copy, 13–13.5px console; ~65ch measure."
+        "purpose": "Descriptions, lesson text, forms. 65-75ch."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Mono uppercase section labels, table headers, stat captions."
+        "purpose": "Uppercase mono labels: form labels, table headers, sidebar groups, badges."
       },
       "data": {
         "displayName": "Data",
-        "purpose": "Mono tabular prices, counts, codes, durations, timers."
+        "purpose": "Stat values, prices, totals with tabular numerals."
       }
     },
     "shadows": [
       {
+        "name": "press",
+        "value": "2px 2px 0 0 rgb(var(--shadow))",
+        "purpose": "Buttons, chips, icon buttons, avatars at rest."
+      },
+      {
+        "name": "base",
+        "value": "3px 3px 0 0 rgb(var(--shadow))",
+        "purpose": "Small floating controls."
+      },
+      {
+        "name": "block",
+        "value": "4px 4px 0 0 rgb(var(--shadow))",
+        "purpose": "Code windows, stat tiles, chat composer."
+      },
+      {
+        "name": "card",
+        "value": "5px 5px 0 0 rgb(var(--shadow))",
+        "purpose": "Every .card at rest."
+      },
+      {
+        "name": "float",
+        "value": "6px 6px 0 0 rgb(var(--shadow))",
+        "purpose": "Dropdowns, popovers, hovered cards, floating hero badges."
+      },
+      {
         "name": "overlay",
-        "value": "0 25px 50px -12px rgba(0,0,0,0.4)",
-        "purpose": "Modals, dropdowns, notification panel, mobile drawer, sticky purchase rail."
-      },
-      {
-        "name": "signal-glow",
-        "value": "0 8px 24px rgb(var(--accent) / 0.3)",
-        "purpose": "Only under the page's single primary CTA; follows the theme accent."
-      },
-      {
-        "name": "lift",
-        "value": "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
-        "purpose": "Interactive cards and rows on hover, paired with a -2 to -4px translate."
+        "value": "8px 8px 0 0 rgb(var(--shadow))",
+        "purpose": "Dialogs and the hero code window."
       }
     ],
     "motion": [
       {
+        "name": "press",
+        "value": "transform + box-shadow 100ms",
+        "purpose": "Pressable blocks sink 1px on hover and onto their shadow on press (.press)."
+      },
+      {
         "name": "reveal",
         "value": "opacity/transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), from translateY(18px)",
-        "purpose": "The one authored entrance for sections on scroll (.reveal)."
+        "purpose": "Below-the-fold sections on scroll; content visible at first paint is shown instantly (.reveal-instant)."
       },
       {
         "name": "state",
-        "value": "150-200ms ease (Tailwind transition)",
-        "purpose": "Hover, focus, colour and border changes."
+        "value": "150-200ms ease",
+        "purpose": "Colour and border changes."
       },
       {
         "name": "caret",
         "value": "1.1s step-end infinite",
-        "purpose": "Blinking terminal caret in code windows and the CTA prompt."
+        "purpose": "Yellow block caret in code windows and the streaming chat."
       },
       {
         "name": "marquee",
         "value": "32s linear infinite, pauses on hover",
-        "purpose": "Concept ticker under the home hero."
+        "purpose": "Yellow concept ticker under the home hero."
+      },
+      {
+        "name": "chat-in",
+        "value": "180ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Assistant panel entrance."
       },
       {
         "name": "reduced-motion",
         "value": "@media (prefers-reduced-motion: reduce)",
         "purpose": "Disables reveal, marquee, float and caret."
-      },
-      {
-        "name": "chat-in",
-        "value": "180ms cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Assistant panel / widget entrance: 8px rise + 0.985 scale from the bottom-right. Off under reduced motion."
       }
     ],
     "breakpoints": [
@@ -417,7 +283,7 @@
       {
         "name": "lg",
         "value": "1024px",
-        "note": "console sidebar becomes fixed (236px); drawer below"
+        "note": "console sidebar becomes fixed (240px); drawer below"
       },
       {
         "name": "xl",
@@ -425,9 +291,9 @@
       }
     ],
     "themes": {
-      "default": "dark (html.dark)",
-      "light": "html:not(.dark); accent swaps to indigo-signal with white accent-ink",
-      "tokenSource": "FE/hoisted-react/src/index.css (RGB triplets) exposed as Tailwind colors in tailwind.config.js"
+      "default": "light (html:not(.dark))",
+      "dark": "html.dark: Night surfaces, Night Edge borders, black shadows; accent becomes Pixel Yellow with navy accent-ink; status ink becomes navy",
+      "tokenSource": "FE/hoisted-react/src/index.css (RGB triplets) exposed as Tailwind colors in tailwind.config.js; radius and shadow scales overridden there"
     }
   },
   "components": [
@@ -435,148 +301,142 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The one accent action per view; carries the Signal Glow on a page's main CTA.",
-      "html": "<button class=\"ds-btn-primary\">Tiếp tục thanh toán</button>",
-      "css": ".ds-btn-primary { display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 16px; border:0; border-radius:8px; background:#F7DF1E; color:#0B0F19; font:600 13.5px/1 'Inter Tight', system-ui, sans-serif; box-shadow:0 8px 24px rgba(247,223,30,.3); cursor:pointer; transition:filter .15s, transform .15s; } .ds-btn-primary:hover { filter:brightness(.95); } .ds-btn-primary:active { transform:translateY(1px); } .ds-btn-primary:focus-visible { outline:2px solid #F7DF1E; outline-offset:2px; }"
+      "description": "The one main action per view; sinks into its shadow when pressed.",
+      "html": "<button class=\"ds-btn-primary\">Thêm vào giỏ</button>",
+      "css": ".ds-btn-primary{background:#FFCF33;color:#0E1B3D;border:2px solid #0E1B3D;border-radius:2px;height:38px;padding:0 16px;font:700 13.5px \"Space Grotesk\",system-ui,sans-serif;box-shadow:2px 2px 0 0 #0E1B3D;transition:transform .1s,box-shadow .1s;cursor:pointer}.ds-btn-primary:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 0 #0E1B3D}.ds-btn-primary:active{transform:translate(2px,2px);box-shadow:none}.ds-btn-primary:focus-visible{outline:3px solid #2547D0;outline-offset:2px}"
     },
     {
       "name": "Ghost Button",
       "kind": "button",
       "refersTo": "button-ghost",
-      "description": "Secondary action: hairline border, fills with Well tone on hover.",
-      "html": "<button class=\"ds-btn-ghost\">Xem khóa học</button>",
-      "css": ".ds-btn-ghost { height:38px; padding:0 16px; border:1px solid rgba(255,255,255,.07); border-radius:8px; background:transparent; color:#F4F5F9; font:600 13.5px/1 'Inter Tight', system-ui, sans-serif; cursor:pointer; transition:background .15s; } .ds-btn-ghost:hover { background:#161C2F; } .ds-btn-ghost:focus-visible { outline:2px solid #F7DF1E; outline-offset:2px; }"
-    },
-    {
-      "name": "Quiet Button",
-      "kind": "button",
-      "refersTo": "button-quiet",
-      "description": "Tertiary toolbar action: muted text, brightens and fills on hover.",
-      "html": "<button class=\"ds-btn-quiet\">Hủy</button>",
-      "css": ".ds-btn-quiet { height:38px; padding:0 16px; border:0; border-radius:8px; background:transparent; color:#B6BCD0; font:600 13.5px/1 'Inter Tight', system-ui, sans-serif; cursor:pointer; transition:background .15s, color .15s; } .ds-btn-quiet:hover { background:#161C2F; color:#F4F5F9; } .ds-btn-quiet:focus-visible { outline:2px solid #F7DF1E; outline-offset:2px; }"
+      "description": "Secondary actions: white block with the same edge and press behaviour.",
+      "html": "<button class=\"ds-btn-ghost\">Hủy</button>",
+      "css": ".ds-btn-ghost{background:#fff;color:#0E1B3D;border:2px solid #0E1B3D;border-radius:2px;height:38px;padding:0 16px;font:700 13.5px \"Space Grotesk\",system-ui,sans-serif;box-shadow:2px 2px 0 0 #0E1B3D;transition:transform .1s,box-shadow .1s,background .15s;cursor:pointer}.ds-btn-ghost:hover{background:#E5EAF7;transform:translate(1px,1px);box-shadow:1px 1px 0 0 #0E1B3D}.ds-btn-ghost:active{transform:translate(2px,2px);box-shadow:none}.ds-btn-ghost:focus-visible{outline:3px solid #2547D0;outline-offset:2px}"
     },
     {
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "Raised-tone field with a persistent mono label; border turns accent on focus.",
-      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Email</span><input class=\"ds-input\" placeholder=\"hoisted@dev.com\" /></label>",
-      "css": ".ds-field { display:flex; flex-direction:column; gap:6px; width:280px; } .ds-field-label { font:500 12.5px/1 'JetBrains Mono', ui-monospace, monospace; color:#B6BCD0; } .ds-input { height:38px; padding:0 12px; background:#1E263D; border:1px solid rgba(255,255,255,.07); border-radius:8px; color:#F4F5F9; font:500 14px/1 'Inter Tight', system-ui, sans-serif; outline:none; transition:border-color .15s; } .ds-input::placeholder { color:#6B7392; } .ds-input:focus { border-color:#F7DF1E; }"
+      "description": "40px white field with a 2px ink edge; focus turns the edge blue and adds a press shadow.",
+      "html": "<input class=\"ds-input\" placeholder=\"vd: hoisted@dev.com\">",
+      "css": ".ds-input{width:280px;height:40px;background:#fff;color:#0E1B3D;border:2px solid #0E1B3D;border-radius:2px;padding:0 12px;font:500 14px \"Space Grotesk\",system-ui,sans-serif;outline:none;transition:border-color .15s,box-shadow .15s}.ds-input::placeholder{color:#525F85}.ds-input:focus{border-color:#2547D0;box-shadow:2px 2px 0 0 #0E1B3D}"
     },
     {
-      "name": "Chip",
+      "name": "Filter Chip",
       "kind": "chip",
-      "refersTo": "chip",
-      "description": "Solid accent tag; the line variant labels category and level on cards.",
-      "html": "<span class=\"ds-chip\">Bài tập</span> <span class=\"ds-chip ds-chip-line\">Nâng cao</span>",
-      "css": ".ds-chip { display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:9999px; background:rgba(247,223,30,.10); color:#F7DF1E; font:600 11px/1 'JetBrains Mono', ui-monospace, monospace; } .ds-chip-line { background:transparent; color:#B6BCD0; border:1px solid rgba(255,255,255,.07); }"
+      "refersTo": "chip-line",
+      "description": "Category and level filters: white when idle, blue when selected, yellow on hover.",
+      "html": "<span class=\"ds-chip\">React</span> <span class=\"ds-chip ds-chip--on\">Tất cả</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;height:28px;padding:0 12px;border:2px solid #0E1B3D;border-radius:2px;background:#fff;color:#374469;font:500 12px \"JetBrains Mono\",monospace;cursor:pointer;transition:background .15s,color .15s}.ds-chip:hover{background:#FFCF33;color:#0E1B3D}.ds-chip--on{background:#2547D0;color:#fff;font-weight:700}"
     },
     {
       "name": "Status Badge",
       "kind": "chip",
       "refersTo": "status-badge-pass",
-      "description": "Mono pill with a currentColor dot; one wording map for every state.",
-      "html": "<span class=\"ds-badge ds-badge-pass\"><i></i>Đã thanh toán</span> <span class=\"ds-badge ds-badge-wait\"><i></i>Chờ duyệt</span> <span class=\"ds-badge ds-badge-fail\"><i></i>Bị từ chối</span>",
-      "css": ".ds-badge { display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:9999px; font:600 11px/1.4 'JetBrains Mono', ui-monospace, monospace; white-space:nowrap; } .ds-badge i { width:6px; height:6px; border-radius:50%; background:currentColor; } .ds-badge-pass { color:#34D399; background:rgba(52,211,153,.15); } .ds-badge-wait { color:#F7DF1E; background:rgba(247,223,30,.15); } .ds-badge-fail { color:#F43F5E; background:rgba(244,63,94,.15); }"
+      "description": "Solid status tag with status ink text.",
+      "html": "<span class=\"ds-badge\">Đã thanh toán</span> <span class=\"ds-badge ds-badge--pending\">Đang chờ</span>",
+      "css": ".ds-badge{display:inline-flex;padding:2px 6px;border:2px solid #0E1B3D;border-radius:2px;background:#05804E;color:#fff;font:700 11px \"JetBrains Mono\",monospace;text-transform:uppercase;letter-spacing:.04em}.ds-badge--pending{background:#FFCF33;color:#0E1B3D}"
     },
     {
       "name": "Card",
       "kind": "card",
       "refersTo": "card",
-      "description": "Panel-tone container with a hairline; flat at rest, lifts with an accent border on hover when interactive.",
-      "html": "<article class=\"ds-card\"><p class=\"ds-card-label\">Học viên</p><p class=\"ds-card-num\">7</p></article>",
-      "css": ".ds-card { width:220px; padding:20px; background:#0F1525; border:1px solid rgba(255,255,255,.07); border-radius:12px; transition:border-color .2s, transform .2s, box-shadow .2s; } .ds-card:hover { border-color:rgba(247,223,30,.3); transform:translateY(-2px); box-shadow:0 10px 15px -3px rgba(0,0,0,.3); } .ds-card-label { margin:0 0 8px; font:500 10.5px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing:.14em; text-transform:uppercase; color:#6B7392; } .ds-card-num { margin:0; font:700 30px/1 'Inter Tight', system-ui, sans-serif; letter-spacing:-.025em; color:#F4F5F9; font-variant-numeric:tabular-nums; }"
+      "description": "White block, 2px ink edge, 5px hard shadow; lifts on hover when interactive.",
+      "html": "<div class=\"ds-card\"><strong>Closure và Execution Context</strong><p>bởi Will Sentance</p><span class=\"ds-price\">399.000đ</span></div>",
+      "css": ".ds-card{width:260px;background:#fff;border:2px solid #0E1B3D;border-radius:3px;padding:16px;box-shadow:5px 5px 0 0 #0E1B3D;font:400 13px \"Space Grotesk\",system-ui,sans-serif;color:#0E1B3D;transition:transform .15s,box-shadow .15s}.ds-card:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 0 #0E1B3D}.ds-card p{color:#525F85;margin:4px 0 12px}.ds-price{display:inline-block;background:#FFCF33;border:2px solid #0E1B3D;border-radius:2px;padding:0 6px;font:700 13.5px \"JetBrains Mono\",monospace}"
     },
     {
       "name": "Console Nav Item",
       "kind": "nav",
-      "refersTo": "",
-      "description": "Sidebar item in the admin/instructor console; active state is accent tint, accent icon and a 3px left bar.",
-      "html": "<nav class=\"ds-side\"><p class=\"ds-side-group\">Giảng dạy</p><a class=\"ds-side-item is-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"9\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\"/></svg>Tổng quan</a><a class=\"ds-side-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M20 12V8H6a2 2 0 0 1 0-4h12v4\"/><path d=\"M4 6v12a2 2 0 0 0 2 2h14v-4\"/><circle cx=\"18\" cy=\"14\" r=\"2\"/></svg>Doanh thu</a></nav>",
-      "css": ".ds-side { width:220px; padding:16px 12px; background:#0F1525; } .ds-side-group { margin:0 12px 8px; font:500 10px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing:.14em; text-transform:uppercase; color:#6B7392; } .ds-side-item { position:relative; display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; color:#B6BCD0; font:500 13.5px/1.2 'Inter Tight', system-ui, sans-serif; text-decoration:none; transition:background .15s, color .15s; } .ds-side-item svg { color:#6B7392; } .ds-side-item:hover { background:#161C2F; color:#F4F5F9; } .ds-side-item.is-active { background:rgba(247,223,30,.10); color:#F7DF1E; } .ds-side-item.is-active svg { color:#F7DF1E; } .ds-side-item.is-active::before { content:''; position:absolute; left:-12px; top:8px; width:3px; height:16px; border-radius:3px; background:#F7DF1E; } .ds-side-item:focus-visible { outline:2px solid #F7DF1E; outline-offset:2px; }"
-    },
-    {
-      "name": "Path Breadcrumb",
-      "kind": "custom",
-      "refersTo": "",
-      "description": "Mono location path with the root in accent; brand voice that also tells you where you are.",
-      "html": "<p class=\"ds-path\"><b>~/instructor</b> / tổng-quan</p>",
-      "css": ".ds-path { margin:0; font:500 11.5px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing:.06em; text-transform:uppercase; color:#6B7392; } .ds-path b { font-weight:600; color:#F7DF1E; }"
+      "refersTo": "console-nav-active",
+      "description": "Navy sidebar; the active item is a blue block with a black edge and shadow.",
+      "html": "<nav class=\"ds-side\"><a class=\"ds-side-item ds-side-item--on\">Tổng quan</a><a class=\"ds-side-item\">Đơn hàng</a></nav>",
+      "css": ".ds-side{background:#0E1B3D;padding:12px;width:220px;display:flex;flex-direction:column;gap:6px}.ds-side-item{display:block;padding:8px 12px;border:2px solid transparent;border-radius:2px;color:rgba(255,255,255,.8);font:700 13px \"Space Grotesk\",system-ui,sans-serif;cursor:pointer}.ds-side-item:hover{background:rgba(255,255,255,.1);color:#fff}.ds-side-item--on{background:#2547D0;color:#fff;border-color:#000;box-shadow:3px 3px 0 0 #000}"
     },
     {
       "name": "Code Window",
       "kind": "custom",
-      "refersTo": "",
-      "description": "Always-dark IDE frame with traffic lights, filename tab, syntax colours and a blinking caret.",
-      "html": "<div class=\"ds-code\"><div class=\"ds-code-bar\"><i></i><i></i><i></i><span>hoisted.js</span></div><pre><span class=\"c\">// hoisting: dùng trước, khai báo sau</span>\n<span class=\"f\">console</span>.<span class=\"f\">log</span>(<span class=\"f\">greet</span>());\n\n<span class=\"k\">function</span> <span class=\"f\">greet</span>() {\n  <span class=\"k\">return</span> <span class=\"s\">'Hello, dev!'</span>;\n}<b></b></pre></div>",
-      "css": ".ds-code { width:340px; background:#0d1117; border:1px solid rgba(255,255,255,.1); border-radius:16px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,.4); } .ds-code-bar { display:flex; align-items:center; gap:8px; height:36px; padding:0 14px; background:rgba(255,255,255,.04); border-bottom:1px solid rgba(255,255,255,.1); } .ds-code-bar i { width:10px; height:10px; border-radius:50%; background:#ff5f57; } .ds-code-bar i:nth-child(2) { background:#febc2e; } .ds-code-bar i:nth-child(3) { background:#28c840; } .ds-code-bar span { margin-left:8px; font:400 11px/1 'JetBrains Mono', ui-monospace, monospace; color:#94a3b8; } .ds-code pre { margin:0; padding:16px 18px; font:400 12.5px/1.9 'JetBrains Mono', ui-monospace, monospace; color:#cbd5e1; white-space:pre; } .ds-code .c { color:#64748b; } .ds-code .f { color:#7dd3fc; } .ds-code .k { color:#fb7185; } .ds-code .s { color:#6ee7b7; } .ds-code b { display:inline-block; width:8px; height:15px; margin-left:2px; vertical-align:middle; background:#cbd5e1; animation:ds-caret 1.1s step-end infinite; } @keyframes ds-caret { 50% { opacity:0; } } @media (prefers-reduced-motion: reduce) { .ds-code b { animation:none; } }"
+      "refersTo": "card",
+      "description": "Always-navy code frame with a flare-orange title bar and square pixel dots.",
+      "html": "<div class=\"ds-code\"><div class=\"ds-code-bar\"><i></i><i class=\"y\"></i><i class=\"w\"></i><span>hoisted.js</span></div><pre>console.log(greet());</pre></div>",
+      "css": ".ds-code{width:320px;background:#0E1B3D;border:2px solid #0E1B3D;border-radius:3px;box-shadow:8px 8px 0 0 #0E1B3D;overflow:hidden}.ds-code-bar{display:flex;align-items:center;gap:8px;height:36px;padding:0 14px;background:#F2542D;border-bottom:2px solid #0E1B3D}.ds-code-bar i{width:11px;height:11px;background:#0E1B3D}.ds-code-bar i.y{background:#FFCF33;border:2px solid #0E1B3D}.ds-code-bar i.w{background:#fff;border:2px solid #0E1B3D}.ds-code-bar span{margin-left:8px;font:700 11px \"JetBrains Mono\",monospace;color:#0E1B3D}.ds-code pre{margin:0;padding:16px;color:#7dd3fc;font:13px/1.9 \"JetBrains Mono\",monospace}"
     }
   ],
   "narrative": {
-    "northStar": "The Runtime Console",
-    "overview": "Hoisted looks like the inside of a JavaScript runtime, seen by someone who finally understands it. Surfaces are deep night ink, layered in quiet tonal steps. The JS yellow is the signal, the way a cursor or a breakpoint is: small, exact, and always meaning \"here\". Code, terminal prompts, `//` comments and `~/path` breadcrumbs are the material of the brand, never pasted on as decoration. Every screen should feel like a well-made developer tool before it feels like a marketing page.\n\nDensity follows the surface. Public pages breathe (56px between sections, generous gutters, one large display headline). The console areas for admins and instructors are compact and scannable: 13px body, mono labels, tables and list rows. Both share one token set and one component vocabulary, so a learner moving into the instructor studio recognises it immediately.\n\nPrecision beats ornament. Depth comes from tonal layering and hairlines, not stacked shadows. Emphasis comes from weight and the single accent, not gradients. Motion is one authored entrance (the reveal) plus the living details of a terminal (blinking caret, scrolling ticker), and it all switches off under reduced motion.",
+    "northStar": "The Pixel Console",
+    "overview": "Hoisted looks like a developer's control panel drawn in pixels: solid blocks of flat colour, ink-navy outlines, and hard shadows that sit a few pixels off every surface as if the interface were printed rather than rendered. The page itself is a pale dot-grid sheet; content lives on white blocks fenced by a 2px navy edge. Nothing glows, nothing blurs, nothing fades into a gradient — depth comes from offset, and emphasis comes from a block of colour.\n\nThe system is neo-brutalist on purpose, but it is a working console, not a poster. Learners, instructors and admins are in tasks (pick a course, finish a lesson, reconcile payouts), so density, scanability and familiar affordances win over expression. The personality lives in a few loud, repeatable decisions: the pixel headline face, the yellow \"pop\" button that sinks into its shadow when pressed, the navy console sidebar, and course thumbnails as flat swatches with a monospace glyph. Everything else stays disciplined.\n\nLight is the default theme; dark keeps the same structure on a deep navy sheet with periwinkle edges and black shadows.",
     "keyCharacteristics": [
-      "Dark-first: dark is the default theme. Light mode is a real theme, not an inversion, and it swaps the accent from JS yellow to indigo for contrast.",
-      "One accent at a time, carried by the semantic `accent` token.",
-      "Two typefaces: Inter Tight for language, JetBrains Mono for anything a machine would print.",
-      "Flat by default, tonal layers, 1px hairlines at 9–10% opacity (`--line` is an RGB triplet, `--line-a` its strength).",
-      "Always-dark code surfaces, in both themes."
+      "2px ink edges around every content block; hairlines only inside blocks.",
+      "Hard offset shadows with zero blur (2–8px), coloured by the theme's shadow token.",
+      "Flat, saturated colour: navy, signal blue, pixel yellow, flare orange, status green/red.",
+      "Pixel face (Handjet) for word headings only; Space Grotesk for reading; JetBrains Mono for anything a machine prints.",
+      "Near-square corners (2–6px). Circles survive only as dots, radios and progress.",
+      "Pale dot-grid page background in both themes."
     ],
     "rules": [
       {
-        "name": "The One Signal Rule",
-        "body": "The accent marks exactly what the user should act on or where they are: one primary button per view, the active nav item, focus, progress. If two things on a screen glow yellow, one of them is wrong.",
-        "section": "colors"
-      },
-      {
-        "name": "The Token-Not-Hex Rule",
-        "body": "Themed surfaces use the semantic tokens (`bg`, `bg-1…3`, `ink`, `ink-2…3`, `line`, `accent`, `accent-ink`) through Tailwind, never raw hex. The raw `js` yellow is reserved for always-dark surfaces such as auth side panels and code windows, where the theme never changes.",
+        "name": "The Pop Is the Action Rule",
+        "body": "Pixel Yellow marks what to do; Signal Blue marks where you are. One yellow primary button per view; a selected state is blue, never a second yellow CTA.",
         "section": "colors"
       },
       {
         "name": "The Status Is Not Brand Rule",
-        "body": "Green, rose and amber appear only when they report a state. Never use them to decorate a card, colour a category, or add variety.",
+        "body": "Green, red and amber appear only when they report a state (paid, failed, passed, locked). Course levels, categories and rankings never borrow them.",
         "section": "colors"
       },
       {
+        "name": "The Status Ink Rule",
+        "body": "Text on a solid status fill uses `success-ink` / `danger-ink` (white in light mode, navy in dark mode), because the night status colours are too bright for white text.",
+        "section": "colors"
+      },
+      {
+        "name": "The Token-Not-Hex Rule",
+        "body": "Themed surfaces use the semantic tokens (`bg`, `bg-1…3`, `ink`, `ink-2…3`, `edge`, `line`, `accent`, `pop`, `success`, `danger`). Raw hex is allowed only in the fixed-colour zones that look the same in both themes: the console sidebar, code windows and terminals, and course thumbnail swatches.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pixel Words Rule",
+        "body": "Handjet sets words only: headings and the logotype. Never numbers — its dotted zero reads as an 8 (\"0%\" became \"8%\", \"399.000đ\" became \"399.888đ\") — and never code glyphs, where \"()\" reads as \"0\".",
+        "section": "typography"
+      },
+      {
         "name": "The Machine Truth Rule",
-        "body": "If a computer would print it (a price, a count, an ID, a path, code, a timestamp), set it in JetBrains Mono with tabular numerals. Sentences meant for people are never mono.",
+        "body": "If a computer would print it (a price, a count, an ID, a path, code, a timestamp, a course glyph), set it in JetBrains Mono with tabular numerals.",
         "section": "typography"
       },
       {
-        "name": "The Weight-Not-Gradient Rule",
-        "body": "Emphasis inside a headline comes from the accent colour on one phrase, or from weight. Gradient text (`bg-clip-text`) is not part of this system.",
+        "name": "The 11px Floor Rule",
+        "body": "No functional UI text below 11px.",
         "section": "typography"
       },
       {
-        "name": "The Flat-By-Default Rule",
-        "body": "Surfaces are flat at rest. A shadow means \"this is above the page\" (overlay) or \"act here\" (signal glow). A card at rest never carries a shadow.",
+        "name": "The Hard Shadow Rule",
+        "body": "Shadows have an offset and no blur. No glows, no soft ambient shadows, no `backdrop-filter`, no glass.",
         "section": "elevation"
       },
       {
-        "name": "The Always-Dark Code Rule",
-        "body": "Code windows, IDE frames and terminal blocks stay dark (`#0d1117` / Ink Night) in both themes, with their own syntax palette. They are the one place a fixed palette overrides theming.",
+        "name": "The Press Rule",
+        "body": "A pressable block sinks toward its shadow: 1px on hover, fully onto it (shadow gone) on press, in 100ms.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "Do let section headings stand alone. No numbered kickers (\"01 / Chủ đề\") or `//` labels above a heading; the `~/hoisted / path` breadcrumb is the only line allowed above an H1, because it tells the user where they are.",
-      "Do show a number only when it is real and non-zero; hide the stat, the category or the testimonial block instead of printing \"0\" or a one-word review.",
-      "Do use the semantic tokens (`bg-bg-1`, `text-ink-2`, `border-line`, `bg-accent text-accent-ink`) for every themed surface, so light mode swaps correctly.",
-      "Do keep one primary (accent) button per view, with the Signal Glow only on the page's main call to action.",
-      "Do set prices, counts, codes, durations and paths in JetBrains Mono with `tabular-nums`.",
-      "Do separate surfaces with tone and 1px hairlines before reaching for a shadow.",
-      "Do give every icon-only control an `aria-label`, and keep a visible focus state.",
-      "Do honour `prefers-reduced-motion`: the reveal, marquee, float and caret all stop."
+      "Do fence every content block with the 2px `edge` and give it a hard shadow from the scale (2–8px, zero blur).",
+      "Do use Pixel Yellow for the one primary action per view and Signal Blue for location and selection.",
+      "Do set numbers, prices, IDs, code and course glyphs in JetBrains Mono with tabular numerals.",
+      "Do let cards fill their grid cell and pin their last row (price, CTA) to the bottom so a row of cards lines up.",
+      "Do keep anything on screen at first paint visible before animation starts; reveal-on-scroll is only for content below the fold.",
+      "Do show a number only when it is real and non-zero; hide the stat, category or testimonial block instead of printing \"0\" or a one-word review.",
+      "Do keep text on status fills on `success-ink` / `danger-ink`, and pick navy or white on admin-chosen colours by luminance."
     ],
     "donts": [
-      "Don't use gradient text (`bg-clip-text` with a gradient) for emphasis. Use the accent on one phrase, or weight.",
-      "Don't use purple or violet as a decorative accent or gradient. The difficulty scale uses Pass Green → JS Yellow → Fail Rose.",
-      "Don't hardcode `#F7DF1E` or any hex on a themed surface. Use `accent`, which is indigo in light mode.",
-      "Don't use status colours (green, rose, amber) to decorate. They only report state.",
-      "Don't give resting cards a shadow, or stack shadow on shadow.",
-      "Don't use `warning` colour classes. The token is `warn`, and `bg-warning` generates nothing.",
-      "Don't use emoji or unicode glyphs as icons in new UI. Use lucide-react at 14–20px with a consistent stroke."
+      "Don't set numbers or code glyphs in Handjet.",
+      "Don't use gradients, glows, blur, glass or soft shadows anywhere.",
+      "Don't use pill shapes or circles for buttons, chips, avatars or tiles.",
+      "Don't colour levels, categories or rankings with status green, red or amber, or give each list row its own decorative colour.",
+      "Don't put white text on Flare Orange or on the night status colours.",
+      "Don't hardcode hex on themed surfaces; only the console sidebar, code windows and course swatches are fixed-colour.",
+      "Don't use emoji or unicode glyphs as icons in new UI."
     ]
   }
 }
