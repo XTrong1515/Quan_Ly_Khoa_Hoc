@@ -139,7 +139,7 @@ export default function AdminCoursesPage() {
             )}>
             {label}
             {value === 'PENDING_REVIEW' && pendingReview > 0 && (
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm bg-pop text-pop-ink ring-2 ring-inset ring-edge">{pendingReview}</span>
+              <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-sm bg-pop text-pop-ink ring-2 ring-inset ring-edge">{pendingReview}</span>
             )}
           </button>
         ))}
@@ -185,7 +185,7 @@ export default function AdminCoursesPage() {
             <tr className="border-b border-line bg-bg-2">
               <th className="px-4 py-2.5 w-10" />
               {['Khóa học', 'Danh mục', 'Giá', 'Học viên', 'Rating', 'Status', 'Cấp độ', ''].map(h => (
-                <th key={h} className="px-4 py-2.5 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
+                <th key={h} className="px-4 py-2.5 text-left font-mono text-[11px] text-ink-3 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
@@ -230,14 +230,14 @@ export default function AdminCoursesPage() {
                       <CourseBadge glyph={c.glyph} thumb={c.thumb} tag={c.tag} />
                       <div>
                         <p className="font-medium text-ink line-clamp-1 max-w-[200px]">{c.title}</p>
-                        <p className="font-mono text-[10px] text-ink-3 mt-0.5">{c.instructor_name}</p>
+                        <p className="font-mono text-[11px] text-ink-3 mt-0.5">{c.instructor_name}</p>
                       </div>
                     </div>
                   </td>
 
                   <td className="px-4 py-3">
                     {c.category && (
-                      <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-bg-3 text-ink-3">{c.category}</span>
+                      <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-bg-3 text-ink-3">{c.category}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 font-mono text-[12px]">{formatPrice(c.price)}</td>
@@ -255,10 +255,8 @@ export default function AdminCoursesPage() {
                   <td className="px-4 py-3"><StatusDropdown course={c} /></td>
                   <td className="px-4 py-3">
                     <span className={cn(
-                      'font-mono text-[10px] px-2 py-0.5 rounded uppercase',
-                      c.level === 'BEGINNER'     ? 'bg-success/10 text-success' :
-                      c.level === 'INTERMEDIATE' ? 'bg-accent text-accent-ink ring-2 ring-inset ring-edge' :
-                                                   'bg-danger/10 text-danger',
+                      // Cấp độ không phải trạng thái → không dùng xanh lá / đỏ; cùng một kiểu chip viền
+                      'font-mono text-[11px] font-bold px-1.5 py-0.5 rounded-sm border-2 border-edge bg-bg-1 text-ink uppercase whitespace-nowrap',
                     )}>
                       {LEVEL_LABELS[c.level] ?? c.level}
                     </span>
@@ -404,7 +402,7 @@ function StatusDropdown({ course }) {
                 )}>
                 <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', opt.dot)} />
                 <span className="text-ink flex-1">{opt.label}</span>
-                {active && <span className="text-accent text-[10px]">✓</span>}
+                {active && <span className="text-accent text-[11px]">✓</span>}
               </button>
             );
           })}
@@ -427,7 +425,7 @@ function RejectModal({ course, onClose, onDone }) {
   return (
     <Dialog onClose={onClose} onCancel={confirmDiscard(reason.trim() !== '')} aria-labelledby="reject-course-title" className="max-w-md">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
-          <h2 id="reject-course-title" className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Từ chối khóa học</h2>
+          <h2 id="reject-course-title" className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">// Từ chối khóa học</h2>
           <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-3">

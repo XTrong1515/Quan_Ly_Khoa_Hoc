@@ -13,8 +13,8 @@ import { cn } from '@/lib/utils';
 /* Centered result screen with grid backdrop and glowing status icon */
 function ResultScreen({ tone, icon: Icon, title, children, actions }) {
   const toneClass = {
-    success: 'bg-success text-white border-2 border-edge shadow-md',
-    danger:  'bg-danger text-white border-2 border-edge shadow-md',
+    success: 'bg-success text-success-ink border-2 border-edge shadow-md',
+    danger:  'bg-danger text-danger-ink border-2 border-edge shadow-md',
     neutral: 'bg-bg-2 text-ink-2 border-2 border-edge',
   }[tone];
 

@@ -74,12 +74,12 @@ export default function InstructorDashboardPage() {
           <div key={label} className="card p-5">
             <div className="flex items-center gap-2 mb-2">
               <Icon className="w-3.5 h-3.5 text-ink-3" aria-hidden="true" />
-              <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
+              <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
             </div>
-            <p className="font-pixel font-extrabold text-[35px] text-ink leading-none tabular-nums">
+            <p className="font-mono font-extrabold tracking-tight text-[26px] text-ink leading-none tabular-nums">
               {isLoading ? '…' : value}
             </p>
-            {hint && !isLoading && <p className="mt-1.5 font-mono text-[10.5px] text-ink-3">{hint}</p>}
+            {hint && !isLoading && <p className="mt-1.5 font-mono text-[11px] text-ink-3">{hint}</p>}
           </div>
         ))}
       </div>
@@ -87,7 +87,7 @@ export default function InstructorDashboardPage() {
       {/* Thu nhập — cùng nguồn services/revenue với trang Doanh thu nên luôn khớp */}
       <section className="card p-5 mb-6" aria-labelledby="earnings-heading">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <p id="earnings-heading" className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">Thu nhập</p>
+          <p id="earnings-heading" className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">Thu nhập</p>
           <Link to="/instructor/revenue" className="flex items-center gap-1 text-[12.5px] font-medium text-ink-2 hover:text-accent transition-colors">
             Xem doanh thu <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
           </Link>
@@ -103,8 +103,8 @@ export default function InstructorDashboardPage() {
                 <dt className="flex items-center gap-2 mb-1.5 text-[12.5px] text-ink-2">
                   <Icon className="w-3.5 h-3.5 text-ink-3" aria-hidden="true" /> {label}
                 </dt>
-                <dd className="font-pixel font-extrabold text-[29px] text-ink leading-none tabular-nums">{formatVND(value)}</dd>
-                {hint && <dd className="mt-1.5 font-mono text-[10.5px] text-ink-3">{hint}</dd>}
+                <dd className="font-mono font-extrabold tracking-tight text-[22px] text-ink leading-none tabular-nums">{formatVND(value)}</dd>
+                {hint && <dd className="mt-1.5 font-mono text-[11px] text-ink-3">{hint}</dd>}
               </div>
             ))}
           </dl>
@@ -113,7 +113,7 @@ export default function InstructorDashboardPage() {
 
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="card p-5">
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em] mb-4">Trạng thái khóa học</p>
+          <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em] mb-4">Trạng thái khóa học</p>
           <div className="space-y-2.5">
             {/* Lưu trữ chỉ hiện khi có — để các dòng cộng lại đúng bằng "Khóa học" ở trên */}
             {STATUS_ORDER.filter((s) => s !== 'ARCHIVED' || counts[s]).map((s) => (
@@ -126,7 +126,7 @@ export default function InstructorDashboardPage() {
         </div>
 
         <div className="card p-5">
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em] mb-4">Cần xử lý</p>
+          <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em] mb-4">Cần xử lý</p>
           {attention.length === 0 ? (
             <p className="text-[13px] text-ink-3">Không có khóa học nháp hay bị từ chối nào cần xử lý.</p>
           ) : (

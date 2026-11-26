@@ -39,7 +39,7 @@ export default function AdminInstructorApplicationsPage() {
             className={cn('px-3 py-2 -mb-px border-b-2 text-[13px] font-medium flex items-center gap-2',
               status === v ? 'border-accent text-accent' : 'border-transparent text-ink-2 hover:text-ink')}>
             {l}
-            {v === 'PENDING' && data?.pending > 0 && <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm bg-pop text-pop-ink ring-2 ring-inset ring-edge">{data.pending}</span>}
+            {v === 'PENDING' && data?.pending > 0 && <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-sm bg-pop text-pop-ink ring-2 ring-inset ring-edge">{data.pending}</span>}
           </button>
         ))}
       </div>
@@ -93,7 +93,7 @@ function RejectModal({ application, onClose, onDone }) {
   return (
     <Dialog onClose={onClose} onCancel={confirmDiscard(note.trim() !== '')} aria-labelledby="reject-application-title" className="max-w-md">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
-          <h2 id="reject-application-title" className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Từ chối đơn của {application.name}</h2>
+          <h2 id="reject-application-title" className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">// Từ chối đơn của {application.name}</h2>
           <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-3">

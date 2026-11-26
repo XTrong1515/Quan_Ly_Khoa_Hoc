@@ -74,7 +74,7 @@ export function AiQuizGenerator({ apiBase, lesson, quizId, onAdded }) {
     <div className="border border-accent/40 rounded-lg p-3 space-y-3 bg-accent/5">
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-accent" />
-        <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest flex-1">AI soạn bản nháp — bạn duyệt trước khi lưu</p>
+        <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest flex-1">AI soạn bản nháp — bạn duyệt trước khi lưu</p>
         <button onClick={() => { setOpen(false); setDrafts([]); }} className="text-[11.5px] text-ink-3 hover:text-ink">Đóng</button>
       </div>
 
@@ -94,18 +94,18 @@ export function AiQuizGenerator({ apiBase, lesson, quizId, onAdded }) {
       </div>
 
       {drafts.map((d, i) => (
-        <div key={i} className={cn('rounded-lg border p-3 bg-bg space-y-2', d.include ? 'border-line' : 'border-line opacity-50')}>
+        <div key={i} className={cn('rounded-lg border-2 p-3 bg-bg space-y-2', d.include ? 'border-edge' : 'border-edge opacity-50')}>
           <div className="flex items-start gap-2">
             <input type="checkbox" checked={d.include} onChange={(e) => patch(i, (x) => ({ ...x, include: e.target.checked }))} className="accent-accent mt-2" title="Thêm câu này" />
             <textarea value={d.question} onChange={(e) => patch(i, (x) => ({ ...x, question: e.target.value }))} rows={2} className={cn(inputCls, 'resize-y')} />
-            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-bg-2 text-ink-3 shrink-0 mt-1">{d.type === 'single' ? '1 đáp án' : 'nhiều đáp án'}</span>
+            <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-bg-2 text-ink-3 shrink-0 mt-1">{d.type === 'single' ? '1 đáp án' : 'nhiều đáp án'}</span>
             <button onClick={() => setDrafts((ds) => ds.filter((_, idx) => idx !== i))} className="p-1 text-ink-3 hover:text-danger" title="Bỏ câu này"><Trash2 className="w-3.5 h-3.5" /></button>
           </div>
           <div className="grid sm:grid-cols-2 gap-1.5 pl-6">
             {d.options.map((o, oi) => (
               <div key={oi} className="flex items-center gap-1.5">
                 <button onClick={() => toggleCorrect(i, oi)} title="Đáp án đúng"
-                  className={cn('w-5 h-5 rounded grid place-items-center shrink-0 border', o.isCorrect ? 'bg-success border-success text-bg' : 'border-line text-transparent')}>
+                  className={cn('w-5 h-5 rounded grid place-items-center shrink-0 border-2', o.isCorrect ? 'bg-success border-success text-bg' : 'border-edge text-transparent')}>
                   <Check className="w-3 h-3" />
                 </button>
                 <input value={o.text} onChange={(e) => patch(i, (x) => ({ ...x, options: x.options.map((y, idx) => (idx === oi ? { ...y, text: e.target.value } : y)) }))} className={inputCls} />

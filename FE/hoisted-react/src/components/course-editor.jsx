@@ -49,16 +49,22 @@ const courseSchema = z.object({
 });
 
 /* ── Course thumb badge ─────────────────────────────────────────── */
+// Nền đậm (xanh, đỏ cam, tím) dùng chữ trắng; nền sáng dùng navy — giống CourseThumb
+const THUMB_INK = { indigo: '#FFFFFF', rose: '#FFFFFF', violet: '#FFFFFF' };
+const thumbInk = (thumb) => THUMB_INK[thumb] ?? '#0E1B3D';
+
 export function CourseBadge({ glyph, thumb, tag }) {
   const bg = THUMB_COLORS[thumb] ?? THUMB_COLORS.yellow;
+  const text = glyph || 'JS';
   return (
     <div className="relative shrink-0">
-      <div className="w-12 h-12 rounded-sm border-2 border-edge grid place-items-center font-pixel font-extrabold text-[20px] text-navy select-none"
-        style={{ background: bg }}>
-        {glyph || 'JS'}
+      <div className={cn('w-12 h-12 rounded-sm border-2 border-edge grid place-items-center font-mono font-extrabold tracking-tighter select-none overflow-hidden',
+        text.length > 3 ? 'text-[11px]' : 'text-[14px]')}
+        style={{ background: bg, color: thumbInk(thumb) }}>
+        {text}
       </div>
       {tag && (
-        <span className="absolute -top-1.5 -right-1.5 font-mono text-[9px] font-bold px-1 py-0.5 rounded bg-bg text-danger ring-1 ring-danger/50 uppercase">
+        <span className="absolute -top-1.5 -right-1.5 font-mono text-[11px] font-bold px-1 py-0.5 rounded-sm bg-danger text-danger-ink border-2 border-edge uppercase">
           {tag}
         </span>
       )}
@@ -132,7 +138,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
     <div className="mt-4">
       {/* Curriculum header */}
       <div className="flex items-center justify-between mb-3">
-        <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+        <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">
           // Nội dung bài học · {courseTitle}
         </p>
         <div className="flex items-center gap-2">
@@ -172,7 +178,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
               <div className="flex items-center gap-3 px-4 py-2.5 bg-bg-2 border-b border-line">
                 <GripVertical className="w-3.5 h-3.5 text-ink-3" />
                 <span className="font-mono text-[12px] font-semibold text-ink">{section.title}</span>
-                <span className="font-mono text-[10px] text-ink-3 ml-auto">{section.items.length} bài</span>
+                <span className="font-mono text-[11px] text-ink-3 ml-auto">{section.items.length} bài</span>
               </div>
             )}
             {section.items.map((l, idx) => (
@@ -188,7 +194,7 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                   dragOver === idx ? 'bg-accent/10 border-accent/30' : 'hover:bg-bg-2',
                 )}>
                 <GripVertical className="w-3.5 h-3.5 text-ink-3 cursor-grab active:cursor-grabbing shrink-0" />
-                <span className="font-mono text-[10px] text-ink-3 w-5 shrink-0">
+                <span className="font-mono text-[11px] text-ink-3 w-5 shrink-0">
                   {String(l.order_index).padStart(2, '0')}
                 </span>
                 {/* min-w-0: thiếu thì ở màn hẹp tên bài bị ép về 0 px bởi các nhãn và nút bên phải */}
@@ -196,21 +202,21 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                   {l.title}
                 </span>
                 {!!l.is_preview && (
-                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-accent text-accent-ink ring-2 ring-inset ring-edge uppercase shrink-0">
+                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-accent text-accent-ink ring-2 ring-inset ring-edge uppercase shrink-0">
                     Xem thử
                   </span>
                 )}
                 {l.video_key && (
-                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-success/10 text-success uppercase shrink-0" title="Video lưu trên storage">
+                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-success/10 text-success uppercase shrink-0" title="Video lưu trên storage">
                     Video
                   </span>
                 )}
                 {l.attachment_key && (
-                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-indigo/10 text-indigo uppercase shrink-0" title={l.attachment_name ?? 'PDF'}>
+                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-indigo/10 text-indigo uppercase shrink-0" title={l.attachment_name ?? 'PDF'}>
                     PDF
                   </span>
                 )}
-                <span className="font-mono text-[10px] text-ink-3 shrink-0">{l.duration_minutes}m</span>
+                <span className="font-mono text-[11px] text-ink-3 shrink-0">{l.duration_minutes}m</span>
                 <div className="flex items-center gap-0.5 shrink-0 max-sm:w-full max-sm:justify-end lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
                   <button onClick={() => moveLesson(l, -1)} disabled={idx === 0} title="Lên trên" aria-label="Chuyển bài học lên trên"
                     className="p-1.5 rounded hover:bg-bg-3 text-ink-3 disabled:opacity-30 transition-colors">
@@ -300,18 +306,18 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
     <div className="mb-3 px-4 py-3 bg-bg-2 border-2 border-edge rounded-lg">
     <div className="flex flex-wrap gap-3 items-end">
       <div className="flex-1 min-w-[180px]">
-        <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tên bài học *</label>
+        <label className="block font-mono text-[11px] text-ink-3 mb-1 uppercase tracking-widest">Tên bài học *</label>
         <input value={title} onChange={e => setTitle(e.target.value)}
           className={inputCls()} placeholder="Tên bài học" />
       </div>
       <div className="w-[70px]">
-        <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Phút</label>
+        <label className="block font-mono text-[11px] text-ink-3 mb-1 uppercase tracking-widest">Phút</label>
         <input type="number" value={duration} onChange={e => setDuration(e.target.value)}
           className={inputCls()} />
       </div>
       {sections.length > 0 && (
         <div className="w-[140px]">
-          <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Phần</label>
+          <label className="block font-mono text-[11px] text-ink-3 mb-1 uppercase tracking-widest">Phần</label>
           <select value={sectionId} onChange={e => setSectionId(e.target.value)} className={inputCls()}>
             <option value="">-- Không --</option>
             {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
@@ -336,7 +342,7 @@ function LessonForm({ apiBase, courseId, sections, initial, onCancel, onSaved })
         <MediaField apiBase={apiBase} courseId={courseId} lesson={initial} kind="attachment" />
       </div>
     ) : (
-      <p className="mt-2 font-mono text-[10.5px] text-ink-3">// Lưu bài học trước, sau đó mở "Sửa" để tải video / tài liệu PDF lên.</p>
+      <p className="mt-2 font-mono text-[11px] text-ink-3">// Lưu bài học trước, sau đó mở "Sửa" để tải video / tài liệu PDF lên.</p>
     )}
     </div>
   );
@@ -403,7 +409,7 @@ function MediaField({ apiBase, courseId, lesson, kind }) {
 
   return (
     <div className="p-3 rounded-lg border-2 border-edge bg-bg">
-      <p className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mb-1.5">{cfg.label}</p>
+      <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-1.5">{cfg.label}</p>
       {current ? (
         <p className="text-[12px] text-success truncate mb-2" title={name ?? current}>
           ✓ {name ?? current.split('/').pop()}
@@ -417,7 +423,7 @@ function MediaField({ apiBase, courseId, lesson, kind }) {
           <div className="h-1.5 rounded-full bg-bg-3 overflow-hidden">
             <div className="h-full bg-accent transition-[width]" style={{ width: `${progress}%` }} />
           </div>
-          <p className="font-mono text-[10px] text-ink-3 mt-1">Đang tải lên… {progress}%</p>
+          <p className="font-mono text-[11px] text-ink-3 mt-1">Đang tải lên… {progress}%</p>
         </div>
       ) : (
         <div className="flex items-center gap-2">
@@ -438,7 +444,7 @@ function MediaField({ apiBase, courseId, lesson, kind }) {
       {kind === 'video' && current && !busy && (
         <HlsStatus apiBase={apiBase} courseId={courseId} lessonId={lesson.id} />
       )}
-      <p className="font-mono text-[9.5px] text-ink-3 mt-2 leading-snug">{cfg.hint}</p>
+      <p className="font-mono text-[11px] text-ink-3 mt-2 leading-snug">{cfg.hint}</p>
     </div>
   );
 }
@@ -471,7 +477,7 @@ function HlsStatus({ apiBase, courseId, lessonId }) {
   };
 
   return (
-    <div className="mt-2 flex items-center gap-2 font-mono text-[10.5px]">
+    <div className="mt-2 flex items-center gap-2 font-mono text-[11px]">
       {status === 'PROCESSING' && <Loader2 className="w-3 h-3 animate-spin text-ink-3" />}
       <span className={label.cls} title={status === 'FAILED' ? row?.hls_error ?? '' : undefined}>{label.text}</span>
       {(status === 'FAILED' || status === 'NONE') && (
@@ -592,7 +598,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
     <Dialog onClose={onClose} dismiss="none" onCancel={confirmDiscard(isDirty)} aria-labelledby="course-modal-title"
       className="max-w-[660px] max-h-[90dvh]">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line sticky top-0 bg-bg z-10">
-          <h2 id="course-modal-title" className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+          <h2 id="course-modal-title" className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">
             {mode === 'create' ? '// Tạo khóa học mới' : '// Chỉnh sửa khóa học'}
           </h2>
           <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
@@ -603,7 +609,7 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
         <form onSubmit={handleSubmit(onSubmit)} className="p-5">
           {/* ── Thumbnail section ── */}
           <div className="mb-6 p-4 bg-bg-2 rounded-xl">
-            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-3">Thumbnail</p>
+            <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-3">Thumbnail</p>
 
             {/* Mode tabs */}
             <div className="flex gap-1 mb-4">
@@ -632,8 +638,8 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
                     <img src={previewImg} className="w-full h-full object-cover" alt="preview" />
                   </div>
                 ) : (
-                  <div className="aspect-video rounded-sm border-2 border-edge grid place-items-center font-pixel font-extrabold text-[32px] text-navy"
-                    style={{ background: THUMB_COLORS[thumbVal] ?? THUMB_COLORS.yellow }}>
+                  <div className="aspect-video rounded-sm border-2 border-edge grid place-items-center font-mono font-extrabold text-[24px]"
+                    style={{ background: THUMB_COLORS[thumbVal] ?? THUMB_COLORS.yellow, color: thumbInk(thumbVal) }}>
                     {glyphVal || 'JS'}
                   </div>
                 )}
@@ -678,15 +684,15 @@ export function CourseModal({ apiBase, variant = 'admin', mode, initial, categor
                       disabled={uploading}
                       onClick={() => fileInputRef.current?.click()}
                       className={cn(
-                        'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-[13px] font-medium transition-colors',
+                        'flex items-center gap-2 px-4 py-2.5 rounded-sm border-2 border-edge text-[13px] font-bold transition-colors',
                         uploading
-                          ? 'border-line text-ink-3 cursor-wait'
-                          : 'border-accent text-accent hover:bg-accent/10',
+                          ? 'bg-bg-2 text-ink-3 cursor-wait'
+                          : 'press bg-bg-1 text-ink hover:bg-bg-2',
                       )}>
                       <Upload className="w-4 h-4" />
                       {uploading ? 'Đang upload...' : uploadPreview ? 'Chọn ảnh khác' : 'Chọn ảnh từ thiết bị'}
                     </button>
-                    <p className="font-mono text-[10px] text-ink-3 mt-2">JPG, PNG, WebP — tối đa 5 MB</p>
+                    <p className="font-mono text-[11px] text-ink-3 mt-2">JPG, PNG, WebP — tối đa 5 MB</p>
                   </div>
                 )}
               </div>
@@ -786,7 +792,7 @@ export function Field({ label, error, children, className }) {
   const id = single ? (single.props.id ?? autoId) : undefined;
   return (
     <div className={className}>
-      <label htmlFor={id} className="block font-mono text-[10px] text-ink-3 mb-1.5 uppercase tracking-widest">{label}</label>
+      <label htmlFor={id} className="block font-mono text-[11px] text-ink-3 mb-1.5 uppercase tracking-widest">{label}</label>
       {single && !single.props.id ? cloneElement(single, { id }) : children}
       {error && <p className="mt-1 font-mono text-[11px] text-danger">{error}</p>}
     </div>
@@ -913,7 +919,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line shrink-0">
           <div>
-            <p className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mb-0.5">Quiz</p>
+            <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-0.5">Quiz</p>
             <h2 id="quiz-editor-title" className="font-semibold text-[14px] text-ink truncate max-w-[480px]">{lesson.title}</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
@@ -934,12 +940,12 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
               <p className="font-mono text-[11px] text-ink-3">// Bài học này chưa có quiz</p>
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
-                  <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tiêu đề (tuỳ chọn)</label>
+                  <label className="block font-mono text-[11px] text-ink-3 mb-1 uppercase tracking-widest">Tiêu đề (tuỳ chọn)</label>
                   <input value={title} onChange={e => setTitle(e.target.value)}
                     placeholder="VD: Kiểm tra cuối bài" className={inputCls()} />
                 </div>
                 <div className="w-28">
-                  <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Điểm đạt %</label>
+                  <label className="block font-mono text-[11px] text-ink-3 mb-1 uppercase tracking-widest">Điểm đạt %</label>
                   <input type="number" min="1" max="100" value={passScore}
                     onChange={e => setPassScore(+e.target.value)} className={inputCls()} />
                 </div>
@@ -953,11 +959,11 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
               {/* ── Settings ── */}
               <div className="flex gap-3 items-end p-3 bg-bg-2 rounded-lg border-2 border-edge">
                 <div className="flex-1">
-                  <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Tiêu đề</label>
+                  <label className="block font-mono text-[11px] text-ink-3 mb-1 uppercase tracking-widest">Tiêu đề</label>
                   <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls()} />
                 </div>
                 <div className="w-24">
-                  <label className="block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest">Điểm đạt %</label>
+                  <label className="block font-mono text-[11px] text-ink-3 mb-1 uppercase tracking-widest">Điểm đạt %</label>
                   <input type="number" min="1" max="100" value={passScore}
                     onChange={e => setPassScore(+e.target.value)} className={inputCls()} />
                 </div>
@@ -970,7 +976,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
 
               {/* ── Questions list ── */}
               <div className="space-y-2">
-                <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+                <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">
                   // {quiz.questions.length} câu hỏi
                 </p>
 
@@ -1020,7 +1026,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
               {/* ── Question form ── */}
               {qForm && (
                 <div className="border border-accent/40 rounded-lg p-4 space-y-3 bg-bg">
-                  <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+                  <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">
                     // {qForm.id ? 'Sửa câu hỏi' : 'Câu hỏi mới'}
                   </p>
 
@@ -1029,7 +1035,7 @@ export function QuizEditorModal({ apiBase, lesson, onClose }) {
                     className={cn(inputCls(), 'resize-none w-full')} />
 
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-[9px] text-ink-3 uppercase tracking-widest">Loại:</span>
+                    <span className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">Loại:</span>
                     {['single', 'multiple'].map(t => (
                       <label key={t} className="flex items-center gap-1.5 text-[12px] text-ink-2 cursor-pointer">
                         <input type="radio" name="qtype" checked={qForm.type === t}

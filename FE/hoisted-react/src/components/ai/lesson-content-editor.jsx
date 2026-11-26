@@ -44,7 +44,7 @@ export function LessonContentEditor({ apiBase, lesson, value, onChange }) {
   return (
     <div className="mt-3 pt-3 border-t border-line">
       <div className="flex items-center gap-1 mb-2">
-        <label className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mr-2">Nội dung bài học (Markdown)</label>
+        <label className="font-mono text-[11px] text-ink-3 uppercase tracking-widest mr-2">Nội dung bài học (Markdown)</label>
         {[['edit', 'Soạn'], ['preview', 'Xem trước']].map(([k, l]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className={cn('px-2 py-0.5 rounded text-[11px]', tab === k ? 'bg-accent text-accent-ink ring-2 ring-inset ring-edge' : 'text-ink-3 hover:text-ink')}>
@@ -87,7 +87,7 @@ export function LessonContentEditor({ apiBase, lesson, value, onChange }) {
               </div>
             </div>
           )}
-          <p className="font-mono text-[10px] text-ink-3">// AI có thể sai — hãy kiểm tra kiến thức và ví dụ code trước khi xuất bản.</p>
+          <p className="font-mono text-[11px] text-ink-3">// AI có thể sai — hãy kiểm tra kiến thức và ví dụ code trước khi xuất bản.</p>
         </div>
       )}
 

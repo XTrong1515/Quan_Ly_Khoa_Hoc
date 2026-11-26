@@ -244,8 +244,8 @@ export default function CourseDetailPage() {
 
             {/* Instructor line */}
             <div className="flex items-center gap-3 mb-10">
-              <div className="p-[2px] rounded-full bg-pop">
-                <div className="w-9 h-9 rounded-full bg-bg-1 grid place-items-center font-bold text-[13px] text-ink">
+              <div className="rounded-sm border-2 border-edge bg-pop shadow-sm overflow-hidden">
+                <div className="w-9 h-9 bg-pop text-pop-ink grid place-items-center font-bold text-[13px] text-ink">
                   {instructorName?.[0]?.toUpperCase()}
                 </div>
               </div>
@@ -362,7 +362,7 @@ export default function CourseDetailPage() {
           <aside className="mt-10 lg:mt-0 lg:sticky lg:top-20">
             <div className="card overflow-hidden shadow-2xl lg:rounded-2xl">
               <div className="relative">
-                <CourseThumb course={course} className="rounded-none" priority />
+                <CourseThumb course={course} className="rounded-none border-0 border-b-2" priority />
                 {discount > 0 && (
                   <span className="absolute top-3 right-3 h-6 px-2.5 rounded-sm bg-[#0B0F19] text-white font-mono text-[11.5px] font-bold grid place-items-center">
                     -{discount}%
@@ -371,7 +371,7 @@ export default function CourseDetailPage() {
               </div>
               <div className="p-5">
                 <div className="flex items-end gap-2.5 mb-5">
-                  <span className={cn('font-pixel font-extrabold text-[41px] leading-none', isFree ? 'text-accent' : 'text-ink')}>
+                  <span className={cn('font-mono font-extrabold tracking-tight text-[30px] leading-none', isFree ? 'text-accent' : 'text-ink')}>
                     {formatPrice(course.price)}
                   </span>
                   {discount > 0 && (
@@ -429,10 +429,10 @@ export default function CourseDetailPage() {
                     onClick={handleWishlist}
                     disabled={wishlistToggle.isPending}
                     className={cn(
-                      'w-full mt-2 flex items-center justify-center gap-2 h-10 rounded-lg border text-[13px] font-medium transition-colors cursor-pointer',
+                      'w-full mt-2 flex items-center justify-center gap-2 h-10 rounded-lg border-2 text-[13px] font-medium transition-colors cursor-pointer',
                       isWishlisted
                         ? 'border-danger/40 text-danger bg-danger/5 hover:bg-danger/10'
-                        : 'border-line text-ink-2 hover:bg-bg-2',
+                        : 'border-edge text-ink-2 hover:bg-bg-2',
                     )}
                   >
                     <Heart className={cn('w-3.5 h-3.5', isWishlisted && 'fill-danger')} aria-hidden="true" />
@@ -540,7 +540,7 @@ function ReviewsList({ reviews, course }) {
       {/* Summary panel */}
       <div className="card p-6 mb-6 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-7 items-center">
         <div className="text-center sm:pr-7 sm:border-r sm:border-line">
-          <div className="font-pixel font-extrabold text-[70px] text-ink leading-none tabular-nums">{Number(course.rating).toFixed(1)}</div>
+          <div className="font-mono font-extrabold tracking-tight text-[50px] text-ink leading-none tabular-nums">{Number(course.rating).toFixed(1)}</div>
           <div className="flex gap-0.5 mt-2 justify-center" aria-label={`${Number(course.rating).toFixed(1)} trên 5 sao`}>
             {[1, 2, 3, 4, 5].map((s) => (
               <Star key={s} className={cn('w-4 h-4', s <= Math.round(course.rating) ? 'fill-accent text-accent' : 'text-line')} aria-hidden="true" />
@@ -569,7 +569,7 @@ function ReviewsList({ reviews, course }) {
         {reviews.map((r) => (
           <div key={r.id} className="card p-5 flex gap-4">
             <div
-              className="w-10 h-10 rounded-full grid place-items-center font-mono font-bold text-sm text-navy flex-shrink-0"
+              className="w-10 h-10 rounded-sm border-2 border-edge grid place-items-center font-mono font-bold text-sm text-navy flex-shrink-0"
               style={{ background: 'rgb(var(--pop))' }}
               aria-hidden="true"
             >
@@ -735,7 +735,7 @@ function PreviewModal({ lesson, onClose }) {
             <Mp4Player src={videoUrl} autoPlay />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-              <div className="w-14 h-14 rounded-full border-2 border-line grid place-items-center">
+              <div className="w-14 h-14 rounded-sm border-2 border-edge bg-bg-1 grid place-items-center">
                 <Play className="w-7 h-7 text-ink-3" aria-hidden="true" />
               </div>
               <p className="font-mono text-[13px] text-ink-3">

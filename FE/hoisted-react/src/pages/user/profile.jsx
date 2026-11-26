@@ -122,11 +122,11 @@ function AvatarSection() {
           <img
             src={user.avatar}
             alt={user.name}
-            className="w-[62px] h-[62px] rounded-full object-cover shrink-0 border-2 border-line"
+            className="w-[62px] h-[62px] rounded-sm object-cover border-2 border-edge shrink-0"
           />
         ) : (
           <div
-            className="w-[62px] h-[62px] rounded-full grid place-items-center font-mono font-bold text-xl text-navy shrink-0"
+            className="w-[62px] h-[62px] rounded-sm border-2 border-edge grid place-items-center font-mono font-bold text-xl text-navy shrink-0"
             style={{ background: 'rgb(var(--pop))' }}
           >
             {avatarLabel}

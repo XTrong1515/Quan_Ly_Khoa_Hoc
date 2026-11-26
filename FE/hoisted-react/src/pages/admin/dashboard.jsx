@@ -13,7 +13,6 @@ import { RevenueAreaChart, useChartColors } from '@/components/charts/revenue-ar
 import { AiStatsCard } from '@/components/ai/ai-stats-card.jsx';
 
 /* ── Bảng màu (mọi số liệu lấy từ API, không dùng dữ liệu mẫu) ─── */
-const TOP_COLORS = ['#8B5CF6', '#F7DF1E', '#06B6D4', '#10B981', '#F59E0B'];
 
 const ORDER_STATUS = [
   { status: 'PAID',      label: 'Đã thanh toán',  cls: 'bg-success' },
@@ -87,7 +86,7 @@ export default function AdminDashboardPage() {
   if (isLoading) return <Skeleton />;
 
   const { stats, revenueChart, topCourses, recentOrders, trend, orderStatus } = data ?? {};
-  const topList = (topCourses ?? []).map((c, i) => ({ ...c, revenue: Number(c.revenue), color: TOP_COLORS[i % TOP_COLORS.length] }));
+  const topList = (topCourses ?? []).map((c) => ({ ...c, revenue: Number(c.revenue) }));
   const topMax = Math.max(1, ...topList.map((c) => c.revenue));
   const trendDays = trend?.days ?? 14;
   const spark = {
@@ -158,7 +157,7 @@ export default function AdminDashboardPage() {
           value={(stats?.totalUsers ?? 0).toLocaleString()}
           delta={`+${(stats?.newUsersThisWeek ?? 0)} tuần này`}
           positive
-          sparkData={spark.users} color="#34D399"
+          sparkData={spark.users} color={chart.accent}
         />
         <StatCard
           icon={GraduationCap}
@@ -166,7 +165,7 @@ export default function AdminDashboardPage() {
           value={(stats?.activeStudents ?? 0).toLocaleString()}
           delta={`/ ${(stats?.totalUsers ?? 0).toLocaleString()} tài khoản`}
           positive
-          sparkData={spark.active} color="#8B5CF6"
+          sparkData={spark.active} color={chart.accent}
         />
         <StatCard
           icon={Hourglass}
@@ -174,7 +173,7 @@ export default function AdminDashboardPage() {
           value={(stats?.pendingOrders ?? 0).toLocaleString()}
           delta={`/ ${(stats?.totalOrders ?? 0).toLocaleString()} tổng đơn`}
           positive={false}
-          sparkData={spark.orders} color="#F43F5E"
+          sparkData={spark.orders} color={chart.accent}
         />
       </div>
 
@@ -183,18 +182,18 @@ export default function AdminDashboardPage() {
         {/* Revenue area chart */}
         <div className="card p-5 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
-            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+            <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">
               // Doanh thu · {rangeLabel}
             </p>
-            <div className="flex border-2 border-edge rounded-lg bg-bg-2 p-0.5" role="group" aria-label="Khoảng thời gian">
+            <div className="flex gap-0.5 border-2 border-edge rounded-sm bg-bg-1 p-0.5" role="group" aria-label="Khoảng thời gian">
               {RANGE_TABS.map((t) => (
                 <button
                   key={t.value}
                   onClick={() => setRange(t.value)}
                   aria-pressed={range === t.value}
                   className={cn(
-                    'px-2.5 py-1 rounded-md font-mono text-[11.5px] transition-colors cursor-pointer',
-                    range === t.value ? 'bg-bg text-accent font-semibold shadow-sm' : 'text-ink-3 hover:text-ink',
+                    'px-2.5 py-1 rounded-sm font-mono text-[11.5px] transition-colors cursor-pointer',
+                    range === t.value ? 'bg-accent text-accent-ink font-bold' : 'text-ink-2 hover:text-ink hover:bg-bg-2',
                   )}
                 >
                   {t.label}
@@ -203,7 +202,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="flex items-end gap-3 mb-4">
-            <p className="font-pixel font-extrabold text-[35px] leading-none tabular-nums">
+            <p className="font-mono font-extrabold tracking-tight text-[26px] leading-none tabular-nums">
               {fmtCompact(rangeTotal)}đ
             </p>
             <span className="font-mono text-[11px] text-ink-3 pb-0.5">
@@ -215,7 +214,7 @@ export default function AdminDashboardPage() {
 
         {/* Top courses */}
         <div className="card p-5">
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-5">
+          <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-5">
             // Top courses · Revenue
           </p>
           <div className="space-y-5">
@@ -232,7 +231,7 @@ export default function AdminDashboardPage() {
         {/* Recent orders */}
         <div className="card overflow-hidden lg:col-span-2">
           <div className="px-5 py-3 border-b border-line flex items-center justify-between">
-            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+            <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">
               // Recent orders · Last 10
             </p>
             <Link to="/admin/orders" className="font-mono text-[11px] text-accent hover:underline">
@@ -244,7 +243,7 @@ export default function AdminDashboardPage() {
             <thead>
               <tr className="border-b border-line bg-bg-2">
                 {['Order', 'Khách hàng', 'Khóa', 'Tổng', 'Status'].map(h => (
-                  <th key={h} className="px-4 py-2 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
+                  <th key={h} className="px-4 py-2 text-left font-mono text-[11px] text-ink-3 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -272,7 +271,7 @@ export default function AdminDashboardPage() {
 
         {/* Funnel */}
         <div className="card p-5">
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-5">
+          <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-5">
             // Đơn hàng · 30 ngày
           </p>
           <div className="space-y-4">
@@ -299,22 +298,18 @@ function StatCard({ icon: Icon, label, value, delta, positive, sparkData, color 
   return (
     <div className="card p-5 transition-colors">
       <div className="flex items-center justify-between mb-3">
-        <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
-        <div
-          className="w-8 h-8 rounded-lg grid place-items-center"
-          style={{ background: `${color}1a`, color }}
-          aria-hidden="true"
-        >
+        <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
+        <div className="w-8 h-8 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center" aria-hidden="true">
           <Icon className="w-4 h-4" />
         </div>
       </div>
-      <p className="font-pixel font-extrabold text-[35px] text-ink leading-none mb-1.5 tabular-nums">{value}</p>
+      <p className="font-mono font-extrabold tracking-tight text-[26px] text-ink leading-none mb-1.5 tabular-nums">{value}</p>
       <p className={cn('font-mono text-[11px] mb-3', positive ? 'text-success' : 'text-danger')}>
         {positive ? '▲' : '▼'} {delta}
       </p>
       <ResponsiveContainer width="100%" height={36}>
         <LineChart data={sparkData.map((v, i) => ({ v, i }))}>
-          <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} dot={false} />
+          <Line type="linear" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -331,8 +326,9 @@ function TopCourseRow({ course, max }) {
           {compactVND(course.revenue)}
         </span>
       </div>
-      <div className="h-1.5 bg-bg-3 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: course.color }} />
+      {/* Một màu cho mọi hạng: độ dài thanh là thông tin, màu khác nhau chỉ là trang trí */}
+      <div className="h-3 bg-bg-1 border-2 border-edge rounded-sm overflow-hidden">
+        <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -349,11 +345,11 @@ function OrderStatusRow({ row, total }) {
           <span className="font-mono text-[12px] font-semibold text-ink" title={row.amount ? formatVND(row.amount) : undefined}>
             {count.toLocaleString()}
           </span>
-          <span className="font-mono text-[10px] text-ink-3">{pct}%</span>
+          <span className="font-mono text-[11px] text-ink-3">{pct}%</span>
         </div>
       </div>
-      <div className="h-1.5 bg-bg-3 rounded-full overflow-hidden">
-        <div className={cn('h-full rounded-full', row.cls)} style={{ width: `${pct}%` }} />
+      <div className="h-3 bg-bg-1 border-2 border-edge rounded-sm overflow-hidden">
+        <div className={cn('h-full', row.cls)} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

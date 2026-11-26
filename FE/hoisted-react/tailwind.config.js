@@ -8,7 +8,7 @@ export default {
         // "… Fallback": font hệ thống đã chỉnh số đo cho khớp (src/index.css) → không xô layout khi font tải xong
         sans:    ['"Space Grotesk"', '"Space Grotesk Fallback"', 'system-ui', 'sans-serif'],
         display: ['"Space Grotesk"', '"Space Grotesk Fallback"', 'system-ui', 'sans-serif'],
-        // pixel / dot-matrix — chỉ cho tiêu đề lớn (.display), logo, số lớn; không dùng cho chữ nhỏ
+        // pixel / dot-matrix — chỉ cho tiêu đề chữ (.display) và logo. KHÔNG dùng cho số: số 0 của Handjet có chấm giữa, ở cỡ lớn đọc thành 8
         pixel:   ['Handjet', '"Handjet Fallback"', '"Arial Narrow"', 'sans-serif'],
         mono:    ['"JetBrains Mono"', '"JetBrains Mono Fallback"', 'ui-monospace', 'monospace'],
       },
@@ -38,6 +38,9 @@ export default {
         // màu trạng thái đổi theo giao diện để chữ đạt tương phản AA trên nền sáng
         success: 'rgb(var(--success) / <alpha-value>)',
         danger:  'rgb(var(--danger) / <alpha-value>)',
+        // chữ đặt TRÊN nền success / danger (trắng ở light, navy ở dark)
+        'success-ink': 'rgb(var(--success-ink) / <alpha-value>)',
+        'danger-ink':  'rgb(var(--danger-ink) / <alpha-value>)',
         warn:    'rgb(var(--warn) / <alpha-value>)',
       },
       letterSpacing: { tight2: '-0.01em' },

@@ -247,7 +247,7 @@ export default function CartPage() {
 
               <div className="border-t border-line pt-4 mb-5 flex items-end justify-between">
                 <span className="font-semibold text-ink">Tổng cộng</span>
-                <span className="font-pixel font-extrabold text-[35px] text-ink leading-none tabular-nums">
+                <span className="font-mono font-extrabold tracking-tight text-[26px] text-ink leading-none tabular-nums">
                   {formatVND(total)}
                 </span>
               </div>

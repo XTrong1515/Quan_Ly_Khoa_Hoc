@@ -7,7 +7,17 @@ import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 /* ── Config ─────────────────────────────────────────────────────── */
-const PRESET_COLORS = ['#F7DF1E', '#10B981', '#EF4444', '#6366F1', '#8B5CF6', '#F59E0B'];
+const PRESET_COLORS = ['#FFCF33', '#1DB06B', '#F2542D', '#2547D0', '#7B5CFA', '#29B6F6'];
+/** Chữ navy hay trắng trên màu danh mục do admin chọn — theo độ sáng tương đối (WCAG). */
+function inkOn(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return '#0E1B3D';
+  const ch = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  const L = 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+  // tương phản với navy (L≈0.011) so với trắng (L=1)
+  return (L + 0.05) / 0.061 >= 1.05 / (L + 0.05) ? '#0E1B3D' : '#FFFFFF';
+}
 const PRESET_GLYPHS = ['{}', 'C', 'Rx', 'TS', 'Nx', '✓', '⚙', '⌘'];
 
 function useCategories() {
@@ -18,7 +28,7 @@ function useCategories() {
   });
 }
 
-const EMPTY_FORM = { name: '', slug: '', description: '', icon: '', color: '#6366F1', visible: true };
+const EMPTY_FORM = { name: '', slug: '', description: '', icon: '', color: '#2547D0', visible: true };
 
 function autoSlug(name) {
   return name.toLowerCase()
@@ -55,7 +65,7 @@ export default function AdminCategoriesPage() {
 
   const openEdit = (cat) => {
     setEditingId(cat.id);
-    setForm({ name: cat.name, slug: cat.slug, description: cat.description ?? '', icon: cat.icon ?? '', color: cat.color ?? '#6366F1', visible: cat.visible !== false });
+    setForm({ name: cat.name, slug: cat.slug, description: cat.description ?? '', icon: cat.icon ?? '', color: cat.color ?? '#2547D0', visible: cat.visible !== false });
     setErrors({});
   };
 
@@ -122,7 +132,7 @@ export default function AdminCategoriesPage() {
       <div className={cn('flex gap-6', editingId ? 'items-start' : '')}>
         {/* Left: drag list */}
         <div className={cn('min-w-0', editingId ? 'flex-1' : 'w-full')}>
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-3">
+          <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-3">
             // Drag để sắp xếp lại thứ tự hiển thị
           </p>
 
@@ -149,8 +159,8 @@ export default function AdminCategoriesPage() {
                 <GripVertical className="w-4 h-4 text-ink-3 shrink-0 cursor-grab active:cursor-grabbing" />
 
                 {/* Icon */}
-                <div className="w-10 h-10 rounded-lg grid place-items-center shrink-0 font-mono font-bold text-[15px] text-bg select-none"
-                  style={{ background: cat.color || '#6366F1' }}>
+                <div className="w-10 h-10 rounded-sm border-2 border-edge grid place-items-center shrink-0 font-mono font-bold text-[15px] select-none"
+                  style={{ background: cat.color || '#2547D0', color: inkOn(cat.color || '#2547D0') }}>
                   {cat.icon || cat.name?.[0] || '?'}
                 </div>
 
@@ -158,7 +168,7 @@ export default function AdminCategoriesPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-[14px] text-ink">{cat.name}</p>
-                    <span className="font-mono text-[10px] text-ink-3">/{cat.slug}</span>
+                    <span className="font-mono text-[11px] text-ink-3">/{cat.slug}</span>
                   </div>
                   {cat.description && (
                     <p className="font-mono text-[11px] text-ink-3 truncate mt-0.5">{cat.description}</p>
@@ -195,7 +205,7 @@ Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu tr�
           <div className="w-[340px] shrink-0 card overflow-hidden">
             {/* Panel header */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
-              <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">
+              <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">
                 {editingId === 'new' ? '// Thêm mới' : '// Đang sửa'}
               </p>
               <button onClick={closePanel} className="p-1 rounded hover:bg-bg-2 text-ink-3 transition-colors">
@@ -212,7 +222,7 @@ Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu tr�
             <div className="p-5 space-y-4">
               {/* Name */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1.5">
+                <label className="block font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-1.5">
                   Tên danh mục
                 </label>
                 <input
@@ -230,7 +240,7 @@ Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu tr�
 
               {/* Slug */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1.5">
+                <label className="block font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-1.5">
                   Slug (URL)
                 </label>
                 <input
@@ -244,7 +254,7 @@ Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu tr�
 
               {/* Description */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1.5">
+                <label className="block font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-1.5">
                   Mô tả
                 </label>
                 <textarea
@@ -258,14 +268,14 @@ Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu tr�
 
               {/* Color swatches */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1.5">
+                <label className="block font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-1.5">
                   Màu đại diện
                 </label>
                 <div className="flex items-center gap-2 flex-wrap">
                   {PRESET_COLORS.map(c => (
                     <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))}
                       className={cn(
-                        'w-7 h-7 rounded-full transition-all',
+                        'w-7 h-7 rounded-sm border-2 border-edge transition-all',
                         form.color === c ? 'ring-2 ring-offset-2 ring-offset-bg ring-ink scale-110' : 'hover:scale-105',
                       )}
                       style={{ background: c }}
@@ -276,7 +286,7 @@ Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu tr�
                     type="color"
                     value={form.color}
                     onChange={set('color')}
-                    className="w-7 h-7 rounded-full cursor-pointer bg-transparent border-0 p-0"
+                    className="w-7 h-7 rounded-sm cursor-pointer bg-transparent border-0 p-0"
                     title="Màu tùy chỉnh"
                   />
                 </div>
@@ -284,7 +294,7 @@ Chỉ xóa được khi không còn khóa học nào (ngoài khóa đã lưu tr�
 
               {/* Glyph picker */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1.5">
+                <label className="block font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-1.5">
                   Glyph / Icon
                 </label>
                 <div className="flex items-center gap-1.5 flex-wrap">

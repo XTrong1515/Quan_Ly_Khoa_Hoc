@@ -20,8 +20,8 @@ export function ExerciseResults({ result, title }) {
   return (
     <div className="space-y-2">
       <div className={cn(
-        'flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-[13px] font-semibold',
-        head.tone === 'success' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger',
+        'flex items-center justify-between gap-3 px-3 py-2 rounded-sm border-2 border-edge text-[13px] font-bold',
+        head.tone === 'success' ? 'bg-success text-success-ink' : 'bg-danger text-danger-ink',
       )}>
         <span>{title ? `${title}: ` : ''}{head.text}</span>
         <span className="font-mono text-[11px] font-normal">{result.passed}/{result.total} test · {result.timeMs} ms</span>
@@ -43,7 +43,7 @@ export function ExerciseResults({ result, title }) {
                 {r.hidden ? `Test ẩn #${r.index}` : `Test #${r.index}`}
               </span>
               <span className="text-ink-3">{STATUS_LABELS[r.status]?.text ?? r.status}</span>
-              <span className="ml-auto font-mono text-[10.5px] text-ink-3">{r.timeMs} ms</span>
+              <span className="ml-auto font-mono text-[11px] text-ink-3">{r.timeMs} ms</span>
             </div>
             {r.input !== undefined && (
               <dl className="mt-1.5 grid grid-cols-[72px_1fr] gap-x-2 gap-y-0.5 font-mono text-[11.5px]">

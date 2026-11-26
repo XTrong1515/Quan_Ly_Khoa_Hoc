@@ -11,7 +11,7 @@ import { ExerciseResults } from './exercise-results.jsx';
 const CodeEditor = lazy(() => import('./code-editor.jsx'));
 
 const inputCls = 'w-full px-3 py-2 text-[13px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
-const labelCls = 'block font-mono text-[9px] text-ink-3 mb-1 uppercase tracking-widest';
+const labelCls = 'block font-mono text-[11px] text-ink-3 mb-1 uppercase tracking-widest';
 
 const EMPTY = {
   title: '', functionName: 'solve', timeLimitMs: 1000,
@@ -85,7 +85,7 @@ export function ExerciseEditorModal({ apiBase, lesson, onClose }) {
       className="max-w-4xl max-h-[92dvh] overflow-hidden open:flex open:flex-col">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line shrink-0">
           <div>
-            <p className="font-mono text-[9px] text-ink-3 uppercase tracking-widest mb-0.5">Bài tập lập trình</p>
+            <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-0.5">Bài tập lập trình</p>
             <h2 id="exercise-editor-title" className="font-semibold text-[14px] text-ink truncate max-w-[560px]">{lesson.title}</h2>
           </div>
           <button type="button" onClick={() => { if (!dirty || window.confirm('Đóng mà không lưu? Các thay đổi chưa lưu sẽ mất.')) onClose(); }}

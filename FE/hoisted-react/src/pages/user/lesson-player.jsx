@@ -59,7 +59,7 @@ function WarningModal({ icon: Icon = AlertTriangle, title, children, onClose, ac
   return (
     <Dialog onClose={onClose} aria-labelledby={titleId} className="max-w-[400px] rounded-2xl p-6">
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-10 h-10 rounded-full bg-warn/15 text-warn grid place-items-center shrink-0">
+          <div className="w-10 h-10 rounded-sm border-2 border-edge bg-pop text-pop-ink grid place-items-center shrink-0">
             <Icon className="w-5 h-5" />
           </div>
           <div className="flex-1 pt-0.5">
@@ -386,10 +386,10 @@ export default function LessonPlayerPage() {
             title={isWishlisted ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
             aria-label={isWishlisted ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
             className={cn(
-              'hidden sm:grid w-8 h-8 rounded border place-items-center transition-colors ml-1',
+              'hidden sm:grid w-8 h-8 rounded border-2 place-items-center transition-colors ml-1',
               isWishlisted
                 ? 'border-danger/40 text-danger bg-danger/5 hover:bg-danger/10'
-                : 'border-line text-ink-3 hover:text-ink hover:bg-bg-2',
+                : 'border-edge text-ink-3 hover:text-ink hover:bg-bg-2',
             )}
           >
             <Heart className={cn('w-4 h-4', isWishlisted && 'fill-danger')} />
@@ -831,8 +831,8 @@ function QuizPanel({ quiz, mode = 'locked', onPassed }) {
       <div className="pb-5">
         {header}
         <div className={cn(
-          'max-w-5xl flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border px-5 py-4',
-          passed ? 'border-success/40 bg-success/10' : 'border-line bg-bg-1',
+          'max-w-5xl flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border-2 px-5 py-4',
+          passed ? 'border-success/40 bg-success/10' : 'border-edge bg-bg-1',
         )}>
           <p className={cn('font-display text-[32px] font-bold leading-none tabular-nums', passed ? 'text-success' : 'text-ink')}>
             {showResult.score}%
@@ -886,10 +886,10 @@ function QuizPanel({ quiz, mode = 'locked', onPassed }) {
                     <button key={o.id} type="button" role={multiple ? 'checkbox' : 'radio'} aria-checked={selected}
                       onClick={() => handleSelect(q, o.id)}
                       className={cn(
-                        'flex items-start gap-2.5 w-full text-left px-3 py-2 rounded-lg border text-[13px] leading-snug transition-colors',
+                        'flex items-start gap-2.5 w-full text-left px-3 py-2 rounded-lg border-2 text-[13px] leading-snug transition-colors',
                         selected
                           ? 'border-accent bg-accent/10 text-ink'
-                          : 'border-line bg-bg hover:border-accent hover:bg-bg-1 text-ink-2',
+                          : 'border-edge bg-bg hover:border-accent hover:bg-bg-1 text-ink-2',
                       )}>
                       <span aria-hidden="true" className={cn(
                         'mt-[2px] w-3.5 h-3.5 shrink-0 border grid place-items-center',
@@ -1045,17 +1045,17 @@ function CommentItem({ comment, currentUserId, canModerate, onReply, onDelete, o
     <div className="space-y-3">
       {/* Main comment */}
       <div className="flex gap-3">
-        <div className="shrink-0 w-7 h-7 rounded-full grid place-items-center font-mono font-bold text-[11px] text-navy mt-0.5"
+        <div className="shrink-0 w-7 h-7 rounded-sm border-2 border-edge grid place-items-center font-mono font-bold text-[11px] text-navy mt-0.5"
           style={{ background: avatar ? undefined : 'rgb(var(--pop))' }}>
           {avatar
-            ? <img src={avatar} alt="" className="w-7 h-7 rounded-full object-cover" />
+            ? <img src={avatar} alt="" className="w-7 h-7 rounded-sm object-cover border-2 border-edge" />
             : initials}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-medium text-[12.5px] text-ink">{comment.author.name}</span>
-            <span className="font-mono text-[10px] text-ink-3">
+            <span className="font-mono text-[11px] text-ink-3">
               {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
             </span>
           </div>
@@ -1103,16 +1103,16 @@ function CommentItem({ comment, currentUserId, canModerate, onReply, onDelete, o
             const rInitials = r.author.name?.[0]?.toUpperCase() ?? '?';
             return (
               <div key={r.id} className="flex gap-2.5">
-                <div className="shrink-0 w-6 h-6 rounded-full grid place-items-center font-mono font-bold text-[10px] text-navy mt-0.5"
+                <div className="shrink-0 w-6 h-6 rounded-sm border-2 border-edge grid place-items-center font-mono font-bold text-[11px] text-navy mt-0.5"
                   style={{ background: r.author.avatar ? undefined : 'rgb(var(--pop))' }}>
                   {r.author.avatar
-                    ? <img src={r.author.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
+                    ? <img src={r.author.avatar} alt="" className="w-6 h-6 rounded-sm object-cover border-2 border-edge" />
                     : rInitials}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium text-[12px] text-ink">{r.author.name}</span>
-                    <span className="font-mono text-[10px] text-ink-3">
+                    <span className="font-mono text-[11px] text-ink-3">
                       {new Date(r.createdAt).toLocaleDateString('vi-VN')}
                     </span>
                   </div>
@@ -1173,7 +1173,7 @@ function CommentForm({ placeholder, initialValue = '', onSubmit, onCancel, submi
         {onCancel && (
           <Button size="sm" variant="ghost" onClick={onCancel}>Hủy</Button>
         )}
-        <span className="font-mono text-[10px] text-ink-3 ml-auto">Ctrl+Enter để gửi</span>
+        <span className="font-mono text-[11px] text-ink-3 ml-auto">Ctrl+Enter để gửi</span>
       </div>
     </div>
   );

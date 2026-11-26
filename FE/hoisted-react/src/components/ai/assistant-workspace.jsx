@@ -59,7 +59,7 @@ function ConversationList({ query, activeId, onOpen, onDelete, deletingId, searc
     <nav aria-label="Lịch sử hội thoại" className="px-2 space-y-4">
       {groupByDate(conversations).map(([label, items]) => (
         <div key={label}>
-          <p className="px-2.5 mb-1 font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">{label}</p>
+          <p className="px-2.5 mb-1 font-mono text-[11px] tracking-[0.1em] uppercase text-ink-3">{label}</p>
           <ul className="space-y-px">
             {items.map((c) => {
               const active = c.id === activeId;
@@ -151,21 +151,21 @@ export function AssistantWorkspace({ assistant, className }) {
       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-3 pointer-events-none" aria-hidden="true" />
       <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Tìm hội thoại"
         placeholder="Tìm hội thoại…"
-        className="w-full h-[34px] pl-8 pr-2.5 rounded-lg border-2 border-edge bg-bg-3 text-[13px] text-ink placeholder:text-ink-3 outline-none focus:border-accent/60" />
+        className="w-full h-[34px] pl-8 pr-2.5 rounded-sm border-2 border-edge bg-bg-3 text-[13px] text-ink placeholder:text-ink-3 outline-none focus:border-accent" />
     </div>
   );
   const newButton = (
     <button type="button" onClick={() => open(null)}
-      className="w-full inline-flex items-center justify-center gap-1.5 h-[38px] px-3 rounded-lg border-2 border-edge text-[13px] font-semibold text-ink hover:bg-bg-2 transition-colors">
+      className="press w-full inline-flex items-center justify-center gap-1.5 h-[38px] px-3 rounded-sm border-2 border-edge bg-pop text-pop-ink text-[13px] font-bold">
       <Plus className="w-4 h-4" /> Hội thoại mới
     </button>
   );
 
   return (
     <div className={cn('grid md:grid-cols-[264px_1fr] min-h-0', className)}>
-      <aside className="hidden md:flex flex-col min-h-0 border-r border-line bg-bg-1">
+      <aside className="hidden md:flex flex-col min-h-0 border-r-2 border-edge bg-bg-1">
         <div className="px-4 pt-5 pb-4">
-          <h1 className="font-display font-semibold text-[17px] text-ink">{assistant.name}</h1>
+          <h1 className="display text-[24px] text-ink">{assistant.name}</h1>
           <div className="mt-3">{newButton}</div>
           {searchBox}
         </div>
@@ -175,7 +175,7 @@ export function AssistantWorkspace({ assistant, className }) {
       </aside>
 
       <section className="flex flex-col min-h-0 min-w-0 bg-bg" aria-label={assistant.name}>
-        <header className="flex items-center gap-2 h-12 px-3 sm:px-5 border-b border-line shrink-0">
+        <header className="flex items-center gap-2 h-12 px-3 sm:px-5 border-b-2 border-edge bg-bg-1 shrink-0">
           <button type="button" onClick={() => setDrawer(true)} aria-label="Mở lịch sử hội thoại"
             className="md:hidden w-9 h-9 rounded-lg border-2 border-edge text-ink-2 grid place-items-center hover:bg-bg-2">
             <History className="w-4 h-4" />

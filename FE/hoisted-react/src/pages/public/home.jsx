@@ -135,10 +135,10 @@ function CodeWindow() {
         <span className="w-3 h-3 bg-[#0E1B3D]" aria-hidden="true" />
         <span className="w-3 h-3 bg-[#FFCF33] border-2 border-[#0E1B3D]" aria-hidden="true" />
         <span className="w-3 h-3 bg-white border-2 border-[#0E1B3D]" aria-hidden="true" />
-        <span className="ml-3 text-[11px] font-bold text-white">hoisted.js</span>
+        <span className="ml-3 text-[11px] font-bold text-navy">hoisted.js</span>
       </div>
       {/* Code */}
-      <pre className="p-5 text-slate-300 overflow-x-auto" aria-hidden="true">
+      <pre className="p-5 pb-14 text-slate-300 overflow-x-auto" aria-hidden="true">
         <code>
           <span className="text-slate-400">{'// hoisting: dùng trước, khai báo sau'}</span>{'\n'}
           <span className="text-sky-300">console</span>
@@ -383,7 +383,7 @@ export default function HomePage() {
                                 className="w-8 h-8 rounded-sm object-cover border-2 border-edge" />
                             ) : (
                               <div key={r.id}
-                                className="w-8 h-8 rounded-sm bg-pop border-2 border-edge text-pop-ink font-bold text-[10px] grid place-items-center">
+                                className="w-8 h-8 rounded-sm bg-pop border-2 border-edge text-pop-ink font-bold text-[11px] grid place-items-center">
                                 {getInitials(r.name)}
                               </div>
                             )
@@ -417,7 +417,7 @@ export default function HomePage() {
 
                 <div className="absolute -left-8 -bottom-7 animate-float">
                   <div className="card px-4 py-3 flex items-center gap-3 shadow-xl bg-bg-1">
-                    <div className="w-9 h-9 rounded-sm border-2 border-edge bg-success text-white grid place-items-center">
+                    <div className="w-9 h-9 rounded-sm border-2 border-edge bg-success text-success-ink grid place-items-center">
                       <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
                     </div>
                     <div>
@@ -462,7 +462,7 @@ export default function HomePage() {
           <dl className="flex flex-wrap gap-x-12 gap-y-5">
             {heroStats.map(({ n, l }) => (
               <div key={l} className="flex items-baseline gap-2.5">
-                <dd className="font-pixel font-extrabold text-[40px] tabular-nums leading-none text-accent">{n}</dd>
+                <dd className="font-mono font-extrabold tracking-tight text-[30px] tabular-nums leading-none text-accent">{n}</dd>
                 <dt className="text-[13.5px] text-ink-2">{l}</dt>
               </div>
             ))}
@@ -602,7 +602,7 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {visibleCourses.map((c, i) => (
-              <Reveal key={c.id} delay={(i % 4) * 60}>
+              <Reveal key={c.id} delay={(i % 4) * 60} className="h-full">
                 <CourseCard course={c} />
               </Reveal>
             ))}
@@ -628,9 +628,6 @@ export default function HomePage() {
                     <div className="flex items-start justify-between">
                       <span className={cn('text-[11px] font-mono font-bold uppercase tracking-widest', color)}>
                         {tag}
-                      </span>
-                      <span className="font-mono text-[28px] font-bold text-ink/10 leading-none select-none" aria-hidden="true">
-                        {String(i + 1).padStart(2, '0')}
                       </span>
                     </div>
                     <div>
@@ -683,8 +680,8 @@ export default function HomePage() {
             {instructors.map(({ name, courses, students }, i) => (
               <Reveal key={name} delay={i * 50}>
                 <div className="card p-5 h-full flex flex-col items-center text-center gap-3.5 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:hover:translate-y-0 hover:shadow-lg transition-all duration-200">
-                  <div className="p-[2.5px] rounded-full bg-pop">
-                    <div className="w-14 h-14 rounded-full bg-bg-1 text-ink font-bold text-[16px] grid place-items-center" aria-hidden="true">
+                  <div className="rounded-sm border-2 border-edge bg-pop shadow-sm overflow-hidden">
+                    <div className="w-14 h-14 bg-pop text-pop-ink font-bold text-[16px] grid place-items-center" aria-hidden="true">
                       {getInitials(name)}
                     </div>
                   </div>
@@ -736,10 +733,10 @@ export default function HomePage() {
                           width="40"
                           height="40"
                           loading="lazy"
-                          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                          className="w-10 h-10 rounded-sm object-cover border-2 border-edge flex-shrink-0"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-accent/15 text-accent font-bold text-[12px] grid place-items-center flex-shrink-0" aria-hidden="true">
+                        <div className="w-10 h-10 rounded-sm border-2 border-edge bg-pop text-pop-ink font-bold text-[12px] grid place-items-center flex-shrink-0" aria-hidden="true">
                           {getInitials(r.name)}
                         </div>
                       )}

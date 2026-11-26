@@ -58,7 +58,7 @@ export default function WishlistPage() {
         <div className="card relative overflow-hidden py-20 px-6 text-center">
           <div className="absolute inset-0 bg-grid mask-fade-y pointer-events-none opacity-60" aria-hidden="true" />
           <div className="relative">
-            <div className="w-16 h-16 rounded-sm border-2 border-edge bg-danger text-white grid place-items-center mx-auto mb-5">
+            <div className="w-16 h-16 rounded-sm border-2 border-edge bg-danger text-danger-ink grid place-items-center mx-auto mb-5">
               <Heart className="w-7 h-7" aria-hidden="true" />
             </div>
             <h3 className="font-display font-bold text-[17px] mb-1.5">Danh sách yêu thích trống</h3>

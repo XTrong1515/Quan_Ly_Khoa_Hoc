@@ -14,8 +14,8 @@ const seconds = (ms) => `${(ms / 1000).toLocaleString('vi-VN', { maximumFraction
 function Metric({ label, value, hint }) {
   return (
     <div className="min-w-0">
-      <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{label}</p>
-      <p className="mt-1.5 font-pixel font-extrabold text-[32px] leading-none tabular-nums text-ink">{value}</p>
+      <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">{label}</p>
+      <p className="mt-1.5 font-mono font-extrabold tracking-tight text-[24px] leading-none tabular-nums text-ink">{value}</p>
       {hint && <p className="mt-1 text-[11.5px] text-ink-3">{hint}</p>}
     </div>
   );
@@ -35,7 +35,7 @@ export function AiStatsCard() {
   if (isError) {
     return (
       <div className="card p-5">
-        <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Trợ lý AI · 30 ngày</p>
+        <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">// Trợ lý AI · 30 ngày</p>
         <p className="mt-3 text-[13px] text-ink-2">Chưa tải được thống kê trợ lý AI.</p>
         <button type="button" onClick={() => refetch()}
           className="mt-2 inline-flex items-center gap-1.5 h-[30px] px-3 rounded-md border-2 border-edge text-[12.5px] font-semibold text-ink hover:bg-bg-2">
@@ -50,7 +50,7 @@ export function AiStatsCard() {
 
   return (
     <div className="card p-5">
-      <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-5">// Trợ lý AI · {days} ngày</p>
+      <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-5">// Trợ lý AI · {days} ngày</p>
       {!questions ? (
         <p className="font-mono text-[12px] text-ink-3">// Chưa có câu hỏi nào cho trợ lý trong {days} ngày qua</p>
       ) : (
@@ -94,7 +94,7 @@ export function AiStatsCard() {
                   <li key={d.id} className="py-2.5">
                     <p className="text-[12.5px] text-ink line-clamp-1">{d.question ?? '(không rõ câu hỏi)'}</p>
                     <p className="mt-0.5 text-[12px] text-ink-3 line-clamp-2">{d.answer}</p>
-                    <p className="mt-1 font-mono text-[10.5px] text-ink-3">
+                    <p className="mt-1 font-mono text-[11px] text-ink-3">
                       {KIND_LABEL[d.kind] ?? d.kind}{d.inLesson ? ' · trong bài học' : ''} · {new Date(d.createdAt).toLocaleDateString('vi-VN')}
                     </p>
                   </li>

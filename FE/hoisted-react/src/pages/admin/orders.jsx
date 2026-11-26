@@ -10,7 +10,8 @@ import { formatVND } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 /* ── Avatar helpers ─────────────────────────────────────────────── */
-const AVATAR_COLORS = ['#6366F1','#F7DF1E','#10B981','#8B5CF6','#F59E0B','#06B6D4','#EF4444','#EC4899'];
+// Màu sáng phẳng — chữ navy trên mọi ô đạt ≥ 4.5:1
+const AVATAR_COLORS = ['#FFCF33','#29B6F6','#1DB06B','#8FB3FF','#FF8FB1','#FF9F43','#B9A6FF','#7FE0C2'];
 function avatarColor(name) {
   const i = [...(name || '')].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length;
   return AVATAR_COLORS[i];
@@ -98,10 +99,10 @@ export default function AdminOrdersPage() {
         ].map(({ label, value, dot }) => (
           <div key={label} className="card p-5">
             <div className="flex items-center gap-1.5 mb-1">
-              <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{label}</p>
+              <p className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">{label}</p>
               {dot && <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />}
             </div>
-            <p className="font-pixel font-extrabold text-[32px] text-ink leading-none">{value}</p>
+            <p className="font-mono font-extrabold tracking-tight text-[24px] text-ink leading-none">{value}</p>
           </div>
         ))}
       </div>
@@ -123,7 +124,7 @@ export default function AdminOrdersPage() {
                 {label}
                 {cnt != null && (
                   <span className={cn(
-                    'text-[10px] px-1.5 py-0.5 rounded-sm',
+                    'text-[11px] px-1.5 py-0.5 rounded-sm',
                     activeTab === value ? 'bg-accent/20 text-accent' : 'bg-bg-3 text-ink-3',
                   )}>
                     {cnt}
@@ -150,7 +151,7 @@ export default function AdminOrdersPage() {
           <thead>
             <tr className="border-b border-line bg-bg-2">
               {['Mã đơn', 'Khách hàng', 'Items', 'Tổng', 'Phương thức', 'Thời gian', 'Status', ''].map(h => (
-                <th key={h} className="px-4 py-2.5 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
+                <th key={h} className="px-4 py-2.5 text-left font-mono text-[11px] text-ink-3 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
@@ -174,13 +175,13 @@ export default function AdminOrdersPage() {
                 <td className="px-4 py-3 font-mono text-[12px] text-accent">{o.order_code}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full shrink-0 grid place-items-center font-mono font-bold text-[10px] text-bg"
+                    <div className="w-7 h-7 rounded-sm border-2 border-edge shrink-0 grid place-items-center font-mono font-bold text-[11px] text-navy"
                       style={{ background: avatarColor(o.userName) }}>
                       {initials(o.userName)}
                     </div>
                     <div>
                       <p className="text-ink font-medium leading-none mb-0.5">{o.userName}</p>
-                      <p className="font-mono text-[10px] text-ink-3">{o.email}</p>
+                      <p className="font-mono text-[11px] text-ink-3">{o.email}</p>
                     </div>
                   </div>
                 </td>
@@ -193,7 +194,7 @@ export default function AdminOrdersPage() {
                 <td className="px-4 py-3">
                   <StatusBadge status={o.status?.toLowerCase()} />
                   {o.status === 'PENDING' && o.expires_at && (
-                    <p className="font-mono text-[10px] text-ink-3 mt-1">
+                    <p className="font-mono text-[11px] text-ink-3 mt-1">
                       Hết hạn: {new Date(o.expires_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                     </p>
                   )}
@@ -255,7 +256,7 @@ function OrderDetailModal({ orderId, onClose }) {
   return (
     <Dialog onClose={onClose} aria-labelledby="order-detail-title" className="max-w-[520px]">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
-          <h2 id="order-detail-title" className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">// Chi tiết đơn hàng</h2>
+          <h2 id="order-detail-title" className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">// Chi tiết đơn hàng</h2>
           <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3 transition-colors">
             <X className="w-4 h-4" />
           </button>
@@ -278,12 +279,12 @@ function OrderDetailModal({ orderId, onClose }) {
                   data.order.paid_at && ['Thanh toán lúc', new Date(data.order.paid_at).toLocaleString('vi-VN')],
                 ].filter(Boolean).map(([label, value]) => (
                   <div key={label}>
-                    <p className="font-mono text-[10px] text-ink-3 uppercase tracking-wide mb-1">{label}</p>
+                    <p className="font-mono text-[11px] text-ink-3 uppercase tracking-wide mb-1">{label}</p>
                     <div className="text-ink">{value}</div>
                   </div>
                 ))}
               </div>
-              <p className="font-mono text-[10px] text-ink-3 uppercase tracking-wide mb-2">Sản phẩm</p>
+              <p className="font-mono text-[11px] text-ink-3 uppercase tracking-wide mb-2">Sản phẩm</p>
               <div className="border-2 border-edge rounded-lg divide-y divide-line">
                 {data.items?.map(item => (
                   <div key={item.id} className="flex items-center justify-between px-4 py-2.5 text-[13px]">

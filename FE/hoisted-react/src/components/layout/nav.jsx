@@ -79,7 +79,7 @@ export function Nav() {
         <Link to="/cart" className="relative" aria-label={items.length ? `Giỏ hàng (${items.length} khóa học)` : 'Giỏ hàng'}>
           <IconBtn title="Giỏ hàng" tabIndex={-1} aria-hidden="true"><ShoppingCart className="w-4 h-4" /></IconBtn>
           {items.length > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-sm bg-pop text-pop-ink font-mono font-bold text-[10px] grid place-items-center border-2 border-edge">
+            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-sm bg-pop text-pop-ink font-mono font-bold text-[11px] grid place-items-center border-2 border-edge">
               {items.length}
             </span>
           )}
@@ -286,7 +286,7 @@ function NotificationsBell() {
           <Bell className="w-4 h-4" />
         </IconBtn>
         {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-sm bg-danger text-white font-mono font-bold text-[10px] grid place-items-center border-2 border-edge pointer-events-none">
+          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-sm bg-danger text-danger-ink font-mono font-bold text-[11px] grid place-items-center border-2 border-edge pointer-events-none">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -336,7 +336,7 @@ function NotificationsBell() {
                           {n.body}
                         </p>
                       )}
-                      <p className="font-mono text-[10px] text-ink-3 mt-1">
+                      <p className="font-mono text-[11px] text-ink-3 mt-1">
                         {new Date(n.createdAt).toLocaleDateString('vi-VN')}
                       </p>
                     </div>
@@ -466,7 +466,7 @@ function SearchBox({ className }) {
           <X className="w-3.5 h-3.5" />
         </button>
       ) : (
-        <span className="absolute right-2 top-[9px] font-mono text-[10.5px] font-bold text-ink-2 bg-bg-2 border-2 border-edge/40 rounded-sm px-1 leading-[16px] pointer-events-none">
+        <span className="absolute right-2 top-[9px] font-mono text-[11px] font-bold text-ink-2 bg-bg-2 border-2 border-edge/40 rounded-sm px-1 leading-[16px] pointer-events-none">
           ⌘K
         </span>
       )}

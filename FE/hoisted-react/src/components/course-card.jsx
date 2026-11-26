@@ -23,7 +23,7 @@ export function CourseCard({ course }) {
   return (
     <Link
       to={`/courses/${course.slug ?? course.id}`}
-      className="card p-3 flex flex-col gap-3 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-xl transition relative group"
+      className="card h-full p-3 flex flex-col gap-3 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-xl transition relative group"
     >
       <CourseThumb course={course} />
 
@@ -48,17 +48,18 @@ export function CourseCard({ course }) {
         </button>
       )}
 
-      <div className="px-1 pb-2">
-        <div className="flex gap-2 mb-2">
+      {/* Thân thẻ giãn hết chiều cao ô lưới; tiêu đề luôn chiếm 2 dòng, hàng giá bám đáy → các thẻ cùng hàng thẳng nhau */}
+      <div className="px-1 pb-1 flex-1 flex flex-col">
+        <div className="flex flex-wrap gap-2 mb-2">
           <Chip variant="line">{course.category}</Chip>
           <Chip variant="line">{levelLabel(course.level)}</Chip>
         </div>
-        <h3 className="font-display font-bold text-[15.5px] tracking-tight2 mb-1 line-clamp-2">
+        <h3 className="font-display font-bold text-[15.5px] leading-[1.4] sm:min-h-[2.8em] tracking-tight2 mb-1 line-clamp-2">
           {course.title}
         </h3>
-        <p className="text-ink-3 text-xs mb-3">bởi {course.instructor}</p>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs text-ink-2">
+        <p className="text-ink-3 text-xs mb-3 truncate">bởi {course.instructor}</p>
+        <div className="mt-auto pt-3 border-t-2 border-dashed border-line flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-2 min-w-0">
             {hasRating(course) ? (
               <>
                 <Star className="w-3.5 h-3.5 fill-accent text-accent" />
@@ -68,9 +69,11 @@ export function CourseCard({ course }) {
             ) : (
               <span className="text-ink-3">Chưa có đánh giá</span>
             )}
-            <span className="text-ink-3">· {compactCount(course.students)} học viên</span>
+            <span className="text-ink-3 whitespace-nowrap">· {compactCount(course.students)} học viên</span>
           </div>
-          <div className={cn('font-mono font-bold text-[14px] shrink-0', Number(course.price) === 0 ? 'bg-success text-white border-2 border-edge rounded-sm px-1.5' : 'text-ink')}>
+          {/* Cùng một khối (viền 2px, cao 24px) cho cả giá và "Miễn phí" để hàng không nhảy chiều cao */}
+          <div className={cn('font-mono font-bold text-[13.5px] leading-5 tabular-nums shrink-0 border-2 rounded-sm px-1.5',
+            Number(course.price) === 0 ? 'bg-success text-success-ink border-edge' : 'bg-pop text-pop-ink border-edge')}>
             {formatPrice(course.price)}
           </div>
         </div>

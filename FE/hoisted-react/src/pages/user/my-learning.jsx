@@ -75,7 +75,7 @@ export default function MyLearningPage() {
       )}
 
       {/* Segmented tabs */}
-      <div className="flex gap-1 bg-bg-2 rounded-xl p-1 w-fit mb-7" role="tablist" aria-label="Lọc khóa học">
+      <div className="flex gap-1 bg-bg-1 border-2 border-edge rounded-sm p-1 w-fit mb-7" role="tablist" aria-label="Lọc khóa học">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
@@ -83,8 +83,8 @@ export default function MyLearningPage() {
             aria-selected={tab === key}
             onClick={() => setTab(key)}
             className={cn(
-              'px-4 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer',
-              tab === key ? 'bg-bg-1 shadow-sm text-ink' : 'text-ink-3 hover:text-ink-2',
+              'px-4 py-1.5 rounded-sm border-2 text-[13px] font-bold transition-colors cursor-pointer',
+              tab === key ? 'bg-accent text-accent-ink border-edge' : 'border-transparent text-ink-2 hover:text-ink hover:bg-bg-2',
             )}
           >
             {label}
@@ -165,9 +165,9 @@ function EnrollmentCard({ enrollment: e, isCompleted }) {
   return (
     <div className="card h-full flex flex-col overflow-hidden group hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:hover:translate-y-0 hover:shadow-lg transition-all duration-200">
       <Link to={`/courses/${e.slug}`} className="relative block">
-        <CourseThumb course={course} className="rounded-none" />
+        <CourseThumb course={course} className="rounded-none border-0 border-b-2" />
         {isCompleted && (
-          <span className="absolute top-3 right-3 flex items-center gap-1.5 h-6 px-2.5 rounded-sm bg-bg/90 text-success ring-1 ring-success/40 font-mono text-[11px] font-bold shadow-lg">
+          <span className="absolute top-3 right-3 flex items-center gap-1.5 h-6 px-2 rounded-sm bg-success text-success-ink border-2 border-edge font-mono text-[11px] font-bold">
             <CheckCircle className="w-3 h-3" aria-hidden="true" /> 100%
           </span>
         )}
@@ -175,7 +175,7 @@ function EnrollmentCard({ enrollment: e, isCompleted }) {
       <div className="p-4 flex flex-col flex-1">
         <Link
           to={`/courses/${e.slug}`}
-          className="font-display font-semibold text-[14.5px] text-ink leading-snug hover:text-accent transition-colors line-clamp-2 mb-1.5 block"
+          className="font-display font-bold text-[14.5px] text-ink leading-[1.375] sm:min-h-[2.75em] hover:text-accent transition-colors line-clamp-2 mb-1.5 block"
         >
           {e.title}
         </Link>

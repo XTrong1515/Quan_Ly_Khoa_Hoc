@@ -127,6 +127,7 @@ async function adminListCourses(req, res) {
               c.student_count, c.total_lessons, c.rating, c.instructor_name,
               c.instructor_id, u.email AS instructor_email,
               c.submitted_at, c.reject_reason,
+              c.glyph, c.thumb, c.tag,
               c.display_order, cat.name AS category, cat.id AS categoryId
        FROM courses c
        LEFT JOIN categories cat ON cat.id = c.category_id

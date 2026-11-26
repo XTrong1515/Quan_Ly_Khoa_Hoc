@@ -68,7 +68,7 @@ function Sidebar({ pathname, user, logout, onNavigate, navGroups, home, consoleL
       <nav className="flex-1 px-3 py-5 overflow-y-auto space-y-6" aria-label={`Điều hướng ${roleLabel}`}>
         {navGroups.map((group) => (
           <div key={group.label}>
-            <p className="font-mono text-[10px] font-bold text-white/55 uppercase tracking-[0.14em] px-3 mb-2">
+            <p className="font-mono text-[11px] font-bold text-white/55 uppercase tracking-[0.14em] px-3 mb-2">
               {group.label}
             </p>
             <div className="space-y-1.5">
@@ -107,7 +107,7 @@ function Sidebar({ pathname, user, logout, onNavigate, navGroups, home, consoleL
             <p className="font-semibold text-[12.5px] text-white truncate">
               {user?.name ?? user?.email}
             </p>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-pop">{roleLabel}</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-pop">{roleLabel}</p>
           </div>
         </div>
         <Link
@@ -118,7 +118,7 @@ function Sidebar({ pathname, user, logout, onNavigate, navGroups, home, consoleL
         </Link>
         <button
           onClick={logout}
-          className="w-full flex items-center justify-center gap-2 h-9 rounded-sm border-2 border-black bg-[#F2542D] text-white text-[12.5px] font-bold shadow-[2px_2px_0_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#000] transition-[transform,box-shadow] cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 h-9 rounded-sm border-2 border-black bg-[#C8361A] text-white text-[12.5px] font-bold shadow-[2px_2px_0_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_0_#000] transition-[transform,box-shadow] cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" aria-hidden="true" /> Đăng xuất
         </button>
@@ -175,8 +175,8 @@ function ConsoleLayout({ navGroups, home, consoleLabel, roleLabel, assistant }) 
             <Menu className="w-4 h-4" />
           </button>
           <p className="font-pixel font-extrabold text-[22px] leading-none text-ink">
-            Hoisted<span className="text-accent">()</span>
-            <span className="font-mono font-bold uppercase tracking-[0.08em] text-ink-3 text-[10px] ml-2">{roleLabel}</span>
+            Hoisted<span className="font-mono text-[0.72em] tracking-[-0.06em] text-accent">()</span>
+            <span className="font-mono font-bold uppercase tracking-[0.08em] text-ink-3 text-[11px] ml-2">{roleLabel}</span>
           </p>
         </div>
 

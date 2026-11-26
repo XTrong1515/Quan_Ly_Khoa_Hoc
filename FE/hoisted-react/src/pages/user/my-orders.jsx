@@ -54,10 +54,10 @@ export default function MyOrdersPage() {
             onClick={() => handleStatusChange(s.value)}
             aria-pressed={status === s.value}
             className={cn(
-              'h-8 px-3.5 rounded-sm font-mono text-[12.5px] border transition-colors cursor-pointer',
+              'h-8 px-3.5 rounded-sm font-mono text-[12.5px] border-2 transition-colors cursor-pointer',
               status === s.value
-                ? 'bg-accent text-accent-ink border-accent font-semibold'
-                : 'border-line text-ink-2 hover:border-accent hover:text-ink',
+                ? 'bg-accent text-accent-ink border-edge font-semibold'
+                : 'border-edge bg-bg-1 text-ink-2 hover:bg-pop hover:text-pop-ink',
             )}
           >
             {s.label}
@@ -130,10 +130,10 @@ export default function MyOrdersPage() {
                   onClick={() => setPage(pg)}
                   aria-current={pg === page ? 'page' : undefined}
                   className={cn(
-                    'w-9 h-9 rounded-xl border text-[13px] font-mono transition-colors cursor-pointer',
+                    'w-9 h-9 rounded-xl border-2 text-[13px] font-mono transition-colors cursor-pointer',
                     pg === page
-                      ? 'border-accent bg-accent text-accent-ink font-bold'
-                      : 'border-line text-ink-2 hover:bg-bg-2 hover:border-accent',
+                      ? 'border-edge bg-accent text-accent-ink font-bold'
+                      : 'border-edge text-ink-2 hover:bg-bg-2 hover:border-accent',
                   )}
                 >
                   {pg}

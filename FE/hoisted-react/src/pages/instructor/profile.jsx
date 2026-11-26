@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { api, apiMessage } from '@/lib/api';
 
 const inputCls = 'w-full px-3 py-2 text-[13px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
-const labelCls = 'block font-mono text-[10px] text-ink-3 mb-1.5 uppercase tracking-widest';
+const labelCls = 'block font-mono text-[11px] text-ink-3 mb-1.5 uppercase tracking-widest';
 
 /** Hồ sơ giảng viên: thông tin hiển thị trên trang khóa học + tài khoản nhận doanh thu. */
 export default function InstructorProfilePage() {
@@ -37,7 +37,7 @@ export default function InstructorProfilePage() {
       {!form ? <p className="font-mono text-[12px] text-ink-3">Đang tải…</p> : (
         <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-6">
           <section className="card p-5 space-y-4">
-            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">Hiển thị trên trang khóa học</p>
+            <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">Hiển thị trên trang khóa học</p>
             <div>
               <label className={labelCls}>Họ tên</label>
               <input value={form.name ?? ''} disabled className={`${inputCls} opacity-60`} />
@@ -53,7 +53,7 @@ export default function InstructorProfilePage() {
           </section>
 
           <section className="card p-5 space-y-4">
-            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">Tài khoản nhận doanh thu</p>
+            <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">Tài khoản nhận doanh thu</p>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>Ngân hàng</label>

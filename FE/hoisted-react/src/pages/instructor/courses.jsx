@@ -130,7 +130,7 @@ export default function InstructorCoursesPage() {
               <CourseBadge glyph={c.glyph} thumb={c.thumb} tag={c.tag} />
               <div className="flex-1 min-w-[180px]">
                 <p className="font-medium text-ink line-clamp-1">{c.title}</p>
-                <p className="font-mono text-[10.5px] text-ink-3 mt-0.5">
+                <p className="font-mono text-[11px] text-ink-3 mt-0.5">
                   {c.category ?? '—'} · {LEVEL_LABELS[c.level] ?? c.level} · {c.total_lessons ?? 0} bài · {formatPrice(c.price)}
                   {c.status === 'PUBLISHED' && ` · ${c.student_count ?? 0} học viên`}
                 </p>

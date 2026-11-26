@@ -10,7 +10,7 @@ const SWATCHES = {
   violet: { bg: 'bg-[#7B5CFA]', ink: 'text-white' },
   sky:    { bg: 'bg-[#29B6F6]', ink: 'text-[#0E1B3D]' },
 };
-const TAG = 'absolute top-2.5 left-2.5 bg-[#0E1B3D] border-2 border-[#0E1B3D] font-mono font-bold text-[10px] uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-sm';
+const TAG = 'absolute top-2.5 left-2.5 bg-[#0E1B3D] border-2 border-[#0E1B3D] font-mono font-bold text-[11px] uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-sm';
 
 /**
  * priority: ảnh là ứng viên LCP (ảnh bìa đầu trang chi tiết khóa học) → tải ngay với
@@ -48,11 +48,11 @@ export function CourseThumb({ course, className, priority = false }) {
     )}>
       {/* lưới chấm pixel trên nền màu */}
       <div className="absolute inset-0 opacity-25 [background-image:radial-gradient(#0E1B3D_1px,transparent_1.4px)] [background-size:12px_12px]" aria-hidden="true" />
-      <div className={cn('absolute inset-0 grid place-items-center font-pixel font-extrabold text-[72px] leading-none [text-shadow:4px_4px_0_rgb(14_27_61/0.35)]', sw.ink)}>
+      <div className={cn('absolute inset-0 grid place-items-center font-mono font-extrabold text-[58px] leading-none tracking-tighter [text-shadow:4px_4px_0_rgb(14_27_61/0.35)]', sw.ink)}>
         {/* Khóa chưa đặt ký hiệu → lấy chữ cái đầu của tên, không để ô màu trống */}
         {course.glyph || (course.title ?? '').trim().slice(0, 2).toUpperCase()}
       </div>
-      <div className="absolute left-2.5 right-2.5 bottom-2.5 flex justify-between items-end font-mono font-bold text-[10.5px] text-[#0E1B3D]">
+      <div className="absolute left-2.5 right-2.5 bottom-2.5 flex justify-between items-end font-mono font-bold text-[11px] text-[#0E1B3D]">
         {/* Một số payload (giỏ hàng…) không có số bài / thời lượng → không in "undefined lessons" hay "0.0h" */}
         {course.lessons != null ? <span className="bg-white border-2 border-[#0E1B3D] rounded-sm px-1.5">{course.lessons} bài học</span> : <span />}
         {Number(course.hours) > 0 ? <span className="bg-white border-2 border-[#0E1B3D] rounded-sm px-1.5">{formatHours(course.hours)}</span> : <span />}

@@ -55,7 +55,7 @@ function Stepper({ current }) {
               active ? 'text-accent font-semibold' : done ? 'text-ink-2' : 'text-ink-3',
             )}>
               <span className={cn(
-                'w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold',
+                'w-5 h-5 rounded-full grid place-items-center text-[11px] font-bold',
                 done ? 'bg-pop text-pop-ink ring-2 ring-inset ring-edge' : active ? 'bg-accent text-accent-ink' : 'border-2 border-edge',
               )} aria-hidden="true">
                 {done ? <Check className="w-3 h-3" strokeWidth={3} /> : i + 1}
@@ -291,15 +291,15 @@ export default function PaymentPendingPage() {
                   )}
                   <div className="flex flex-col items-center gap-2">
                     <div className={cn(
-                      'soft w-[72px] sm:w-[84px] py-3.5 rounded-xl border',
-                      urgency ? 'border-danger/25' : 'border-line',
+                      'soft w-[72px] sm:w-[84px] py-3.5 rounded-xl border-2',
+                      urgency ? 'border-danger/25' : 'border-edge',
                     )}>
                       <span className={cn(
-                        'font-pixel font-extrabold text-[55px] sm:text-[64px] leading-none tabular-nums',
+                        'font-mono font-extrabold tracking-tight text-[40px] sm:text-[46px] leading-none tabular-nums',
                         urgency ? 'text-danger' : 'text-ink',
                       )}>{val}</span>
                     </div>
-                    <span className="font-mono text-[10.5px] text-ink-3 uppercase tracking-[0.1em]">{label}</span>
+                    <span className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.1em]">{label}</span>
                   </div>
                 </div>
               ))}
@@ -329,7 +329,7 @@ export default function PaymentPendingPage() {
           </div>
           <div className="border-t border-line mt-4 pt-4 flex justify-between items-end">
             <span className="font-semibold text-[14px]">Tổng cộng</span>
-            <span className="font-pixel font-extrabold text-[35px] text-ink leading-none tabular-nums">
+            <span className="font-mono font-extrabold tracking-tight text-[26px] text-ink leading-none tabular-nums">
               {formatVND(data.total_amount)}
             </span>
           </div>

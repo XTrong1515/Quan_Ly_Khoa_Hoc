@@ -17,7 +17,7 @@ export function ConfirmDialog({ title, children, confirmLabel, onConfirm, onClos
       <div className="mt-5 flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose} disabled={pending} autoFocus>Hủy</Button>
         <Button onClick={onConfirm} disabled={pending}
-          className={cn(destructive && 'bg-danger text-white', pending && 'opacity-70')}>
+          className={cn(destructive && 'bg-danger text-danger-ink', pending && 'opacity-70')}>
           {pending ? 'Đang xử lý…' : confirmLabel}
         </Button>
       </div>

@@ -41,12 +41,12 @@ export default function AdminReviewsPage() {
 
       {/* Filters */}
       <div className="flex gap-3 mb-5 flex-wrap">
-        <div className="flex gap-1 border-2 border-edge rounded-lg p-1 bg-bg-2">
+        <div className="flex gap-1 border-2 border-edge rounded-sm p-1 bg-bg-1">
           {[{ v: 'course', l: 'Khóa học' }, { v: 'site', l: 'Website' }].map(({ v, l }) => (
             <button key={v} onClick={() => { setType(v); setPage(1); }}
               className={cn(
-                'px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors',
-                type === v ? 'bg-bg text-ink shadow-sm' : 'text-ink-3 hover:text-ink',
+                'px-3 py-1 rounded-sm text-[13px] font-bold transition-colors',
+                type === v ? 'bg-accent text-accent-ink' : 'text-ink-2 hover:text-ink hover:bg-bg-2',
               )}>
               {l}
             </button>
@@ -78,7 +78,7 @@ export default function AdminReviewsPage() {
             r.status === 'HIDDEN' && 'opacity-60',
           )}>
             {/* Avatar */}
-            <div className="w-9 h-9 rounded-full grid place-items-center font-mono font-bold text-sm shrink-0"
+            <div className="w-9 h-9 rounded-sm border-2 border-edge grid place-items-center font-mono font-bold text-sm shrink-0"
               style={{ background: 'rgb(var(--pop))', color: '#0B0F19' }}>
               {r.userName?.[0]?.toUpperCase() ?? '?'}
             </div>

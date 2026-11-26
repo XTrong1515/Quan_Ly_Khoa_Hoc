@@ -35,7 +35,7 @@ export default function TransactionsPage() {
               </div>
               <div>
                 <p className="font-mono text-[11px] text-ink-3 uppercase tracking-wide mb-1">Tổng đã thanh toán</p>
-                <p className="font-pixel font-extrabold text-[32px] text-ink leading-none tabular-nums">{formatVND(total)}</p>
+                <p className="font-mono font-extrabold tracking-tight text-[24px] text-ink leading-none tabular-nums">{formatVND(total)}</p>
               </div>
             </div>
             <div className="card p-5 flex items-center gap-4">
@@ -44,7 +44,7 @@ export default function TransactionsPage() {
               </div>
               <div>
                 <p className="font-mono text-[11px] text-ink-3 uppercase tracking-wide mb-1">Số giao dịch</p>
-                <p className="font-pixel font-extrabold text-[32px] text-ink leading-none tabular-nums">{transactions.length}</p>
+                <p className="font-mono font-extrabold tracking-tight text-[24px] text-ink leading-none tabular-nums">{transactions.length}</p>
               </div>
             </div>
           </div>

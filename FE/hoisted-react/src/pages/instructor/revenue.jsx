@@ -62,12 +62,12 @@ export default function InstructorRevenuePage() {
           <div key={label} className="card p-5">
             <div className="flex items-center gap-2 mb-2">
               <Icon className="w-3.5 h-3.5 text-ink-3" aria-hidden="true" />
-              <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
+              <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
             </div>
-            <p className="font-pixel font-extrabold text-[29px] text-ink leading-none tabular-nums">
+            <p className="font-mono font-extrabold tracking-tight text-[22px] text-ink leading-none tabular-nums">
               {isLoading || value === undefined ? '…' : formatVND(value)}
             </p>
-            {hint && <p className="mt-1.5 font-mono text-[10.5px] text-ink-3">{hint}</p>}
+            {hint && <p className="mt-1.5 font-mono text-[11px] text-ink-3">{hint}</p>}
           </div>
         ))}
       </div>
@@ -75,7 +75,7 @@ export default function InstructorRevenuePage() {
       <div className="card p-5 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">Thu nhập theo ngày</p>
+            <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">Thu nhập theo ngày</p>
             <p className="font-mono font-bold text-[18px] text-ink mt-1">{formatVND(rangeEarned)}</p>
           </div>
           <div className="flex gap-1">
@@ -96,12 +96,12 @@ export default function InstructorRevenuePage() {
 
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="card overflow-x-auto">
-          <p className="px-5 pt-4 pb-3 font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">Theo khóa học ({RANGES.find(([v]) => v === days)?.[1]})</p>
+          <p className="px-5 pt-4 pb-3 font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">Theo khóa học ({RANGES.find(([v]) => v === days)?.[1]})</p>
           <table className="w-full min-w-[540px] text-[13px]">
             <thead>
               <tr className="border-y border-line bg-bg-2">
                 {['Khóa học', 'Lượt mua', 'Doanh số', 'Phí cổng', 'Thu nhập'].map((h) => (
-                  <th key={h} className="px-4 py-2 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
+                  <th key={h} className="px-4 py-2 text-left font-mono text-[11px] text-ink-3 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -123,12 +123,12 @@ export default function InstructorRevenuePage() {
         </div>
 
         <div className="card overflow-x-auto">
-          <p className="px-5 pt-4 pb-3 font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">Lịch sử chi trả</p>
+          <p className="px-5 pt-4 pb-3 font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">Lịch sử chi trả</p>
           <table className="w-full min-w-[480px] text-[13px]">
             <thead>
               <tr className="border-y border-line bg-bg-2">
                 {['Ngày tạo', 'Số tiền', 'Trạng thái', 'Mã GD'].map((h) => (
-                  <th key={h} className="px-4 py-2 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
+                  <th key={h} className="px-4 py-2 text-left font-mono text-[11px] text-ink-3 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>

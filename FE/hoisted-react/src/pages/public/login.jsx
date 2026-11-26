@@ -86,11 +86,11 @@ export default function LoginPage() {
 
           {/* Terminal: session restore */}
           <div className="rounded border-2 border-black bg-[#081230] font-mono text-[12.5px] leading-[2] overflow-hidden mb-8 shadow-[6px_6px_0_0_#FFCF33]">
-            <div className="flex items-center gap-2 px-4 h-9 bg-[#F2542D] border-b-2 border-black text-white">
+            <div className="flex items-center gap-2 px-4 h-9 bg-[#F2542D] border-b-2  text-navy">
               <span className="w-2.5 h-2.5 bg-black" aria-hidden="true" />
               <span className="w-2.5 h-2.5 bg-[#FFCF33] border-2 border-black" aria-hidden="true" />
               <span className="w-2.5 h-2.5 bg-white border-2 border-black" aria-hidden="true" />
-              <span className="ml-2 text-[10.5px] font-bold text-white">phiên-học — hoisted</span>
+              <span className="ml-2 text-[11px] font-bold text-navy">phiên-học — hoisted</span>
             </div>
             <div className="px-5 py-4 text-slate-300" aria-hidden="true">
               <p><span className="text-js">$</span> hoisted resume</p>

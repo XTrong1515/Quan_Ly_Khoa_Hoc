@@ -13,20 +13,21 @@ import { formatVND } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 /* ── Avatar helpers ─────────────────────────────────────────────── */
-const COLORS = ['#6366F1','#10B981','#8B5CF6','#F59E0B','#06B6D4','#EF4444','#EC4899','#F7DF1E'];
+// Màu sáng phẳng — chữ navy trên mọi ô đạt ≥ 4.5:1
+const COLORS = ['#FFCF33','#29B6F6','#1DB06B','#8FB3FF','#FF8FB1','#FF9F43','#B9A6FF','#7FE0C2'];
 const avatarColor = (name) => COLORS[[...(name||'')].reduce((a,c) => a+c.charCodeAt(0),0) % COLORS.length];
 const initials    = (name) => (name||'?').split(' ').map(w=>w[0]).join('').slice(-2).toUpperCase();
 
 /* ── Role badge ─────────────────────────────────────────────────── */
 const ROLE_CFG = {
-  ADMIN:      { label: 'Admin',      color: 'text-accent-ink ring-2 ring-inset ring-edge bg-accent' },
-  INSTRUCTOR: { label: 'Giảng viên', color: 'text-indigo bg-indigo/10' },
-  USER:       { label: 'Student',    color: 'text-ink-3 bg-bg-2'       },
+  ADMIN:      { label: 'Admin',      color: 'text-accent-ink bg-accent' },
+  INSTRUCTOR: { label: 'Giảng viên', color: 'text-pop-ink bg-pop' },
+  USER:       { label: 'Student',    color: 'text-ink-2 bg-bg-2' },
 };
 const ROLE_OPTIONS = [['USER', 'Student'], ['INSTRUCTOR', 'Giảng viên'], ['ADMIN', 'Admin']];
 function RoleBadge({ role }) {
   const cfg = ROLE_CFG[role] ?? ROLE_CFG.USER;
-  return <span className={cn('inline-flex font-mono text-[10px] font-bold px-2 py-0.5 rounded uppercase', cfg.color)}>{cfg.label}</span>;
+  return <span className={cn('inline-flex font-mono text-[11px] font-bold px-1.5 py-0.5 rounded-sm border-2 border-edge uppercase', cfg.color)}>{cfg.label}</span>;
 }
 
 /* ── Queries ────────────────────────────────────────────────────── */
@@ -141,9 +142,9 @@ export default function AdminUsersPage() {
           <div key={label} className="card p-5 transition-colors">
             <div className="flex items-center gap-1.5 mb-2">
               <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', positive ? 'bg-success' : 'bg-danger')} aria-hidden="true" />
-              <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
+              <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.12em]">{label}</p>
             </div>
-            <p className="font-pixel font-extrabold text-[35px] text-ink leading-none tabular-nums">
+            <p className="font-mono font-extrabold tracking-tight text-[26px] text-ink leading-none tabular-nums">
               {value != null ? Number(value).toLocaleString() : '—'}
             </p>
           </div>
@@ -207,7 +208,7 @@ export default function AdminUsersPage() {
                   onChange={toggleAll} className="accent-accent" />
               </th>
               {['Người dùng','Vai trò','Khóa học','Tổng chi','Tham gia','Status',''].map(h => (
-                <th key={h} className="px-4 py-2.5 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
+                <th key={h} className="px-4 py-2.5 text-left font-mono text-[11px] text-ink-3 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
@@ -277,16 +278,16 @@ function UserRow({ user: u, selected, expanded, onSelect, onToggleExpand, onTogg
       <td className="px-4 py-3">
         <div className="flex items-center gap-2.5">
           {u.avatar_url ? (
-            <img src={u.avatar_url} alt="" width="32" height="32" loading="lazy" className="w-8 h-8 rounded-full object-cover shrink-0" />
+            <img src={u.avatar_url} alt="" width="32" height="32" loading="lazy" className="w-8 h-8 rounded-sm object-cover shrink-0 border-2 border-edge" />
           ) : (
-            <div className="w-8 h-8 rounded-full shrink-0 grid place-items-center font-mono font-bold text-[11px] text-bg"
+            <div className="w-8 h-8 rounded-sm border-2 border-edge shrink-0 grid place-items-center font-mono font-bold text-[11px] text-navy"
               style={{ background: avatarColor(u.full_name) }}>
               {initials(u.full_name)}
             </div>
           )}
           <div>
             <p className="font-medium text-ink leading-none mb-0.5">{u.full_name}</p>
-            <p className="font-mono text-[10px] text-ink-3">{u.email}</p>
+            <p className="font-mono text-[11px] text-ink-3">{u.email}</p>
           </div>
         </div>
       </td>
@@ -356,10 +357,10 @@ function UserRow({ user: u, selected, expanded, onSelect, onToggleExpand, onTogg
             onClick={onToggleStatus}
             disabled={isUpdating}
             className={cn(
-              'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium transition-colors',
+              'flex items-center gap-1.5 px-2.5 py-1 rounded-sm border-2 border-edge bg-bg-1 text-[11px] font-mono font-bold transition-colors',
               u.status === 'ACTIVE'
-                ? 'bg-danger/10 text-danger hover:bg-danger/20'
-                : 'bg-success/10 text-success hover:bg-success/20',
+                ? 'text-danger hover:bg-danger hover:text-danger-ink'
+                : 'text-success hover:bg-success hover:text-success-ink',
             )}>
             {u.status === 'ACTIVE'
               ? <><Lock className="w-3 h-3" /> Khóa</>
@@ -480,11 +481,11 @@ function UserEnrollmentsPanel({ userId }) {
             <div className="flex-1 h-1.5 rounded-full bg-bg-3 overflow-hidden">
               <div className="h-full bg-accent" style={{ width: `${Math.min(100, e.progress_percent ?? 0)}%` }} />
             </div>
-            <span className="font-mono text-[10.5px] text-ink-3 w-9 text-right">
+            <span className="font-mono text-[11px] text-ink-3 w-9 text-right">
               {Number(e.progress_percent ?? 0).toFixed(0)}%
             </span>
           </div>
-          <span className="font-mono text-[10.5px] text-ink-3 shrink-0 w-24 text-right">
+          <span className="font-mono text-[11px] text-ink-3 shrink-0 w-24 text-right">
             {new Date(e.enrolled_at).toLocaleDateString('vi-VN')}
           </span>
         </div>

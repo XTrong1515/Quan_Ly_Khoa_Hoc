@@ -142,7 +142,7 @@ export default function CourseListingPage() {
         <span className="flex items-center gap-2 font-mono text-[12px] font-semibold text-ink-3 uppercase tracking-[0.08em]">
           <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" /> Bộ lọc
           {activeFilterCount > 0 && (
-            <span className="min-w-[18px] h-[18px] px-1 rounded-sm bg-accent text-accent-ink text-[10px] font-bold grid place-items-center press border-2 border-edge">
+            <span className="min-w-[18px] h-[18px] px-1 rounded-sm bg-accent text-accent-ink text-[11px] font-bold grid place-items-center press border-2 border-edge">
               {activeFilterCount}
             </span>
           )}
@@ -185,10 +185,10 @@ export default function CourseListingPage() {
               onClick={() => { setMinRating(minRating === String(r.value) ? '' : String(r.value)); setPage(1); }}
               aria-pressed={minRating === String(r.value)}
               className={cn(
-                'h-8 px-3 rounded-lg border font-mono text-[12px] transition-colors cursor-pointer',
+                'h-8 px-3 rounded-sm border-2 border-edge font-mono text-[12px] transition-colors cursor-pointer',
                 minRating === String(r.value)
-                  ? 'border-accent bg-pop text-pop-ink font-semibold'
-                  : 'border-line text-ink-2 hover:border-accent hover:text-ink',
+                  ? 'bg-pop text-pop-ink font-bold'
+                  : 'bg-bg-1 text-ink-2 hover:bg-pop hover:text-pop-ink',
               )}
             >
               {r.label}
@@ -255,10 +255,10 @@ export default function CourseListingPage() {
                 onClick={() => { setCategory([]); setPage(1); }}
                 aria-pressed={category.length === 0}
                 className={cn(
-                  'h-8 px-3.5 rounded-sm border font-mono text-[12px] whitespace-nowrap transition-colors cursor-pointer flex-shrink-0',
+                  'h-8 px-3.5 rounded-sm border-2 font-mono text-[12px] whitespace-nowrap transition-colors cursor-pointer flex-shrink-0',
                   category.length === 0
-                    ? 'border-accent bg-accent text-accent-ink font-semibold'
-                    : 'border-line text-ink-2 hover:border-accent hover:text-ink',
+                    ? 'bg-accent text-accent-ink font-bold'
+                    : 'bg-bg-1 text-ink-2 hover:bg-pop hover:text-pop-ink',
                 )}
               >
                 Tất cả
@@ -269,10 +269,10 @@ export default function CourseListingPage() {
                   onClick={() => toggleFilter(setCategory)(c.slug)}
                   aria-pressed={category.includes(c.slug)}
                   className={cn(
-                    'h-8 px-3.5 rounded-sm border font-mono text-[12px] whitespace-nowrap transition-colors cursor-pointer flex-shrink-0',
+                    'h-8 px-3.5 rounded-sm border-2 border-edge font-mono text-[12px] whitespace-nowrap transition-colors cursor-pointer flex-shrink-0',
                     category.includes(c.slug)
-                      ? 'border-accent bg-accent text-accent-ink font-semibold'
-                      : 'border-line text-ink-2 hover:border-accent hover:text-ink',
+                      ? 'bg-accent text-accent-ink font-bold'
+                      : 'bg-bg-1 text-ink-2 hover:bg-pop hover:text-pop-ink',
                   )}
                 >
                   {c.name}
@@ -329,7 +329,7 @@ export default function CourseListingPage() {
                 >
                   <SlidersHorizontal className="w-4 h-4" aria-hidden="true" /> Bộ lọc
                   {activeFilterCount > 0 && (
-                    <span className="min-w-[18px] h-[18px] px-1 rounded-sm bg-accent text-accent-ink text-[10px] font-bold grid place-items-center press border-2 border-edge">
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-sm bg-accent text-accent-ink text-[11px] font-bold grid place-items-center press border-2 border-edge">
                       {activeFilterCount}
                     </span>
                   )}
@@ -413,7 +413,7 @@ export default function CourseListingPage() {
                 isFetching && !isLoading && 'opacity-60',
               )}>
                 {courses.map((c, i) => (
-                  <Reveal key={c.id} delay={(i % 3) * 50}>
+                  <Reveal key={c.id} delay={(i % 3) * 50} className="h-full">
                     <CourseCard course={c} />
                   </Reveal>
                 ))}
@@ -440,10 +440,10 @@ export default function CourseListingPage() {
                       onClick={() => setPage(pg)}
                       aria-current={pg === page ? 'page' : undefined}
                       className={cn(
-                        'w-9 h-9 rounded-xl border text-[13px] font-mono transition-colors cursor-pointer',
+                        'w-9 h-9 rounded-xl border-2 text-[13px] font-mono transition-colors cursor-pointer',
                         pg === page
-                          ? 'border-accent bg-accent text-accent-ink font-bold shadow'
-                          : 'border-line text-ink-2 hover:bg-bg-2 hover:border-accent',
+                          ? 'border-edge bg-accent text-accent-ink font-bold shadow'
+                          : 'border-edge text-ink-2 hover:bg-bg-2 hover:border-accent',
                       )}
                     >
                       {pg}
@@ -483,9 +483,9 @@ function FilterCheckbox({ label, count, checked, onChange }) {
       <input type="checkbox" checked={checked} onChange={onChange} className="sr-only peer" />
       <span
         className={cn(
-          'w-[18px] h-[18px] rounded-md border grid place-items-center flex-shrink-0 transition-colors',
+          'w-[18px] h-[18px] rounded-md border-2 grid place-items-center flex-shrink-0 transition-colors',
           'peer-focus-visible:ring-2 peer-focus-visible:ring-accent/60',
-          checked ? 'border-accent bg-accent text-accent-ink' : 'border-line group-hover:border-accent/50',
+          checked ? 'border-edge bg-accent text-accent-ink' : 'border-edge group-hover:bg-bg-2',
         )}
         aria-hidden="true"
       >
@@ -501,12 +501,12 @@ function FilterCheckbox({ label, count, checked, onChange }) {
 
 function ActiveChip({ label, onRemove }) {
   return (
-    <span className="inline-flex items-center gap-1.5 h-[28px] pl-3 pr-1.5 rounded-full border bg-accent text-accent-ink ring-2 ring-inset ring-edge font-mono text-[12px]">
+    <span className="inline-flex items-center gap-1.5 h-[28px] pl-2.5 pr-1 rounded-sm border-2 border-edge bg-accent text-accent-ink font-mono text-[12px] font-bold">
       {label}
       <button
         onClick={onRemove}
         aria-label={`Bỏ lọc ${label}`}
-        className="w-5 h-5 rounded-full hover:bg-accent/20 grid place-items-center cursor-pointer transition-colors"
+        className="w-5 h-5 rounded-sm hover:bg-white/25 grid place-items-center cursor-pointer transition-colors"
       >
         <X className="w-3 h-3" />
       </button>

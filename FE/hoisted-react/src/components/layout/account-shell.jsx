@@ -23,16 +23,16 @@ export function AccountShell({ title, desc, action, children }) {
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-8 pt-10">
           <div className="flex flex-wrap items-center gap-5 mb-8">
             {/* Avatar */}
-            <div className="p-[3px] rounded-full bg-pop flex-shrink-0">
+            <div className="rounded-sm border-2 border-edge bg-pop shadow-sm overflow-hidden flex-shrink-0">
               {user?.avatar ? (
                 <img
                   src={user.avatar}
                   alt={`Ảnh đại diện của ${user?.name ?? 'bạn'}`}
                   width="56" height="56"
-                  className="w-14 h-14 rounded-full object-cover"
+                  className="w-14 h-14 rounded-sm object-cover border-2 border-edge"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-bg-1 grid place-items-center font-display font-bold text-[20px] text-ink">
+                <div className="w-14 h-14 bg-pop text-pop-ink grid place-items-center font-display font-bold text-[20px] text-ink">
                   {user?.name?.[0]?.toUpperCase() ?? '?'}
                 </div>
               )}

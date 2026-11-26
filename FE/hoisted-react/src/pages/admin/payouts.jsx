@@ -64,7 +64,7 @@ export default function AdminPayoutsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
         {cards.map(([label, value]) => (
           <div key={label} className="card p-4">
-            <p className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.1em] mb-2">{label}</p>
+            <p className="font-mono text-[11px] text-ink-3 uppercase tracking-[0.1em] mb-2">{label}</p>
             <p className="font-mono font-bold text-[18px] text-ink tabular-nums">{value === undefined ? '…' : formatVND(value)}</p>
           </div>
         ))}
@@ -75,7 +75,7 @@ export default function AdminPayoutsPage() {
           <thead>
             <tr className="border-b border-line bg-bg-2">
               {['Giảng viên', 'Hoa hồng', 'Thu nhập', 'Đã trả', 'Đang chờ', 'Số dư', 'Tài khoản', ''].map((h) => (
-                <th key={h} className="px-4 py-2.5 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
+                <th key={h} className="px-4 py-2.5 text-left font-mono text-[11px] text-ink-3 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
@@ -84,7 +84,7 @@ export default function AdminPayoutsPage() {
               <tr key={i.id} className="hover:bg-bg-2">
                 <td className="px-4 py-3">
                   <p className="font-medium text-ink">{i.name}</p>
-                  <p className="font-mono text-[10.5px] text-ink-3">{i.email}</p>
+                  <p className="font-mono text-[11px] text-ink-3">{i.email}</p>
                 </td>
                 <td className="px-4 py-3">
                   <button onClick={() => setRating(i)} title="Đổi tỷ lệ riêng"
@@ -124,7 +124,7 @@ export default function AdminPayoutsPage() {
           <thead>
             <tr className="border-b border-line bg-bg-2">
               {['Ngày tạo', 'Giảng viên', 'Số tiền', 'Tài khoản', 'Ghi chú', 'Trạng thái', ''].map((h) => (
-                <th key={h} className="px-4 py-2.5 text-left font-mono text-[10px] text-ink-3 uppercase tracking-wide">{h}</th>
+                <th key={h} className="px-4 py-2.5 text-left font-mono text-[11px] text-ink-3 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
@@ -141,7 +141,7 @@ export default function AdminPayoutsPage() {
                 <td className="px-4 py-3 text-[12px] text-ink-3 max-w-[160px] truncate">{p.note ?? '—'}</td>
                 <td className="px-4 py-3">
                   <StatusBadge status={p.status === 'PAID' ? 'paid' : 'pending'} />
-                  {p.bankRef && <p className="font-mono text-[10px] text-ink-3 mt-0.5">{p.bankRef} · {fmtDate(p.paidAt)}</p>}
+                  {p.bankRef && <p className="font-mono text-[11px] text-ink-3 mt-0.5">{p.bankRef} · {fmtDate(p.paidAt)}</p>}
                 </td>
                 <td className="px-4 py-3">
                   {p.status === 'PENDING' && (
@@ -170,7 +170,7 @@ function Modal({ title, onClose, children }) {
   return (
     <Dialog onClose={onClose} aria-labelledby={titleId} className="max-w-md">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
-          <h2 id={titleId} className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{title}</h2>
+          <h2 id={titleId} className="font-mono text-[11px] text-ink-3 uppercase tracking-widest">{title}</h2>
           <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 rounded hover:bg-bg-2 text-ink-3"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-3">{children}</div>

@@ -64,9 +64,9 @@ function CodeBlock({ node, children }) {
   return (
     <div className="my-3 rounded overflow-hidden border border-white/10 bg-[#0d1117]">
       <div className="flex items-center justify-between h-8 pl-3 pr-1 border-b border-white/10">
-        <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase text-slate-400">{lang || 'code'}</span>
+        <span className="font-mono text-[11px] tracking-[0.06em] uppercase text-slate-400">{lang || 'code'}</span>
         <button type="button" onClick={() => copy(source)} aria-label={copied ? 'Đã sao chép code' : 'Sao chép code'}
-          className="inline-flex items-center gap-1 h-6 px-2 rounded-md font-mono text-[10.5px] text-slate-400 hover:text-slate-100 hover:bg-white/10 transition-colors">
+          className="inline-flex items-center gap-1 h-6 px-2 rounded-md font-mono text-[11px] text-slate-400 hover:text-slate-100 hover:bg-white/10 transition-colors">
           {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           {copied ? 'Đã chép' : 'Chép'}
         </button>
@@ -180,7 +180,7 @@ function Message({ m, onRetry, onFeedback, wide }) {
   if (m.role === 'user') {
     return (
       <div className="flex justify-end pl-10">
-        <div className="max-w-full px-3.5 py-2.5 rounded-2xl rounded-br-md bg-bg-3 border-2 border-edge text-ink text-[14px] leading-[1.6] whitespace-pre-wrap break-words">
+        <div className="max-w-full px-3.5 py-2.5 rounded-sm bg-pop border-2 border-edge shadow-sm text-pop-ink text-[14px] leading-[1.6] whitespace-pre-wrap break-words">
           {m.content}
         </div>
       </div>
@@ -214,7 +214,7 @@ function Message({ m, onRetry, onFeedback, wide }) {
         )}
         {m.courses?.length > 0 && !m.streaming && (
           <div className="mt-3">
-            <p className="mb-1.5 font-mono text-[10.5px] tracking-[0.08em] uppercase text-ink-3">Khóa học được nhắc tới</p>
+            <p className="mb-1.5 font-mono text-[11px] tracking-[0.08em] uppercase text-ink-3">Khóa học được nhắc tới</p>
             <div className={cn('grid grid-cols-[minmax(0,1fr)] gap-1.5', wide && 'sm:grid-cols-2')}>{m.courses.map((c) => <CourseCard key={c.slug} course={c} />)}</div>
           </div>
         )}
@@ -228,7 +228,7 @@ function EmptyState({ assistant, onPick, wide }) {
   return (
     <div className="h-full flex flex-col justify-center py-6">
       {wide && (
-        <span className="w-10 h-10 rounded-xl border-2 border-edge bg-bg-1 text-accent grid place-items-center mb-4" aria-hidden="true">
+        <span className="w-10 h-10 rounded-sm border-2 border-edge bg-pop text-pop-ink shadow-sm grid place-items-center mb-4" aria-hidden="true">
           <Sparkles className="w-[18px] h-[18px]" />
         </span>
       )}
@@ -462,13 +462,13 @@ export function ChatPanel({
       <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="relative px-3 sm:px-5 pt-2 pb-3">
         {!atBottom && messages.length > 0 && (
           <button type="button" onClick={toBottom} aria-label="Cuộn xuống tin nhắn mới nhất"
-            className="absolute left-1/2 -translate-x-1/2 -top-10 z-10 w-8 h-8 rounded-full border-2 border-edge bg-bg-1 text-ink-2 hover:text-ink shadow-lg grid place-items-center">
+            className="absolute left-1/2 -translate-x-1/2 -top-10 z-10 w-8 h-8 rounded-sm border-2 border-edge bg-bg-1 text-ink hover:bg-bg-2 shadow-sm grid place-items-center">
             <ArrowDown className="w-4 h-4" />
           </button>
         )}
         <div className="mx-auto max-w-[720px]">
-          <div className={cn('flex items-end gap-2 rounded-2xl border bg-bg-3 pl-3.5 pr-2 py-2 transition-colors',
-            'border-line focus-within:border-accent/60')}>
+          <div className={cn('flex items-end gap-2 rounded border-2 bg-bg-3 pl-3.5 pr-2 py-2 shadow-md transition-colors',
+            'border-edge focus-within:border-accent')}>
             <label htmlFor={`chat-input-${assistant.id}`} className="sr-only">Câu hỏi cho {assistant.name.toLowerCase()}</label>
             <textarea
               id={`chat-input-${assistant.id}`}
@@ -483,7 +483,7 @@ export function ChatPanel({
             />
             {streaming ? (
               <button type="button" onClick={() => abortRef.current?.abort()} aria-label="Dừng trả lời"
-                className="w-9 h-9 rounded-xl border-2 border-edge bg-bg-1 text-ink grid place-items-center shrink-0 hover:bg-bg-2">
+                className="w-9 h-9 rounded-sm border-2 border-edge bg-bg-1 text-ink grid place-items-center shrink-0 hover:bg-bg-2">
                 <Square className="w-3.5 h-3.5 fill-current" />
               </button>
             ) : (

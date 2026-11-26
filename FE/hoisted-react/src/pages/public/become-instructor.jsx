@@ -10,7 +10,7 @@ import { useAuth } from '@/store/auth';
 import { cn } from '@/lib/utils';
 
 const inputCls = 'w-full px-3 py-2.5 text-[13.5px] bg-bg-3 border-2 border-edge rounded-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent';
-const labelCls = 'block font-mono text-[10px] text-ink-3 mb-1.5 uppercase tracking-widest';
+const labelCls = 'block font-mono text-[11px] text-ink-3 mb-1.5 uppercase tracking-widest';
 
 const BENEFITS = [
   { icon: GraduationCap, title: 'Công cụ soạn khóa học', text: 'Video bảo mật, tài liệu PDF, quiz và bài tập code chấm tự động.' },
@@ -32,7 +32,7 @@ function ApplicationForm({ onSubmitted }) {
   const invalid = Object.entries(RULES).some(([k, [min, max]]) => form[k].trim().length < min || form[k].trim().length > max);
   const counter = (k) => {
     const [min] = RULES[k]; const n = form[k].trim().length;
-    return <span className={cn('font-mono text-[10px]', n < min ? 'text-ink-3' : 'text-success')}>{n}/{min}+</span>;
+    return <span className={cn('font-mono text-[11px]', n < min ? 'text-ink-3' : 'text-success')}>{n}/{min}+</span>;
   };
 
   return (
