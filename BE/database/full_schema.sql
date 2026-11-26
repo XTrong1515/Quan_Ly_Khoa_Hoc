@@ -1,4 +1,4 @@
--- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-11-26T16:51:40.842Z
+-- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-11-26T17:46:24.749Z
 -- Sinh lại: npm run db:export-schema · Dựng DB mới: npm run db:setup
 
 
@@ -559,6 +559,27 @@ CREATE TABLE `users` (
   UNIQUE KEY `email` (`email`),
   KEY `idx_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `video_access_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `video_access_logs` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `lesson_id` int NOT NULL,
+  `course_id` int NOT NULL,
+  `source` enum('HLS','MP4') NOT NULL COMMENT 'HLS = lấy khóa giải mã; MP4 = cấp link presigned (video chưa mã hóa xong)',
+  `ip` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_val_user_time` (`user_id`,`created_at`),
+  KEY `idx_val_lesson_time` (`lesson_id`,`created_at`),
+  KEY `fk_val_course` (`course_id`),
+  CONSTRAINT `fk_val_course` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_val_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `lessons` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_val_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Nhật ký cấp quyền phát video — đối chiếu watermark khi nội dung bị lộ';
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `wishlists`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

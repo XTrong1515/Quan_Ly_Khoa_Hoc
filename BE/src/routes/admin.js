@@ -72,6 +72,7 @@ router.post('/users/bulk',            ctrl.adminBulkUsers);
 router.put('/users/:id/status',       ctrl.adminUpdateUserStatus);
 router.put('/users/:id/role',         ctrl.adminUpdateUserRole);
 router.get('/users/:id/enrollments',  ctrl.adminGetUserEnrollments);
+router.get('/video-access',            ctrl.adminListVideoAccess);   // nhật ký xem video (truy vết watermark)
 
 // Đối soát & chi trả doanh thu giảng viên
 const payout = require('../controllers/payoutController');

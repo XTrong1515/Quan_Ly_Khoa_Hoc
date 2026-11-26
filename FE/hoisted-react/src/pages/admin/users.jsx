@@ -2,7 +2,7 @@ import { useState, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, Download, Plus, Lock, Unlock,
-  ChevronDown, ChevronUp, BookOpen, X, Eye, EyeOff,
+  ChevronDown, ChevronUp, BookOpen, X, Eye, EyeOff, PlayCircle, AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
@@ -42,6 +42,15 @@ function useUserEnrollments(userId) {
   return useQuery({
     queryKey: ['admin-user-enrollments', userId],
     queryFn: () => api.get(`/api/admin/users/${userId}/enrollments`).then(r => r.data),
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
+}
+
+function useUserVideoAccess(userId) {
+  return useQuery({
+    queryKey: ['admin-user-video-access', userId],
+    queryFn: () => api.get('/api/admin/video-access', { params: { userId } }).then(r => r.data),
     enabled: !!userId,
     staleTime: 30_000,
   });
@@ -234,7 +243,9 @@ export default function AdminUsersPage() {
                 {expandedId === u.id && (
                   <tr className="bg-bg-2">
                     <td colSpan={8} className="px-4 py-3">
+                      <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-ink-3 mb-2">Khóa học đã đăng ký</p>
                       <UserEnrollmentsPanel userId={u.id} />
+                      <UserVideoAccessPanel userId={u.id} />
                     </td>
                   </tr>
                 )}
@@ -490,6 +501,88 @@ function UserEnrollmentsPanel({ userId }) {
           </span>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ── Nhật ký xem video (truy vết watermark) ─────────────────────── */
+// Watermark trên video hiện "email · #ID": video / ảnh bị phát tán → tra ID ở đây để xem ai, bài nào, lúc nào, IP nào.
+function shortUa(ua) {
+  if (!ua) return '—';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Chrome\//.test(ua) ? 'Chrome'
+    : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Khác';
+  const os = /Windows/.test(ua) ? 'Windows' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS'
+    : /Mac OS/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : '';
+  return os ? `${browser} · ${os}` : browser;
+}
+
+function UserVideoAccessPanel({ userId }) {
+  const { data, isLoading, isError } = useUserVideoAccess(userId);
+  const logs = data?.logs ?? [];
+  const manyIps = (data?.distinctIps ?? 0) >= 3;
+
+  return (
+    <div className="mt-4">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-ink-3">Lịch sử xem video</p>
+        {data && (
+          <span className="font-mono text-[11px] text-ink-3">
+            {data.total} lượt · {data.distinctIps} IP{data.total > logs.length ? ` · hiện ${logs.length} gần nhất` : ''}
+          </span>
+        )}
+        {manyIps && (
+          <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-1.5 rounded-sm border-2 border-edge bg-pop text-pop-ink"
+            title="Xem từ nhiều địa chỉ IP khác nhau — có thể đang dùng chung tài khoản">
+            <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Nhiều IP
+          </span>
+        )}
+      </div>
+
+      {isLoading && <p className="font-mono text-[12px] text-ink-3 py-2">Đang tải...</p>}
+      {isError && <p className="text-[12.5px] text-danger py-2">Không tải được nhật ký xem video.</p>}
+      {!isLoading && !isError && !logs.length && (
+        <p className="font-mono text-[12px] text-ink-3 py-2">// Chưa xem video nào</p>
+      )}
+
+      {logs.length > 0 && (
+        <div className="border-2 border-edge rounded-sm bg-bg overflow-x-auto max-h-72 overflow-y-auto">
+          <table className="w-full text-[12.5px]">
+            <thead className="sticky top-0 bg-bg-2">
+              <tr className="text-left font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3">
+                <th className="px-3 py-1.5 font-bold">Thời điểm</th>
+                <th className="px-3 py-1.5 font-bold">Bài học</th>
+                <th className="px-3 py-1.5 font-bold">Nguồn</th>
+                <th className="px-3 py-1.5 font-bold">IP</th>
+                <th className="px-3 py-1.5 font-bold">Thiết bị</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((l) => (
+                <tr key={l.id} className="border-t border-line">
+                  <td className="px-3 py-1.5 font-mono text-[11.5px] text-ink-2 whitespace-nowrap">
+                    {new Date(l.createdAt).toLocaleString('vi-VN')}
+                  </td>
+                  <td className="px-3 py-1.5 min-w-[220px]">
+                    <span className="flex items-center gap-1.5 text-ink">
+                      <PlayCircle className="w-3.5 h-3.5 text-ink-3 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{l.lessonTitle}</span>
+                    </span>
+                    <span className="block text-[11.5px] text-ink-3 truncate">{l.courseTitle}</span>
+                  </td>
+                  <td className="px-3 py-1.5">
+                    <span className="font-mono text-[11px] font-bold px-1.5 rounded-sm border-2 border-edge bg-bg-1 text-ink-2"
+                      title={l.source === 'HLS' ? 'Lấy khóa giải mã video HLS' : 'Được cấp link MP4 (video chưa mã hóa xong)'}>
+                      {l.source}
+                    </span>
+                  </td>
+                  <td className="px-3 py-1.5 font-mono text-[11.5px] text-ink-2 whitespace-nowrap">{l.ip ?? '—'}</td>
+                  <td className="px-3 py-1.5 text-ink-2 whitespace-nowrap" title={l.userAgent ?? ''}>{shortUa(l.userAgent)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

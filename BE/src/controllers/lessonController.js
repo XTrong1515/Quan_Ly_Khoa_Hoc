@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const storage = require('../utils/storage');
 const hls = require('../services/video/hls');
+const videoAccess = require('../services/video-access');
 
 /**
  * Video chỉ đến từ object storage riêng tư. Link ngoài (YouTube…) không còn được phát: không kiểm soát được
@@ -122,6 +123,11 @@ async function detail(req, res) {
       });
     }
 
+    // Chưa mã hóa HLS xong → cấp link MP4 có hạn: ghi nhật ký xem (HLS thì ghi lúc lấy khóa giải mã)
+    if (lesson.video_key && lesson.hls_status !== 'READY') {
+      await videoAccess.logFromRequest(req, { lessonId: lesson.id, source: 'MP4' });
+    }
+
     return res.json({
       lesson: {
         id: lesson.id,
@@ -207,8 +213,11 @@ async function hlsKey(req, res) {
   try {
     const [[lesson]] = await pool.query('SELECT hls_status, hls_key FROM lessons WHERE id = ?', [parseInt(req.params.id, 10)]);
     if (lesson?.hls_status !== 'READY' || !lesson.hls_key) return res.status(404).json({ message: 'Không có khóa' });
+    const key = hls.openKey(lesson.hls_key);
+    // Lấy khóa giải mã = thực sự bắt đầu phát → ghi nhật ký xem (đối chiếu watermark khi video bị lộ)
+    await videoAccess.logFromRequest(req, { lessonId: parseInt(req.params.id, 10), source: 'HLS' });
     res.set({ 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-store, private' });
-    return res.send(hls.openKey(lesson.hls_key));
+    return res.send(key);
   } catch (err) {
     console.error('[lessons/hls/key]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });

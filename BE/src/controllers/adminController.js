@@ -940,6 +940,52 @@ async function adminGetUserEnrollments(req, res) {
   }
 }
 
+/**
+ * GET /api/admin/video-access?userId=&lessonId=&from=YYYY-MM-DD&to=YYYY-MM-DD&page=
+ * Nhật ký xem video — tra theo người (ID trên watermark) hoặc theo bài + khoảng ngày (video bị lộ: ai đã xem?).
+ */
+async function adminListVideoAccess(req, res) {
+  const iso = /^\d{4}-\d{2}-\d{2}$/;
+  const userId   = parseInt(req.query.userId, 10);
+  const lessonId = parseInt(req.query.lessonId, 10);
+  const page     = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit    = 50;
+  const wheres = []; const params = [];
+  if (userId)   { wheres.push('v.user_id = ?');   params.push(userId); }
+  if (lessonId) { wheres.push('v.lesson_id = ?'); params.push(lessonId); }
+  if (iso.test(req.query.from ?? '')) { wheres.push('v.created_at >= ?'); params.push(req.query.from); }
+  if (iso.test(req.query.to ?? ''))   { wheres.push('v.created_at < DATE_ADD(?, INTERVAL 1 DAY)'); params.push(req.query.to); }
+  if (!wheres.length) return res.status(400).json({ message: 'Cần lọc theo người dùng, bài học hoặc khoảng ngày' });
+  const where = `WHERE ${wheres.join(' AND ')}`;
+  try {
+    const [[{ total, distinctIps, distinctUsers }]] = await pool.query(
+      `SELECT COUNT(*) AS total, COUNT(DISTINCT v.ip) AS distinctIps, COUNT(DISTINCT v.user_id) AS distinctUsers
+       FROM video_access_logs v ${where}`,
+      params,
+    );
+    const [logs] = await pool.query(
+      `SELECT v.id, v.created_at AS createdAt, v.source, v.ip, v.user_agent AS userAgent,
+              v.user_id AS userId, u.email AS userEmail, u.full_name AS userName,
+              v.lesson_id AS lessonId, l.title AS lessonTitle, v.course_id AS courseId, c.title AS courseTitle
+       FROM video_access_logs v
+       JOIN users u   ON u.id = v.user_id
+       JOIN lessons l ON l.id = v.lesson_id
+       JOIN courses c ON c.id = v.course_id
+       ${where}
+       ORDER BY v.created_at DESC, v.id DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, (page - 1) * limit],
+    );
+    return res.json({
+      logs, page, total: Number(total), totalPages: Math.max(1, Math.ceil(Number(total) / limit)),
+      distinctIps: Number(distinctIps), distinctUsers: Number(distinctUsers),
+    });
+  } catch (err) {
+    console.error('[admin/video-access]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
 async function adminUpdateUserStatus(req, res) {
   const id = parseInt(req.params.id, 10);
   const { status } = req.body;
@@ -1255,7 +1301,7 @@ module.exports = {
   adminListLessons, adminCreateLesson, adminUpdateLesson, adminReorderLessons, adminDeleteLesson, adminSetLessonVisibility,
   adminListCategories, adminCreateCategory, adminUpdateCategory, adminDeleteCategory,
   adminListUsers, adminCreateUser, adminUpdateUserStatus, adminUpdateUserRole,
-  adminBulkUsers, adminExportUsers, adminGetUserEnrollments,
+  adminBulkUsers, adminExportUsers, adminGetUserEnrollments, adminListVideoAccess,
   adminListOrders, adminExportOrders, adminGetOrder, adminCancelOrder, adminConfirmOrder,
   adminListReviews, adminUpdateReviewStatus,
 };
