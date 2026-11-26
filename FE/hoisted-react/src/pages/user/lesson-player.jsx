@@ -122,7 +122,8 @@ export default function LessonPlayerPage() {
     // Mỗi lần tải lại là 1 presigned URL mới → trình phát nạp lại video. Không refetch khi quay lại tab;
     // link hết hạn đã có handleVideoError (MP4) / HlsPlayer tự xử lý
     refetchOnWindowFocus: false,
-    retry: (failCount, err) => err?.response?.status !== 403 && failCount < 2,
+    // 403 (chưa đăng ký) / 404 (bài đã bị gỡ hoặc ẩn) thử lại cũng vậy → báo ngay, không treo khung tải ~3 s
+    retry: (failCount, err) => ![403, 404].includes(err?.response?.status) && failCount < 2,
   });
 
   // Cùng query key với ExerciseWorkspace → dùng chung cache
@@ -728,6 +729,13 @@ function SidebarSection({ section, currentLessonId, onSelect }) {
                   )}>
                     {l.title}
                   </span>
+                  {/* Chỉ admin / giảng viên sở hữu nhận được bài đã ẩn trong mục lục */}
+                  {l.hidden && (
+                    <span className="font-mono text-[11px] font-bold px-1 rounded-sm border-2 border-edge bg-bg-3 text-ink-2 uppercase shrink-0"
+                      title="Học viên không thấy bài này">
+                      Ẩn
+                    </span>
+                  )}
                   {l.durationMinutes > 0 && (
                     <span className="font-mono text-[11px] text-ink-3 tabular-nums shrink-0">
                       {l.durationMinutes}m

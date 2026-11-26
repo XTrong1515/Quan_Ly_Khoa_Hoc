@@ -138,7 +138,7 @@ async function detail(req, res) {
                 l.duration_minutes, l.is_preview
          FROM lessons l
          LEFT JOIN course_sections cs ON cs.id = l.section_id
-         WHERE l.course_id = ? ORDER BY l.order_index ASC`,
+         WHERE l.course_id = ? AND l.hidden_at IS NULL ORDER BY l.order_index ASC`,
         [course.id],
       ),
       pool.query(

@@ -1,4 +1,4 @@
--- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-11-22T08:03:32.813Z
+-- Hoisted — cấu trúc CSDL đầy đủ, sinh từ DB "course_mng" lúc 2026-11-26T16:51:40.842Z
 -- Sinh lại: npm run db:export-schema · Dựng DB mới: npm run db:setup
 
 
@@ -324,9 +324,11 @@ CREATE TABLE `lessons` (
   `attachment_key` varchar(500) DEFAULT NULL,
   `attachment_name` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `hidden_at` datetime DEFAULT NULL COMMENT 'NULL = hiển thị; có giá trị = đã ẩn với học viên (xóa mềm)',
   PRIMARY KEY (`id`),
   KEY `section_id` (`section_id`),
   KEY `idx_course` (`course_id`,`order_index`),
+  KEY `idx_lessons_course_hidden` (`course_id`,`hidden_at`),
   CONSTRAINT `lessons_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE,
   CONSTRAINT `lessons_ibfk_2` FOREIGN KEY (`section_id`) REFERENCES `course_sections` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

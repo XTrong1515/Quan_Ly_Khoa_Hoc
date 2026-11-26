@@ -40,7 +40,9 @@ router.get('/courses/:courseId/lessons',  requireOwnership('course', 'courseId')
 router.post('/courses/:courseId/lessons', requireOwnership('course', 'courseId'), editable, ctrl.requireOwnSection, admin.adminCreateLesson);
 router.put('/lessons/reorder',            requireLessonsOwnership, admin.adminReorderLessons);
 router.put('/lessons/:id',                ownLesson, editable, ctrl.requireOwnSection, admin.adminUpdateLesson);
-router.delete('/lessons/:id',             ownLesson, editable, ctrl.requireNoStudents, admin.adminDeleteLesson);
+// Xóa thật chỉ khi bài chưa có dữ liệu học viên (adminDeleteLesson kiểm tra) — có rồi thì ẩn bài
+router.delete('/lessons/:id',             ownLesson, editable, admin.adminDeleteLesson);
+router.put('/lessons/:id/visibility',     ownLesson, editable, admin.adminSetLessonVisibility);
 
 // Bài tập lập trình
 router.get('/lessons/:id/exercise',           ownLesson, exercise.getForAuthor);

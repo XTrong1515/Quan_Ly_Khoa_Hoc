@@ -10,7 +10,7 @@ async function updateProgress(req, res) {
     const [rows] = await pool.query(
       `SELECT e.id FROM enrollments e
        JOIN lessons l ON l.course_id = e.course_id
-       WHERE e.user_id = ? AND l.id = ?
+       WHERE e.user_id = ? AND l.id = ? AND l.hidden_at IS NULL
        LIMIT 1`,
       [userId, lessonId],
     );
@@ -61,7 +61,7 @@ async function completeLesson(userId, lessonId) {
   const [enrollRows] = await pool.query(
     `SELECT e.id, e.course_id FROM enrollments e
      JOIN lessons l ON l.course_id = e.course_id
-     WHERE e.user_id = ? AND l.id = ?
+     WHERE e.user_id = ? AND l.id = ? AND l.hidden_at IS NULL
      LIMIT 1`,
     [userId, lessonId],
   );
@@ -79,12 +79,12 @@ async function completeLesson(userId, lessonId) {
     [enrollmentId, lessonId],
   );
 
-  // Recalculate enrollment progress
+  // Recalculate enrollment progress — chỉ tính bài đang hiển thị (bài đã ẩn không vào tử lẫn mẫu)
   const [countRows] = await pool.query(
     `SELECT
-       (SELECT COUNT(*) FROM lessons WHERE course_id = ?) AS total,
-       (SELECT COUNT(*) FROM lesson_progress lp
-        WHERE lp.enrollment_id = ? AND lp.is_completed = 1) AS completed`,
+       (SELECT COUNT(*) FROM lessons WHERE course_id = ? AND hidden_at IS NULL) AS total,
+       (SELECT COUNT(*) FROM lesson_progress lp JOIN lessons l ON l.id = lp.lesson_id
+        WHERE lp.enrollment_id = ? AND lp.is_completed = 1 AND l.hidden_at IS NULL) AS completed`,
     [courseId, enrollmentId],
   );
 

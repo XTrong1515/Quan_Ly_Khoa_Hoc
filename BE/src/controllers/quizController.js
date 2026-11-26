@@ -250,12 +250,13 @@ async function submitAttempt(req, res) {
     // Kết quả trả về chứa đáp án đúng, và lượt làm chặn việc xóa bài học → chỉ học viên của khóa mới được nộp.
     // Admin / giảng viên sở hữu được chấm thử nhưng không lưu lượt làm.
     const [[access]] = await pool.query(
-      `SELECT c.instructor_id AS ownerId,
+      `SELECT c.instructor_id AS ownerId, l.hidden_at AS hiddenAt,
               (SELECT e.id FROM enrollments e WHERE e.course_id = c.id AND e.user_id = ? LIMIT 1) AS enrollmentId
        FROM lessons l JOIN courses c ON c.id = l.course_id WHERE l.id = ?`,
       [userId, quizRow.lesson_id],
     );
     const isStaff = req.user.role === 'ADMIN' || (req.user.role === 'INSTRUCTOR' && access.ownerId === userId);
+    if (access.hiddenAt && !isStaff) return res.status(404).json({ message: 'Quiz không tồn tại' });
     if (!access.enrollmentId && !isStaff) {
       return res.status(403).json({ message: 'Bạn chưa đăng ký khóa học này' });
     }

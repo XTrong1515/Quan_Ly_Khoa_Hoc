@@ -18,7 +18,7 @@ async function myEnrollments(req, res) {
          (SELECT l.id
           FROM lessons l
           LEFT JOIN lesson_progress lp ON lp.lesson_id = l.id AND lp.enrollment_id = e.id
-          WHERE l.course_id = c.id
+          WHERE l.course_id = c.id AND l.hidden_at IS NULL
             AND (lp.is_completed IS NULL OR lp.is_completed = 0)
           ORDER BY l.order_index ASC
           LIMIT 1
@@ -27,7 +27,7 @@ async function myEnrollments(req, res) {
        JOIN courses c ON c.id = e.course_id
        WHERE e.user_id = ? ${condition}
          -- Khóa đã lưu trữ mà không còn bài học nào thì không còn gì để học → ẩn (khóa lưu trữ còn nội dung vẫn hiện cho người đã mua)
-         AND NOT (c.status = 'ARCHIVED' AND NOT EXISTS (SELECT 1 FROM lessons l2 WHERE l2.course_id = c.id))
+         AND NOT (c.status = 'ARCHIVED' AND NOT EXISTS (SELECT 1 FROM lessons l2 WHERE l2.course_id = c.id AND l2.hidden_at IS NULL))
        ORDER BY e.enrolled_at DESC`,
       [userId],
     );

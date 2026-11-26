@@ -14,7 +14,7 @@ async function loadLessonContext(user, lessonId) {
   const id = parseInt(lessonId, 10);
   if (!id) return null;
   const [[row]] = await pool.query(
-    `SELECT l.id, l.title, l.content, l.is_preview, l.course_id,
+    `SELECT l.id, l.title, l.content, l.is_preview, l.hidden_at, l.course_id,
             c.title AS courseTitle, c.instructor_id, c.status AS courseStatus, s.title AS sectionTitle
      FROM lessons l
      JOIN courses c ON c.id = l.course_id
@@ -25,6 +25,7 @@ async function loadLessonContext(user, lessonId) {
   if (!row) return null;
 
   const staff = user.role === 'ADMIN' || (user.role === 'INSTRUCTOR' && row.instructor_id === user.id);
+  if (row.hidden_at && !staff) return null; // bài đã ẩn với học viên
   const preview = row.is_preview && row.courseStatus === 'PUBLISHED';
   if (!staff && !preview) {
     const [[enrolled]] = await pool.query(

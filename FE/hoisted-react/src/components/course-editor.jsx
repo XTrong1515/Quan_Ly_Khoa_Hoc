@@ -5,12 +5,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Plus, Edit2, Trash2, X, ChevronDown, ChevronUp,
-  GripVertical, ImageIcon, Link2, Upload, ListChecks, Code2, Loader2,
+  GripVertical, ImageIcon, Link2, Upload, ListChecks, Code2, Loader2, Eye, EyeOff,
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { Dialog, confirmDiscard } from '@/components/ui/dialog.jsx';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog.jsx';
 import { api, apiMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { RichContent } from '@/components/rich-content.jsx';
@@ -80,6 +81,9 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
   const [quizLesson, setQuizLesson] = useState(null);
   const [exerciseLesson, setExerciseLesson] = useState(null);
   const [dragOver, setDragOver]     = useState(null);
+  // Xóa bài: bước 1 xác nhận xóa; nếu bài đã có học viên học (409) → bước 2 đề nghị ẩn bài thay vì xóa
+  const [confirmDelete, setConfirmDelete] = useState(null);   // lesson
+  const [offerHide, setOfferHide]         = useState(null);   // { lesson, learners }
   const dragSrc = useRef(null);
 
   const { data, isLoading } = useQuery({
@@ -101,9 +105,28 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
     : [{ id: null, title: null, items: lessons }];
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => api.delete(`${apiBase}/lessons/${id}`),
-    onSuccess: () => { toast.success('Đã xóa bài học'); lessonsChanged(); },
-    onError: (err) => toast.error(apiMessage(err, 'Chưa xóa được bài học. Thử lại sau giây lát.')),
+    mutationFn: (lesson) => api.delete(`${apiBase}/lessons/${lesson.id}`),
+    onSuccess: () => { setConfirmDelete(null); toast.success('Đã xóa bài học'); lessonsChanged(); },
+    onError: (err, lesson) => {
+      setConfirmDelete(null);
+      const body = err.response?.data;
+      if (err.response?.status === 409 && body?.code === 'LESSON_HAS_LEARNER_DATA') {
+        if (body.hidden) toast.info(`Không xóa được: ${body.learners ?? 'đã có'} học viên đã học bài này. Bài đang ẩn với học viên và lịch sử của họ được giữ.`);
+        else setOfferHide({ lesson, learners: body.learners });
+        return;
+      }
+      toast.error(apiMessage(err, 'Chưa xóa được bài học. Thử lại sau giây lát.'));
+    },
+  });
+
+  const visibilityMutation = useMutation({
+    mutationFn: ({ lesson, hidden }) => api.put(`${apiBase}/lessons/${lesson.id}/visibility`, { hidden }),
+    onSuccess: (_res, { hidden }) => {
+      setOfferHide(null);
+      toast.success(hidden ? 'Đã ẩn bài học với học viên' : 'Bài học hiển thị lại với học viên');
+      lessonsChanged();
+    },
+    onError: (err) => toast.error(apiMessage(err, 'Chưa đổi được trạng thái hiển thị của bài học. Thử lại sau giây lát.')),
   });
 
   const reorderMutation = useMutation({
@@ -198,9 +221,16 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                   {String(l.order_index).padStart(2, '0')}
                 </span>
                 {/* min-w-0: thiếu thì ở màn hẹp tên bài bị ép về 0 px bởi các nhãn và nút bên phải */}
-                <span className={cn('flex-1 min-w-0 text-[13px] truncate', l.is_preview ? 'text-accent' : 'text-ink')}>
+                <span className={cn('flex-1 min-w-0 text-[13px] truncate',
+                  l.hidden_at ? 'text-ink-3 line-through decoration-ink-3/60' : l.is_preview ? 'text-accent' : 'text-ink')}>
                   {l.title}
                 </span>
+                {l.hidden_at && (
+                  <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-1.5 py-px rounded-sm border-2 border-edge bg-bg-3 text-ink-2 uppercase shrink-0"
+                    title="Học viên không thấy bài này; tiến độ, quiz, bài nộp và thảo luận cũ vẫn được giữ">
+                    <EyeOff className="w-3 h-3" aria-hidden="true" /> Đã ẩn
+                  </span>
+                )}
                 {!!l.is_preview && (
                   <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-accent text-accent-ink ring-2 ring-inset ring-edge uppercase shrink-0">
                     Xem thử
@@ -239,9 +269,15 @@ export function CurriculumPanel({ apiBase, courseId, courseTitle }) {
                     <Code2 className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => { if (window.confirm(`Xóa bài học "${l.title}"?
-
-Video, tài liệu, quiz, bài tập, thảo luận và tiến độ của học viên trong bài này sẽ bị xóa vĩnh viễn. Không xóa được nếu quiz của bài đã có học viên làm.`)) deleteMutation.mutate(l.id); }}
+                    onClick={() => visibilityMutation.mutate({ lesson: l, hidden: !l.hidden_at })}
+                    disabled={visibilityMutation.isPending}
+                    title={l.hidden_at ? 'Hiện lại với học viên' : 'Ẩn với học viên'}
+                    aria-label={l.hidden_at ? `Hiện lại bài học "${l.title}"` : `Ẩn bài học "${l.title}"`}
+                    className="p-1.5 rounded hover:bg-bg-3 text-ink-3 hover:text-ink disabled:opacity-40 transition-colors">
+                    {l.hidden_at ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(l)}
                     title="Xóa bài học" aria-label={`Xóa bài học "${l.title}"`}
                     className="p-1 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
@@ -262,6 +298,39 @@ Video, tài liệu, quiz, bài tập, thảo luận và tiến độ của học
 
       {exerciseLesson && (
         <ExerciseEditorModal apiBase={apiBase} lesson={exerciseLesson} onClose={() => setExerciseLesson(null)} />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Xóa bài học?"
+          confirmLabel="Xóa vĩnh viễn"
+          destructive
+          pending={deleteMutation.isPending}
+          onClose={() => setConfirmDelete(null)}
+          onConfirm={() => deleteMutation.mutate(confirmDelete)}>
+          <p>
+            <b className="text-ink">"{confirmDelete.title}"</b> cùng video, tài liệu, quiz và bài tập của nó sẽ bị xóa vĩnh viễn.
+          </p>
+          <p className="mt-2">Nếu đã có học viên học bài này, hệ thống sẽ không xóa mà đề nghị ẩn bài để giữ lịch sử của họ.</p>
+        </ConfirmDialog>
+      )}
+
+      {offerHide && (
+        <ConfirmDialog
+          title="Ẩn bài thay vì xóa?"
+          confirmLabel="Ẩn bài học"
+          pending={visibilityMutation.isPending}
+          onClose={() => setOfferHide(null)}
+          onConfirm={() => visibilityMutation.mutate({ lesson: offerHide.lesson, hidden: true })}>
+          <p>
+            <b className="text-ink">{offerHide.learners} học viên</b> đã học <b className="text-ink">"{offerHide.lesson.title}"</b>{' '}
+            (tiến độ, quiz, bài nộp hoặc thảo luận) nên không xóa được.
+          </p>
+          <p className="mt-2">
+            Ẩn bài: học viên không thấy bài này nữa và nó không tính vào tiến độ khóa học. Lịch sử của họ vẫn được giữ,
+            bạn có thể hiện lại bất cứ lúc nào.
+          </p>
+        </ConfirmDialog>
       )}
 
       {quizLesson && (

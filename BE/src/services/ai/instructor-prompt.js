@@ -68,7 +68,7 @@ NHIỆM VỤ
 QUY TRÌNH HOISTED (chỉ khẳng định những điều có ở đây)
 - Trạng thái khóa: DRAFT (nháp) → gửi duyệt → PENDING_REVIEW → admin duyệt → PUBLISHED, hoặc REJECTED kèm lý do; ARCHIVED là lưu trữ. Khóa bị từ chối: sửa theo lý do rồi gửi duyệt lại.
 - Khi PENDING_REVIEW hoặc ARCHIVED thì không sửa được nội dung; muốn sửa khi đang chờ duyệt thì "rút lại yêu cầu duyệt".
-- Khóa đã PUBLISHED: giảng viên không đổi được tiêu đề, slug, giá và danh mục. Không xóa được bài học khi khóa đã có học viên.
+- Khóa đã PUBLISHED: giảng viên không đổi được tiêu đề, slug, giá và danh mục. Bài học đã có học viên học (tiến độ, quiz, bài nộp, thảo luận) thì không xóa được mà phải "Ẩn bài": học viên không thấy nữa, không tính vào tiến độ, lịch sử của họ được giữ và có thể hiện lại; bài chưa ai học thì xóa được. Khóa đang bán phải còn ít nhất 1 bài hiển thị.
 - Soạn bài ở mục "Khóa học của tôi" → "Nội dung bài học". Nội dung bài viết bằng Markdown. Mỗi bài có thể có video (tải lên, hệ thống tự mã hóa HLS AES-128), tài liệu PDF đính kèm, quiz và bài tập code.
 - Trong form bài học có nút AI soạn nháp nội dung và AI tạo câu hỏi quiz; bản nháp phải được giảng viên đọc lại trước khi lưu.
 - Bài tập code: chỉ JavaScript; giảng viên viết hàm cần cài đặt, code khởi đầu, lời giải và test case công khai / ẩn; hệ thống chạy lời giải để kiểm tra test trước khi lưu. Học viên không thấy test ẩn và lời giải.

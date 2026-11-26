@@ -2,12 +2,13 @@ import { useState, useRef, useEffect, Fragment } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Search, Edit2, Trash2, X, ChevronDown, ChevronUp,
-  GripVertical, Download, Star, Check, Ban,
+  Plus, Search, Edit2, X, ChevronDown, ChevronUp,
+  GripVertical, Download, Star, Check, Ban, Archive,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { Dialog, confirmDiscard } from '@/components/ui/dialog.jsx';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog.jsx';
 import { StatusBadge } from '@/components/ui/status-badge.jsx';
 import {
   CourseBadge, CurriculumPanel, CourseModal, inputCls,
@@ -53,6 +54,7 @@ export default function AdminCoursesPage() {
   const [sort, setSort]         = useState('manual');
   const [page, setPage]         = useState(1);
   const [modal, setModal]       = useState(null);
+  const [archiveTarget, setArchiveTarget] = useState(null); // khóa đang hỏi xác nhận ngừng bán
   const [rejecting, setRejecting] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
@@ -70,13 +72,14 @@ export default function AdminCoursesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/api/admin/courses/${id}`),
     onSuccess: () => {
-      toast.success('Đã chuyển khóa học sang Lưu trữ');
+      setArchiveTarget(null);
+      toast.success('Đã ngừng bán khóa học — học viên đã mua vẫn học tiếp');
       qc.invalidateQueries({ queryKey: ['admin-courses'] });
       qc.invalidateQueries({ queryKey: ['home'] });
       qc.invalidateQueries({ queryKey: ['courses'] });
       qc.invalidateQueries({ queryKey: ['course'] });
     },
-    onError: (err) => toast.error(apiMessage(err, 'Chưa lưu trữ được khóa học. Thử lại sau giây lát.')),
+    onError: (err) => toast.error(apiMessage(err, 'Chưa ngừng bán được khóa học. Thử lại sau giây lát.')),
   });
 
   const approveMutation = useMutation({
@@ -294,14 +297,14 @@ export default function AdminCoursesPage() {
                         title="Chỉnh sửa">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => { if (window.confirm(`Lưu trữ "${c.title}"?
-
-Khóa học bị gỡ khỏi trang công khai và chuyển sang trạng thái Lưu trữ. Không áp dụng được với khóa đã có học viên.`)) deleteMutation.mutate(c.id); }}
-                        className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors"
-                        title="Lưu trữ khóa học" aria-label={`Lưu trữ khóa học "${c.title}"`}>
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {c.status !== 'ARCHIVED' && (
+                        <button
+                          onClick={() => setArchiveTarget(c)}
+                          className="p-1.5 rounded hover:bg-danger/10 text-ink-3 hover:text-danger transition-colors"
+                          title="Ngừng bán" aria-label={`Ngừng bán khóa học "${c.title}"`}>
+                          <Archive className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -323,6 +326,26 @@ Khóa học bị gỡ khỏi trang công khai và chuyển sang trạng thái L�
       <Pagination page={page} totalPages={totalPages} onPage={setPage} />
 
       {/* Modal */}
+      {archiveTarget && (
+        <ConfirmDialog
+          title="Ngừng bán khóa học?"
+          confirmLabel="Ngừng bán"
+          destructive
+          pending={deleteMutation.isPending}
+          onClose={() => setArchiveTarget(null)}
+          onConfirm={() => deleteMutation.mutate(archiveTarget.id)}>
+          <p>
+            <b className="text-ink">"{archiveTarget.title}"</b> bị gỡ khỏi trang công khai và không ai mua được nữa
+            (trạng thái Lưu trữ).
+          </p>
+          <p className="mt-2">
+            {archiveTarget.student_count > 0
+              ? <>{archiveTarget.student_count} học viên đã mua <b className="text-ink">vẫn học tiếp</b> bình thường. Đơn hàng, doanh thu và đánh giá được giữ nguyên.</>
+              : 'Đơn hàng, doanh thu và đánh giá được giữ nguyên. Có thể đổi trạng thái lại trong mục Chỉnh sửa.'}
+          </p>
+        </ConfirmDialog>
+      )}
+
       {modal && (
         <CourseModal
           apiBase={API}

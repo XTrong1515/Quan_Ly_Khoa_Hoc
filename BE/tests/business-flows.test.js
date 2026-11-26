@@ -393,12 +393,17 @@ describe('Vòng đời khóa học', () => {
     expect((await request(app).post(`/api/instructor/courses/${course.id}/withdraw`).set(H(teacher))).status).toBe(409);
   });
 
-  it('khóa có học viên: giảng viên không xóa được bài học, vẫn sửa được', async () => {
+  it('khóa có học viên: bài đã có người học thì không xóa được (gợi ý ẩn), vẫn sửa được', async () => {
     const student = await createUser();
     const course = await createCourse({ instructor: teacher, status: 'PUBLISHED' });
     const lesson = await createLesson(course.id);
+    await createLesson(course.id);
     await enroll(student, course.id);
-    expect((await request(app).delete(`/api/instructor/lessons/${lesson.id}`).set(H(teacher))).status).toBe(409);
+    const [[{ id: enrollmentId }]] = await pool.query('SELECT id FROM enrollments WHERE user_id = ? AND course_id = ?', [student.id, course.id]);
+    await pool.query('INSERT INTO lesson_progress (enrollment_id, lesson_id, is_completed) VALUES (?, ?, 1)', [enrollmentId, lesson.id]);
+    const res = await request(app).delete(`/api/instructor/lessons/${lesson.id}`).set(H(teacher));
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('LESSON_HAS_LEARNER_DATA');
     expect((await editLesson(lesson.id)).status).toBe(200);
   });
 

@@ -145,12 +145,12 @@ async function submitMyCourse(req, res) {
   }
 
   try {
-    const [[{ lessons }]] = await pool.query('SELECT COUNT(*) AS lessons FROM lessons WHERE course_id = ?', [courseId]);
+    const [[{ lessons }]] = await pool.query('SELECT COUNT(*) AS lessons FROM lessons WHERE course_id = ? AND hidden_at IS NULL', [courseId]);
     if (!lessons) return res.status(400).json({ message: 'Khóa học cần ít nhất 1 bài học trước khi gửi duyệt' });
     // Bài rỗng (không nội dung, không video) không được gửi duyệt — nêu tên bài để giảng viên biết sửa đâu
     const [empty] = await pool.query(
       `SELECT title FROM lessons
-       WHERE course_id = ? AND video_key IS NULL AND (content IS NULL OR TRIM(content) = '')
+       WHERE course_id = ? AND hidden_at IS NULL AND video_key IS NULL AND (content IS NULL OR TRIM(content) = '')
        ORDER BY order_index, id`,
       [courseId],
     );
@@ -201,20 +201,6 @@ async function withdrawMyCourse(req, res) {
   }
 }
 
-/* ── Học viên đã mua khóa thì giảng viên không được xóa bớt bài học ── */
-async function requireNoStudents(req, res, next) {
-  try {
-    const [rows] = await pool.query('SELECT id FROM enrollments WHERE course_id = ? LIMIT 1', [req.course.courseId]);
-    if (rows.length) {
-      return res.status(409).json({ message: 'Khóa học đã có học viên nên không thể xóa bài học. Hãy sửa nội dung bài, hoặc liên hệ quản trị viên.' });
-    }
-    next();
-  } catch (err) {
-    console.error('[instructor/no-students]', err);
-    return res.status(500).json({ message: 'Lỗi máy chủ' });
-  }
-}
-
 /* ── Bài học: section phải thuộc đúng khóa học ────────────────── */
 async function requireOwnSection(req, res, next) {
   const { sectionId } = req.body ?? {};
@@ -233,5 +219,5 @@ async function requireOwnSection(req, res, next) {
 
 module.exports = {
   dashboard, listMyCourses, createMyCourse, updateMyCourse, deleteMyCourse, submitMyCourse, withdrawMyCourse,
-  requireOwnSection, requireNoStudents,
+  requireOwnSection,
 };

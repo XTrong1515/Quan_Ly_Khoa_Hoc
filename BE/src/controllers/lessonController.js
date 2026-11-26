@@ -29,7 +29,7 @@ async function preview(req, res) {
               c.title AS courseTitle, c.slug AS courseSlug
        FROM lessons l
        JOIN courses c ON c.id = l.course_id
-       WHERE l.id = ? AND c.status = 'PUBLISHED'`,
+       WHERE l.id = ? AND c.status = 'PUBLISHED' AND l.hidden_at IS NULL`,
       [lessonId],
     );
 
@@ -88,15 +88,16 @@ async function detail(req, res) {
     const [sectionRows] = await pool.query(
       `SELECT cs.id AS sectionId, cs.title AS sectionTitle, cs.order_index AS sectionOrder,
               l.id AS lessonId, l.title AS lessonTitle, l.duration_minutes,
-              l.order_index, l.is_preview,
+              l.order_index, l.is_preview, l.hidden_at,
               COALESCE(lp.is_completed, 0) AS isCompleted
        FROM lessons l
        LEFT JOIN course_sections cs ON cs.id = l.section_id AND cs.course_id = l.course_id
        LEFT JOIN lesson_progress lp
          ON lp.lesson_id = l.id AND lp.enrollment_id = ?
-       WHERE l.course_id = ?
+       WHERE l.course_id = ? AND (? OR l.hidden_at IS NULL)
        ORDER BY cs.id IS NULL, cs.order_index ASC, l.order_index ASC, l.id ASC`,
-      [enrollmentId ?? 0, courseId],
+      // Bài đã ẩn: học viên không thấy; admin / giảng viên sở hữu vẫn thấy (kèm cờ hidden) để kiểm tra
+      [enrollmentId ?? 0, courseId, req.staffView ? 1 : 0],
     );
 
     const sectionsMap = new Map(); // Map giữ thứ tự chèn (đã ORDER BY) — section null nằm cuối
@@ -117,6 +118,7 @@ async function detail(req, res) {
         orderIndex: row.order_index,
         isPreview: !!row.is_preview,
         isCompleted: !!row.isCompleted,
+        hidden: !!row.hidden_at,
       });
     }
 

@@ -28,6 +28,7 @@ router.post('/courses/:courseId/lessons', ctrl.adminCreateLesson);
 router.put('/lessons/reorder',            ctrl.adminReorderLessons);
 router.put('/lessons/:id',                ctrl.adminUpdateLesson);
 router.delete('/lessons/:id',             ctrl.adminDeleteLesson);
+router.put('/lessons/:id/visibility',     ctrl.adminSetLessonVisibility);
 
 // Video / tài liệu trên object storage (requireOwnership: admin bypass, chỉ để lấy courseId)
 const media = require('../controllers/mediaController');

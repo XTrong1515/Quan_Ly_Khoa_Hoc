@@ -2,7 +2,7 @@
  * Đồng bộ số liệu khóa học với dữ liệu thật (chạy lại nhiều lần không sao):
  *   - rating / review_count   ← đánh giá VISIBLE
  *   - student_count           ← số enrollment
- *   - total_lessons / total_duration_minutes ← bài học hiện có
+ *   - total_lessons / total_duration_minutes ← bài học hiện có (không tính bài đã ẩn)
  *   - (chỉ khi có --dedupe-sections) xóa section RỖNG bị trùng tên với section khác cùng khóa (do chạy seed 2 lần)
  * Dữ liệu mẫu ban đầu (schema.sql) ghi sẵn số giả kiểu "847 đánh giá · 12.441 học viên" — script này thay bằng số thật.
  *
@@ -40,8 +40,8 @@ async function run() {
         rating = COALESCE((SELECT ROUND(AVG(r.rating), 2) FROM reviews r WHERE r.course_id = c.id AND r.status = 'VISIBLE'), 0),
         review_count = (SELECT COUNT(*) FROM reviews r WHERE r.course_id = c.id AND r.status = 'VISIBLE'),
         student_count = (SELECT COUNT(*) FROM enrollments e WHERE e.course_id = c.id),
-        total_lessons = (SELECT COUNT(*) FROM lessons l WHERE l.course_id = c.id),
-        total_duration_minutes = (SELECT COALESCE(SUM(l.duration_minutes), 0) FROM lessons l WHERE l.course_id = c.id)
+        total_lessons = (SELECT COUNT(*) FROM lessons l WHERE l.course_id = c.id AND l.hidden_at IS NULL),
+        total_duration_minutes = (SELECT COALESCE(SUM(l.duration_minutes), 0) FROM lessons l WHERE l.course_id = c.id AND l.hidden_at IS NULL)
     `);
 
     await conn.commit();

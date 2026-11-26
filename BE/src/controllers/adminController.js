@@ -363,7 +363,7 @@ async function adminUpdateCourse(req, res) {
     if (req.body.status === 'PUBLISHED') {
       // Khóa đang bán thì sửa thông tin vẫn được; chỉ chặn việc đưa khóa rỗng lên bán
       const [[current]] = await pool.query(
-        'SELECT status, (SELECT COUNT(*) FROM lessons WHERE course_id = ?) AS lessons FROM courses WHERE id = ?', [id, id],
+        'SELECT status, (SELECT COUNT(*) FROM lessons WHERE course_id = ? AND hidden_at IS NULL) AS lessons FROM courses WHERE id = ?', [id, id],
       );
       if (current && current.status !== 'PUBLISHED' && !current.lessons) {
         return res.status(400).json({ message: 'Khóa học cần ít nhất 1 bài học trước khi xuất bản' });
@@ -385,13 +385,16 @@ async function adminUpdateCourse(req, res) {
   }
 }
 
+/**
+ * "Xóa" khóa học = ngừng bán (ARCHIVED), không xóa dữ liệu: khóa biến khỏi danh mục và không mua được nữa,
+ * người đã mua vẫn học tiếp (xem enrollmentController / requireEnrollment). Đơn hàng, doanh thu, đánh giá giữ nguyên.
+ */
 async function adminDeleteCourse(req, res) {
   const id = parseInt(req.params.id, 10);
   try {
-    const [enrollRows] = await pool.query('SELECT id FROM enrollments WHERE course_id = ? LIMIT 1', [id]);
-    if (enrollRows.length) return res.status(409).json({ message: 'Không thể xóa: khóa học đã có học viên đăng ký' });
+    const [[{ students }]] = await pool.query('SELECT COUNT(*) AS students FROM enrollments WHERE course_id = ?', [id]);
     await pool.query("UPDATE courses SET status = 'ARCHIVED' WHERE id = ?", [id]);
-    return res.json({ ok: true });
+    return res.json({ ok: true, status: 'ARCHIVED', students });
   } catch (err) {
     console.error('[admin/courses/delete]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
@@ -441,21 +444,27 @@ const adminRejectCourse  = (req, res) => _reviewCourse(req, res, 'REJECTED');
 async function _updateCourseTotals(courseId) {
   await pool.query(
     `UPDATE courses
-     SET total_lessons          = (SELECT COUNT(*)               FROM lessons WHERE course_id = ?),
-         total_duration_minutes = (SELECT COALESCE(SUM(duration_minutes),0) FROM lessons WHERE course_id = ?)
+     SET total_lessons          = (SELECT COUNT(*)               FROM lessons WHERE course_id = ? AND hidden_at IS NULL),
+         total_duration_minutes = (SELECT COALESCE(SUM(duration_minutes),0) FROM lessons WHERE course_id = ? AND hidden_at IS NULL)
      WHERE id = ?`,
     [courseId, courseId, courseId],
   );
 }
 
-/** Số bài học đổi → tính lại % của mọi học viên, để khóa đã "hoàn thành" không còn đúng khi có bài mới. */
+/**
+ * Số bài học (hiển thị) đổi → tính lại % của mọi học viên, để khóa đã "hoàn thành" không còn đúng khi có bài mới.
+ * Bài đã ẩn không tính ở cả tử lẫn mẫu: ẩn một bài không làm ai tụt tiến độ hay kẹt dưới 100%.
+ */
 async function _recomputeEnrollmentProgress(courseId) {
-  const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM lessons WHERE course_id = ?', [courseId]);
+  const [[{ total }]] = await pool.query(
+    'SELECT COUNT(*) AS total FROM lessons WHERE course_id = ? AND hidden_at IS NULL', [courseId],
+  );
   // MySQL gán SET từ trái sang phải: completed_at đọc progress_percent vừa tính
   await pool.query(
     `UPDATE enrollments e
      SET e.progress_percent = IF(? = 0, 0, ROUND(100 * (
-           SELECT COUNT(*) FROM lesson_progress lp WHERE lp.enrollment_id = e.id AND lp.is_completed = 1
+           SELECT COUNT(*) FROM lesson_progress lp JOIN lessons l ON l.id = lp.lesson_id
+           WHERE lp.enrollment_id = e.id AND lp.is_completed = 1 AND l.hidden_at IS NULL
          ) / ?)),
          e.completed_at = IF(e.progress_percent = 100, COALESCE(e.completed_at, NOW()), NULL)
      WHERE e.course_id = ?`,
@@ -471,7 +480,7 @@ async function adminListLessons(req, res) {
       [courseId],
     );
     const [lessons] = await pool.query(
-      `SELECT l.id, l.title, l.duration_minutes, l.order_index, l.is_preview,
+      `SELECT l.id, l.title, l.duration_minutes, l.order_index, l.is_preview, l.hidden_at,
               l.attachment_url, l.section_id,
               l.video_key, l.attachment_key, l.attachment_name, l.content, l.hls_status, l.hls_error,
               cs.title AS sectionTitle
@@ -580,31 +589,103 @@ async function adminReorderLessons(req, res) {
   }
 }
 
+/**
+ * Số học viên đã để lại dữ liệu trên bài học: tiến độ, lượt làm quiz, bài nộp code, thảo luận, ghi chú.
+ * Xóa bài học sẽ xóa cascade những dữ liệu đó (riêng quiz_attempts bị FK chặn) → có dữ liệu thì chỉ được ẩn.
+ * Không tính giảng viên sở hữu khóa (trả lời thảo luận / chấm thử).
+ */
+async function _lessonLearnerCount(lessonId) {
+  const [[{ learners }]] = await pool.query(
+    `SELECT COUNT(DISTINCT t.uid) AS learners FROM (
+       SELECT e.user_id AS uid FROM lesson_progress lp JOIN enrollments e ON e.id = lp.enrollment_id WHERE lp.lesson_id = ?
+       UNION SELECT qa.user_id FROM quiz_attempts qa JOIN quizzes q ON q.id = qa.quiz_id WHERE q.lesson_id = ?
+       UNION SELECT cs.user_id FROM code_submissions cs JOIN coding_exercises ce ON ce.id = cs.exercise_id WHERE ce.lesson_id = ?
+       UNION SELECT d.user_id FROM lesson_discussions d WHERE d.lesson_id = ?
+       UNION SELECT n.user_id FROM lesson_notes n WHERE n.lesson_id = ?
+     ) t
+     WHERE t.uid <> COALESCE((SELECT c.instructor_id FROM lessons l JOIN courses c ON c.id = l.course_id WHERE l.id = ?), 0)`,
+    [lessonId, lessonId, lessonId, lessonId, lessonId, lessonId],
+  );
+  return Number(learners);
+}
+
+/** Khóa đang bán / chờ duyệt phải còn ít nhất 1 bài hiển thị. Trả message lỗi hoặc null. */
+async function _lastVisibleLessonGuard(lesson) {
+  if (lesson.hidden_at || !['PUBLISHED', 'PENDING_REVIEW'].includes(lesson.courseStatus)) return null;
+  const [[{ visible }]] = await pool.query(
+    'SELECT COUNT(*) AS visible FROM lessons WHERE course_id = ? AND hidden_at IS NULL', [lesson.course_id],
+  );
+  return visible <= 1 ? 'Khóa học đang bán cần ít nhất 1 bài học hiển thị — thêm bài khác trước khi ẩn / xóa bài này.' : null;
+}
+
+async function _loadLessonForChange(lessonId) {
+  const [[lesson]] = await pool.query(
+    `SELECT l.course_id, l.video_key, l.attachment_key, l.hls_prefix, l.hidden_at, c.status AS courseStatus
+     FROM lessons l JOIN courses c ON c.id = l.course_id WHERE l.id = ?`,
+    [lessonId],
+  );
+  return lesson ?? null;
+}
+
 async function adminDeleteLesson(req, res) {
   const lessonId = parseInt(req.params.id, 10);
   try {
-    const [rows] = await pool.query('SELECT course_id, video_key, attachment_key, hls_prefix FROM lessons WHERE id = ?', [lessonId]);
-    if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy' });
-    // Xóa bài học cascade sang quizzes, nhưng quiz_attempts thì không → kiểm tra trước để trả 409 rõ ràng
-    const [attempts] = await pool.query(
-      'SELECT qa.id FROM quiz_attempts qa JOIN quizzes q ON q.id = qa.quiz_id WHERE q.lesson_id = ? LIMIT 1', [lessonId],
-    );
-    if (attempts.length) {
-      return res.status(409).json({ message: 'Không thể xóa: quiz của bài học này đã có học viên làm. Sửa nội dung bài học thay vì xóa.' });
+    const lesson = await _loadLessonForChange(lessonId);
+    if (!lesson) return res.status(404).json({ message: 'Không tìm thấy' });
+    const learners = await _lessonLearnerCount(lessonId);
+    if (learners > 0) {
+      return res.status(409).json({
+        code: 'LESSON_HAS_LEARNER_DATA',
+        learners,
+        hidden: !!lesson.hidden_at,
+        message: `Không thể xóa: ${learners} học viên đã học bài này (tiến độ, quiz, bài nộp hoặc thảo luận). `
+          + 'Hãy ẩn bài để giữ lại lịch sử của họ.',
+      });
     }
+    const guard = await _lastVisibleLessonGuard(lesson);
+    if (guard) return res.status(409).json({ message: guard });
     await pool.query('DELETE FROM lessons WHERE id = ?', [lessonId]);
-    await _updateCourseTotals(rows[0].course_id);
-    await _recomputeEnrollmentProgress(rows[0].course_id);
+    await _updateCourseTotals(lesson.course_id);
+    await _recomputeEnrollmentProgress(lesson.course_id);
     // Không để file mồ côi trên storage
     await Promise.all([
-      storage.deleteObject(rows[0].video_key), storage.deleteObject(rows[0].attachment_key), storage.deletePrefix(rows[0].hls_prefix),
+      storage.deleteObject(lesson.video_key), storage.deleteObject(lesson.attachment_key), storage.deletePrefix(lesson.hls_prefix),
     ]);
     return res.json({ ok: true });
   } catch (err) {
     if (err.code === 'ER_ROW_IS_REFERENCED_2') {
-      return res.status(409).json({ message: 'Không thể xóa: quiz của bài học này đã có học viên làm. Sửa nội dung bài học thay vì xóa.' });
+      return res.status(409).json({
+        code: 'LESSON_HAS_LEARNER_DATA',
+        message: 'Không thể xóa: đã có học viên học bài này. Hãy ẩn bài để giữ lại lịch sử của họ.',
+      });
     }
     console.error('[admin/lessons/delete]', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+}
+
+/**
+ * PUT {apiBase}/lessons/:id/visibility  { hidden: boolean } — ẩn / hiện bài học (xóa mềm).
+ * Bài ẩn: học viên không thấy, không mở được, không tính vào tổng số bài và % tiến độ. Dữ liệu cũ giữ nguyên.
+ */
+async function adminSetLessonVisibility(req, res) {
+  const lessonId = parseInt(req.params.id, 10);
+  if (typeof req.body?.hidden !== 'boolean') return res.status(400).json({ message: 'hidden phải là true / false' });
+  const { hidden } = req.body;
+  try {
+    const lesson = await _loadLessonForChange(lessonId);
+    if (!lesson) return res.status(404).json({ message: 'Không tìm thấy' });
+    if (!!lesson.hidden_at === hidden) return res.json({ ok: true, hidden });
+    if (hidden) {
+      const guard = await _lastVisibleLessonGuard(lesson);
+      if (guard) return res.status(409).json({ message: guard });
+    }
+    await pool.query(`UPDATE lessons SET hidden_at = ${hidden ? 'NOW()' : 'NULL'} WHERE id = ?`, [lessonId]);
+    await _updateCourseTotals(lesson.course_id);
+    await _recomputeEnrollmentProgress(lesson.course_id);
+    return res.json({ ok: true, hidden });
+  } catch (err) {
+    console.error('[admin/lessons/visibility]', err);
     return res.status(500).json({ message: 'Lỗi máy chủ' });
   }
 }
@@ -1171,7 +1252,7 @@ module.exports = {
   dashboard,
   adminListCourses, adminExportCourses, adminGetCourse, adminCreateCourse, adminUpdateCourse, adminDeleteCourse, adminReorderCourses,
   adminApproveCourse, adminRejectCourse,
-  adminListLessons, adminCreateLesson, adminUpdateLesson, adminReorderLessons, adminDeleteLesson,
+  adminListLessons, adminCreateLesson, adminUpdateLesson, adminReorderLessons, adminDeleteLesson, adminSetLessonVisibility,
   adminListCategories, adminCreateCategory, adminUpdateCategory, adminDeleteCategory,
   adminListUsers, adminCreateUser, adminUpdateUserStatus, adminUpdateUserRole,
   adminBulkUsers, adminExportUsers, adminGetUserEnrollments,
